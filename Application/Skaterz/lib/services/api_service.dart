@@ -38,6 +38,8 @@ class ApiService {
   Future<void> logout() async {
     try {
       await _storage.delete(key: 'jwt_token');
+      // Clear cache on logout
+      await _storage.deleteAll();
     } catch (e) {
       debugPrint("Secure Storage Logout Error: $e");
     }
@@ -63,6 +65,26 @@ class ApiService {
     } else {
       throw Exception('Request failed with status: ${response.statusCode}');
     }
+  }
+
+  // --- Caching Helpers ---
+
+  Future<void> _cacheData(String key, dynamic data) async {
+    try {
+      await _storage.write(key: 'cache_$key', value: jsonEncode(data));
+    } catch (e) {
+      debugPrint("Caching Error: $key - $e");
+    }
+  }
+
+  Future<dynamic> getCachedData(String key) async {
+    try {
+      String? cached = await _storage.read(key: 'cache_$key');
+      if (cached != null) return jsonDecode(cached);
+    } catch (e) {
+      debugPrint("Cache Read Error: $key - $e");
+    }
+    return null;
   }
 
   // --- Auth Services ---
@@ -103,7 +125,11 @@ class ApiService {
       Uri.parse('$baseUrl/users/me'),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null) {
+      await _cacheData('user_me', data);
+    }
+    return data;
   }
 
   Future<void> uploadProfileImage(String base64Image) async {
@@ -147,7 +173,11 @@ class ApiService {
       Uri.parse('$baseUrl/categories'),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null) {
+      await _cacheData('categories', data);
+    }
+    return data;
   }
 
   Future<List<dynamic>> getTricks({int? categoryId}) async {
@@ -159,7 +189,11 @@ class ApiService {
       Uri.parse(url),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null) {
+      await _cacheData('tricks_${categoryId ?? 'all'}', data);
+    }
+    return data;
   }
 
   Future<List<dynamic>> getCompletedTricks() async {
@@ -167,7 +201,11 @@ class ApiService {
       Uri.parse('$baseUrl/completed'),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null) {
+      await _cacheData('completed_tricks', data);
+    }
+    return data;
   }
 
   Future<List<dynamic>> getWishlistTricks() async {
@@ -175,7 +213,11 @@ class ApiService {
       Uri.parse('$baseUrl/wishlist'),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null) {
+      await _cacheData('wishlist_tricks', data);
+    }
+    return data;
   }
 
   Future<void> toggleWishlist(int trickId, bool isWishlisted) async {
@@ -207,7 +249,11 @@ class ApiService {
       Uri.parse(url),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null && userId == null) {
+      await _cacheData('category_stats_me', data);
+    }
+    return data;
   }
 
   Future<List<dynamic>> getLeaderboard({int? categoryId}) async {
@@ -229,7 +275,11 @@ class ApiService {
       Uri.parse('$baseUrl/goals'),
       headers: await _getHeaders(),
     );
-    return _handleResponse(response);
+    final data = _handleResponse(response);
+    if (data != null) {
+      await _cacheData('session_goals', data);
+    }
+    return data;
   }
 
   Future<Map<String, dynamic>> addSessionGoal(Map<String, dynamic> goalData) async {

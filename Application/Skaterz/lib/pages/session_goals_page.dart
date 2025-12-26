@@ -43,7 +43,16 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
   }
 
   Future<void> _loadGoals() async {
-    setState(() => _isLoading = true);
+    // 1. Zuerst Cache laden (Blitzschnell)
+    final cachedData = await _apiService.getCachedData('session_goals');
+    if (cachedData != null && mounted) {
+      setState(() {
+        _goals = (cachedData as List).map((json) => SessionGoal.fromJson(json)).toList();
+        _isLoading = false; // Nutzer sieht sofort Daten
+      });
+    }
+
+    // 2. Dann im Hintergrund API abfragen
     try {
       final goalsData = await _apiService.getSessionGoals();
       if (mounted) {
@@ -53,10 +62,10 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _goals.isEmpty) { // Nur Fehler zeigen, wenn gar keine Daten da sind
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Network Error: $e')),
         );
       }
     }
@@ -166,98 +175,101 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading 
+      body: _isLoading && _goals.isEmpty 
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            elevation: 4,
-            margin: const EdgeInsets.only(bottom: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            clipBehavior: Clip.antiAlias,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF002211), Color(0xFF004D40), Color(0xFF00FF88)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                leading: const CircleAvatar(
-                  backgroundColor: Colors.white24,
-                  child: Icon(Icons.add, color: Colors.white),
-                ),
-                title: Text(
-                  widget.localizations.addGoal,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    fontSize: 18,
-                    color: Colors.white,
+          : RefreshIndicator(
+              onRefresh: _loadGoals,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF002211), Color(0xFF004D40), Color(0xFF00FF88)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.white24,
+                          child: Icon(Icons.add, color: Colors.white),
+                        ),
+                        title: Text(
+                          widget.localizations.addGoal,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                        subtitle: Text(
+                          widget.localizations.goalHint,
+                          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                        ),
+                        onTap: _addNewGoal,
+                      ),
+                    ),
                   ),
-                ),
-                subtitle: Text(
-                  widget.localizations.goalHint,
-                  style: TextStyle(color: Colors.white.withOpacity(0.8)),
-                ),
-                onTap: _addNewGoal,
+
+                  if (_goals.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 40),
+                      child: Center(
+                        child: Text(
+                          widget.localizations.noGoals,
+                          style: const TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    if (openGoals.isNotEmpty) ...[
+                      _SectionHeader(title: widget.localizations.openGoals),
+                      ...openGoals.map((goal) => _GoalTile(
+                            localizations: widget.localizations,
+                            goal: goal,
+                            onDelete: () => _deleteGoal(goal),
+                            onToggleComplete: () {
+                              setState(() => goal.isCompleted = !goal.isCompleted);
+                              _updateGoalOnServer(goal);
+                            },
+                            onTogglePause: () => setState(() => goal.isPaused = !goal.isPaused),
+                            onIncrement: () {
+                              setState(() {
+                                goal.currentCount++;
+                                if (goal.targetCount != null && goal.currentCount >= goal.targetCount!) {
+                                  goal.isCompleted = true;
+                                }
+                              });
+                              _updateGoalOnServer(goal);
+                            },
+                          )),
+                    ],
+                    if (completedGoals.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _SectionHeader(title: widget.localizations.completedGoals),
+                      ...completedGoals.map((goal) => _GoalTile(
+                            localizations: widget.localizations,
+                            goal: goal,
+                            onDelete: () => _deleteGoal(goal),
+                            onToggleComplete: () {
+                              setState(() => goal.isCompleted = !goal.isCompleted);
+                              _updateGoalOnServer(goal);
+                            },
+                            onTogglePause: () {},
+                            onIncrement: () {},
+                          )),
+                    ],
+                  ],
+                ],
               ),
             ),
-          ),
-
-          if (_goals.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 40),
-              child: Center(
-                child: Text(
-                  widget.localizations.noGoals,
-                  style: const TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-              ),
-            )
-          else ...[
-            if (openGoals.isNotEmpty) ...[
-              _SectionHeader(title: widget.localizations.openGoals),
-              ...openGoals.map((goal) => _GoalTile(
-                    localizations: widget.localizations,
-                    goal: goal,
-                    onDelete: () => _deleteGoal(goal),
-                    onToggleComplete: () {
-                      setState(() => goal.isCompleted = !goal.isCompleted);
-                      _updateGoalOnServer(goal);
-                    },
-                    onTogglePause: () => setState(() => goal.isPaused = !goal.isPaused),
-                    onIncrement: () {
-                      setState(() {
-                        goal.currentCount++;
-                        if (goal.targetCount != null && goal.currentCount >= goal.targetCount!) {
-                          goal.isCompleted = true;
-                        }
-                      });
-                      _updateGoalOnServer(goal);
-                    },
-                  )),
-            ],
-            if (completedGoals.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _SectionHeader(title: widget.localizations.completedGoals),
-              ...completedGoals.map((goal) => _GoalTile(
-                    localizations: widget.localizations,
-                    goal: goal,
-                    onDelete: () => _deleteGoal(goal),
-                    onToggleComplete: () {
-                      setState(() => goal.isCompleted = !goal.isCompleted);
-                      _updateGoalOnServer(goal);
-                    },
-                    onTogglePause: () {},
-                    onIncrement: () {},
-                  )),
-            ],
-          ],
-        ],
-      ),
     );
   }
 }
@@ -363,7 +375,7 @@ class _GoalTile extends StatelessWidget {
                 ],
               ),
               LinearProgressIndicator(
-                value: goal.currentCount / goal.targetCount!,
+                value: goal.targetCount! > 0 ? goal.currentCount / goal.targetCount! : 0,
                 backgroundColor: Colors.grey[200],
                 color: const Color(0xFF004D40),
               ),
@@ -490,95 +502,77 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
               onSelectionChanged: (val) => setState(() => _type = val.first),
             ),
             const SizedBox(height: 16),
-            if (_type == GoalType.text)
+            if (_type == GoalType.trick) ...[
+              DropdownButtonFormField<Map<String, dynamic>>(
+                decoration: InputDecoration(
+                  labelText: widget.localizations.selectTrick,
+                  prefixIcon: const Icon(Icons.skateboarding),
+                ),
+                items: _tricks.map((t) => DropdownMenuItem(
+                  value: t as Map<String, dynamic>,
+                  child: Text(t['name']),
+                )).toList(),
+                onChanged: (val) => setState(() => _selectedTrick = val),
+              ),
+            ] else
               TextField(
                 controller: _titleController,
                 decoration: InputDecoration(
-                  labelText: widget.localizations.goalHint,
-                  border: const OutlineInputBorder(),
+                  labelText: widget.localizations.goalTitle,
+                  prefixIcon: const Icon(Icons.edit),
                 ),
-              )
-            else
-              _isLoadingTricks
-                  ? const Center(child: CircularProgressIndicator())
-                  : Autocomplete<Map<String, dynamic>>(
-                      displayStringForOption: (option) => option['name'],
-                      optionsBuilder: (TextEditingValue textEditingValue) {
-                        if (textEditingValue.text == '') {
-                          return const Iterable<Map<String, dynamic>>.empty();
-                        }
-                        return _tricks.where((dynamic option) {
-                          return option['name']
-                              .toString()
-                              .toLowerCase()
-                              .contains(textEditingValue.text.toLowerCase());
-                        }).cast<Map<String, dynamic>>();
-                      },
-                      onSelected: (Map<String, dynamic> selection) {
-                        setState(() => _selectedTrick = selection);
-                      },
-                      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                        return TextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          onSubmitted: (value) => onFieldSubmitted(),
-                          decoration: InputDecoration(
-                            labelText: widget.localizations.selectTrick,
-                            border: const OutlineInputBorder(),
-                          ),
-                        );
-                      },
+              ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _countController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: widget.localizations.targetCount,
+                      prefixIcon: const Icon(Icons.repeat),
+                      hintText: "e.g. 10",
                     ),
-            const SizedBox(height: 16),
-            if (_type == GoalType.trick)
-              TextField(
-                controller: _countController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: widget.localizations.targetCount,
-                  border: const OutlineInputBorder(),
+                  ),
                 ),
-              ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _minutesController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: widget.localizations.timerMinutes,
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.timer),
-              ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: _minutesController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: widget.localizations.timerMinutes,
+                      prefixIcon: const Icon(Icons.timer),
+                      hintText: "e.g. 30",
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                final String title = _type == GoalType.text 
-                    ? _titleController.text 
-                    : (_selectedTrick?['name'] ?? "");
-                
-                if (title.isEmpty && _type == GoalType.text) return;
-                if (_type == GoalType.trick && _selectedTrick == null) return;
-
-                final int? targetCount = int.tryParse(_countController.text);
-                final int? minutes = int.tryParse(_minutesController.text);
-
-                final goal = SessionGoal(
-                  title: title,
-                  type: _type,
-                  trickId: _selectedTrick?['id'],
-                  targetCount: targetCount,
-                  timerDuration: minutes != null ? Duration(minutes: minutes) : null,
-                  remainingTime: minutes != null ? Duration(minutes: minutes) : null,
-                  isPaused: true,
-                );
-                widget.onGoalAdded(goal);
-              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF004D40),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(widget.localizations.addGoal),
+              onPressed: () {
+                final title = _type == GoalType.trick ? _selectedTrick?['name'] : _titleController.text;
+                if (title == null || title.isEmpty) return;
+
+                final targetCount = int.tryParse(_countController.text);
+                final minutes = int.tryParse(_minutesController.text);
+
+                final newGoal = SessionGoal(
+                  title: title,
+                  type: _type,
+                  targetCount: targetCount,
+                  remainingTime: minutes != null ? Duration(minutes: minutes) : null,
+                );
+                widget.onGoalAdded(newGoal);
+              },
+              child: Text(widget.localizations.save),
             ),
             const SizedBox(height: 16),
           ],

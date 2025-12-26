@@ -22,57 +22,62 @@ class ProgressTrackerPage extends StatefulWidget {
 
 class _ProgressTrackerPageState extends State<ProgressTrackerPage> {
   final ApiService _apiService = ApiService();
-  Future<Map<String, dynamic>>? _dataFuture;
+  List<dynamic> _stats = [];
+  List<dynamic> _completed = [];
+  bool _isLoading = true;
 
   final Map<int, Color> categoryColors = {
-    1: Colors.blue,
-    2: Colors.red,
-    3: Colors.green,
-    4: Colors.orange,
-    5: Colors.purple,
-    6: Colors.teal,
-    7: Colors.amber,
+    1: Colors.blue, 2: Colors.red, 3: Colors.green, 
+    4: Colors.orange, 5: Colors.purple, 6: Colors.teal, 7: Colors.amber,
   };
 
   @override
   void initState() {
     super.initState();
     if (widget.isLoggedIn) {
-      _dataFuture = _loadAllData();
+      _loadData();
     }
   }
 
-  @override
-  void didUpdateWidget(ProgressTrackerPage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isLoggedIn && !oldWidget.isLoggedIn) {
+  Future<void> _loadData() async {
+    // 1. Load from Cache
+    final cachedStats = await _apiService.getCachedData('category_stats_me');
+    final cachedCompleted = await _apiService.getCachedData('completed_tricks');
+
+    if (mounted && (cachedStats != null || cachedCompleted != null)) {
       setState(() {
-        _dataFuture = _loadAllData();
+        if (cachedStats != null) _stats = cachedStats;
+        if (cachedCompleted != null) _completed = cachedCompleted;
+        _isLoading = false;
       });
     }
-  }
 
-  Future<Map<String, dynamic>> _loadAllData() async {
-    final stats = await _apiService.getCategoryStats();
-    final completed = await _apiService.getCompletedTricks();
-    final allTricks = await _apiService.getTricks();
-    
-    // Create a map for quick trick lookup by ID
-    Map<String, dynamic> tricksMap = {};
-    for (var t in allTricks) {
-      tricksMap[t['id'].toString()] = t;
+    // 2. Load from API in parallel
+    try {
+      final results = await Future.wait([
+        _apiService.getCategoryStats(),
+        _apiService.getCompletedTricks(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _stats = results[0];
+          _completed = results[1];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted && _stats.isEmpty) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     }
-
-    return {
-      'stats': stats, 
-      'completed': completed,
-      'tricksMap': tricksMap,
-    };
   }
 
-  void _showCategoryTricks(BuildContext context, int categoryId, String categoryName, List<dynamic> allCompleted, Map<String, dynamic> tricksMap) {
-    // Filter completed tricks by matching their category ID
-    final categoryTricks = allCompleted.where((item) {
+  void _showCategoryTricks(BuildContext context, int categoryId, String categoryName) {
+    final categoryTricks = _completed.where((item) {
       final trickCatId = (item['category_id'] ?? item['categoryId'] ?? 
                          (item['category'] != null ? item['category']['id'] : null))?.toString();
       return trickCatId == categoryId.toString();
@@ -80,49 +85,31 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> {
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                categoryName,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF004D40)),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${categoryTricks.length} ${widget.localizations.tricksCompleted}',
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-              const Divider(),
-              if (categoryTricks.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 30),
-                  child: Text(widget.localizations.noTricksYet),
-                )
-              else
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: categoryTricks.length,
-                    itemBuilder: (context, index) {
-                      final item = categoryTricks[index];
-                      return ListTile(
-                        visualDensity: VisualDensity.compact,
-                        leading: const Icon(Icons.check_circle, color: Color(0xFF004D40)),
-                        title: Text(item['name'] ?? 'Trick'),
-                      );
-                    },
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(categoryName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
+            const Divider(),
+            if (categoryTricks.isEmpty)
+              Padding(padding: const EdgeInsets.all(20), child: Text(widget.localizations.noTricksYet))
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: categoryTricks.length,
+                  itemBuilder: (context, index) => ListTile(
+                    visualDensity: VisualDensity.compact,
+                    leading: const Icon(Icons.check_circle, color: Color(0xFF004D40)),
+                    title: Text(categoryTricks[index]['name'] ?? 'Trick'),
                   ),
                 ),
-            ],
-          ),
-        );
-      },
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -137,9 +124,25 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> {
       );
     }
 
+    Map<String, int> localCategoryCounts = {};
+    for (var item in _completed) {
+      final catId = (item['category_id'] ?? item['categoryId'] ?? 
+                    (item['category'] != null ? item['category']['id'] : null))?.toString();
+      if (catId != null) localCategoryCounts[catId] = (localCategoryCounts[catId] ?? 0) + 1;
+    }
+
+    int totalTricks = 0;
+    for (var cat in _stats) {
+      final catTotal = cat['totalTricks'] ?? cat['total_tricks'] ?? cat['totalCount'] ?? cat['total_count'] ?? 0;
+      totalTricks += (catTotal as num).toInt();
+    }
+
+    final int totalCompleted = _completed.length;
+    final double percentage = totalTricks > 0 ? (totalCompleted / totalTricks) * 100 : 0;
+    final pieStats = _stats.where((cat) => (localCategoryCounts[cat['id'].toString()] ?? 0) > 0).toList();
+
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -149,145 +152,68 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> {
             ),
           ),
         ),
-        title: Text(
-          widget.localizations.progressTrackerMenuItem,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+        title: Text(widget.localizations.progressTrackerMenuItem, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _dataFuture,
-        builder: (context, snapshot) {
-          if (_dataFuture == null || snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final stats = snapshot.data!['stats'] as List<dynamic>;
-          final completed = snapshot.data!['completed'] as List<dynamic>;
-
-          // Calculate counts per category
-          Map<String, int> localCategoryCounts = {};
-          for (var item in completed) {
-            final catId = (item['category_id'] ?? item['categoryId'] ?? 
-                          (item['category'] != null ? item['category']['id'] : null))?.toString();
-            if (catId != null) {
-              localCategoryCounts[catId] = (localCategoryCounts[catId] ?? 0) + 1;
-            }
-          }
-
-          int totalTricks = 0;
-          for (var cat in stats) {
-            final catTotal = cat['totalTricks'] ?? cat['total_tricks'] ?? cat['totalCount'] ?? cat['total_count'] ?? 0;
-            totalTricks += (catTotal as num).toInt();
-          }
-
-          final int totalCompleted = completed.length;
-          final double percentage = totalTricks > 0 ? (totalCompleted / totalTricks) * 100 : 0;
-
-          // Filter stats for the pie chart to only include categories with at least one completed trick
-          final pieStats = stats.where((cat) {
-            final catIdStr = (cat['id'] ?? '').toString();
-            return (localCategoryCounts[catIdStr] ?? 0) > 0;
-          }).toList();
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _dataFuture = _loadAllData();
-              });
-              await _dataFuture;
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Text(
-                    '$totalCompleted/$totalTricks ${widget.localizations.tricksCompleted} (${percentage.toStringAsFixed(1)}%)',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
-
-                  if (pieStats.isNotEmpty)
-                    SizedBox(
-                      height: 200,
-                      child: PieChart(
-                        PieChartData(
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 40,
-                          pieTouchData: PieTouchData(
-                            touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                              if (!event.isInterestedForInteractions ||
-                                  pieTouchResponse == null ||
-                                  pieTouchResponse.touchedSection == null ||
-                                  event is! FlTapUpEvent) {
-                                return;
-                              }
-                              final index = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                              if (index >= 0 && index < pieStats.length) {
-                                final cat = pieStats[index];
-                                final catId = (cat['id'] ?? 0);
-                                _showCategoryTricks(context, catId is int ? catId : int.parse(catId.toString()), cat['name'] ?? '', completed, {});
-                              }
-                            },
+      body: _isLoading && _stats.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text('$totalCompleted/$totalTricks ${widget.localizations.tricksCompleted} (${percentage.toStringAsFixed(1)}%)',
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 24),
+                    if (pieStats.isNotEmpty)
+                      SizedBox(
+                        height: 200,
+                        child: PieChart(
+                          PieChartData(
+                            sectionsSpace: 2,
+                            centerSpaceRadius: 40,
+                            sections: pieStats.map((cat) {
+                              final id = cat['id'];
+                              final count = localCategoryCounts[id.toString()] ?? 0;
+                              return PieChartSectionData(
+                                color: categoryColors[id] ?? Colors.grey,
+                                value: count.toDouble(),
+                                title: '$count',
+                                radius: 40,
+                                titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                              );
+                            }).toList(),
                           ),
-                          sections: pieStats.map((cat) {
-                            final catIdStr = (cat['id'] ?? '').toString();
-                            final int finalCount = localCategoryCounts[catIdStr] ?? 0;
-                            
-                            final int catId = int.tryParse(catIdStr) ?? 0;
-                            return PieChartSectionData(
-                              color: categoryColors[catId] ?? Colors.grey,
-                              value: finalCount.toDouble(),
-                              title: '$finalCount',
-                              radius: 40,
-                              titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                            );
-                          }).toList(),
                         ),
                       ),
+                    const SizedBox(height: 32),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _stats.length,
+                      itemBuilder: (context, index) {
+                        final cat = _stats[index];
+                        final id = cat['id'];
+                        final count = localCategoryCounts[id.toString()] ?? 0;
+                        final total = (cat['totalTricks'] ?? cat['total_tricks'] ?? 0) as num;
+
+                        return Card(
+                          child: ListTile(
+                            onTap: () => _showCategoryTricks(context, id, cat['name'] ?? ''),
+                            leading: CircleAvatar(backgroundColor: categoryColors[id], radius: 10),
+                            title: Text(cat['name'] ?? ''),
+                            trailing: Text('$count/${total.toInt()} ${widget.localizations.tricks}',
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        );
+                      },
                     ),
-
-                  const SizedBox(height: 32),
-
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: stats.length,
-                    itemBuilder: (context, index) {
-                      final cat = stats[index];
-                      final catIdStr = (cat['id'] ?? '').toString();
-                      final int finalCount = localCategoryCounts[catIdStr] ?? 0;
-
-                      final catTotal = cat['totalTricks'] ?? cat['total_tricks'] ?? cat['totalCount'] ?? cat['total_count'] ?? 0;
-                      final int totalCount = (catTotal as num).toInt();
-                      final int catId = int.tryParse(catIdStr) ?? 0;
-
-                      return Card(
-                        child: ListTile(
-                          onTap: () => _showCategoryTricks(context, catId, cat['name'] ?? '', completed, {}),
-                          leading: CircleAvatar(
-                            backgroundColor: categoryColors[catId],
-                            radius: 10,
-                          ),
-                          title: Text(cat['name'] ?? ''),
-                          trailing: Text(
-                            '$finalCount/$totalCount ${widget.localizations.tricks}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          );
-        },
-      ),
     );
   }
 }

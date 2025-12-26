@@ -35,17 +35,38 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadData();
   }
 
-  @override
-  void didUpdateWidget(ProfilePage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _loadData();
-  }
-
   Future<void> _loadData() async {
+    // 1. Load from Cache first
+    final cachedUser = await _apiService.getCachedData('user_me');
+    final cachedWishlist = await _apiService.getCachedData('wishlist_tricks');
+    final cachedCompleted = await _apiService.getCachedData('completed_tricks');
+
+    if (mounted && (cachedUser != null || cachedWishlist != null || cachedCompleted != null)) {
+      setState(() {
+        if (cachedUser != null) _userData = cachedUser;
+        if (cachedWishlist != null) _wishlistTricks = cachedWishlist;
+        if (cachedCompleted != null) {
+          _recentlyCompleted = List.from(cachedCompleted)..sort((a, b) {
+            if (a['created_at'] == null || b['created_at'] == null) return 0;
+            return DateTime.parse(b['created_at']).compareTo(DateTime.parse(a['created_at']));
+          });
+          _recentlyCompleted = _recentlyCompleted.take(3).toList();
+        }
+        _isLoading = false;
+      });
+    }
+
+    // 2. Load from API in parallel
     try {
-      final user = await _apiService.getCurrentUser();
-      final wishlist = await _apiService.getWishlistTricks();
-      final completed = await _apiService.getCompletedTricks();
+      final results = await Future.wait([
+        _apiService.getCurrentUser(),
+        _apiService.getWishlistTricks(),
+        _apiService.getCompletedTricks(),
+      ]);
+
+      final user = results[0] as Map<String, dynamic>;
+      final wishlist = results[1] as List<dynamic>;
+      final completed = results[2] as List<dynamic>;
       
       List<dynamic> recent = List.from(completed);
       recent.sort((a, b) {
@@ -62,7 +83,7 @@ class _ProfilePageState extends State<ProfilePage> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _userData == null) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -191,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
+      body: _isLoading && _userData == null
           ? Center(child: Text(widget.localizations.loadingData))
           : RefreshIndicator(
               onRefresh: _loadData,

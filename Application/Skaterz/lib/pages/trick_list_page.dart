@@ -40,6 +40,19 @@ class _TrickListPageState extends State<TrickListPage> {
   }
 
   Future<void> _loadTricks() async {
+    final cacheKey = 'tricks_${widget.categoryId ?? 'all'}';
+    
+    // 1. Load from Cache
+    final cachedData = await _apiService.getCachedData(cacheKey);
+    if (cachedData != null && mounted) {
+      setState(() {
+        _allTricks = cachedData;
+        _filteredTricks = cachedData;
+        _isLoading = false;
+      });
+    }
+
+    // 2. Load from API
     try {
       final tricks = await _apiService.getTricks(categoryId: widget.categoryId);
       if (mounted) {
@@ -50,7 +63,7 @@ class _TrickListPageState extends State<TrickListPage> {
         });
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && _allTricks.isEmpty) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -106,86 +119,90 @@ class _TrickListPageState extends State<TrickListPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _isLoading
+      body: _isLoading && _allTricks.isEmpty
           ? Center(child: Text(widget.localizations.loadingData))
-          : _filteredTricks.isEmpty
-              ? Center(child: Text(widget.localizations.noTricksYet))
-              : ListView.separated(
-                  itemCount: _filteredTricks.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: Colors.grey.withOpacity(0.2),
-                    indent: 16,
-                    endIndent: 16,
-                  ),
-                  itemBuilder: (context, index) {
-                    final trick = _filteredTricks[index];
-                    final int trickId = trick['id'];
-                    final bool isCompleted = trick['completed'] ?? false;
-                    final bool isWishlisted = trick['wishlisted'] ?? false;
+          : RefreshIndicator(
+              onRefresh: _loadTricks,
+              child: _filteredTricks.isEmpty
+                  ? Center(child: Text(widget.localizations.noTricksYet))
+                  : ListView.separated(
+                      itemCount: _filteredTricks.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: Colors.grey.withOpacity(0.2),
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                      itemBuilder: (context, index) {
+                        final trick = _filteredTricks[index];
+                        final int trickId = trick['id'];
+                        final bool isCompleted = trick['completed'] ?? false;
+                        final bool isWishlisted = trick['wishlisted'] ?? false;
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      leading: const Icon(Icons.skateboarding, color: Color(0xFF004D40)),
-                      title: Text(
-                        trick['name'] ?? 'Unknown Trick',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: trick['description'] != null ? Text(trick['description']) : null,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (!isCompleted)
-                            IconButton(
-                              icon: Icon(
-                                isWishlisted ? Icons.favorite : Icons.favorite_border,
-                                color: isWishlisted ? Colors.red : null,
-                              ),
-                              onPressed: () async {
-                                if (!widget.isLoggedIn) {
-                                  _showLoginWarning();
-                                  return;
-                                }
-                                try {
-                                  await _apiService.toggleWishlist(trickId, isWishlisted);
-                                  _loadTricks();
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: ${e.toString()}')),
-                                    );
-                                  }
-                                }
-                              },
-                            ),
-                          IconButton(
-                            icon: Icon(
-                              isCompleted ? Icons.check_circle : Icons.check_circle_outline,
-                              color: isCompleted ? Colors.green : null,
-                            ),
-                            onPressed: () async {
-                              if (!widget.isLoggedIn) {
-                                _showLoginWarning();
-                                return;
-                              }
-                              try {
-                                await _apiService.toggleCompleted(trickId, isCompleted);
-                                _loadTricks();
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: ${e.toString()}')),
-                                  );
-                                }
-                              }
-                            },
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: const Icon(Icons.skateboarding, color: Color(0xFF004D40)),
+                          title: Text(
+                            trick['name'] ?? 'Unknown Trick',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                          subtitle: trick['description'] != null ? Text(trick['description']) : null,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (!isCompleted)
+                                IconButton(
+                                  icon: Icon(
+                                    isWishlisted ? Icons.favorite : Icons.favorite_border,
+                                    color: isWishlisted ? Colors.red : null,
+                                  ),
+                                  onPressed: () async {
+                                    if (!widget.isLoggedIn) {
+                                      _showLoginWarning();
+                                      return;
+                                    }
+                                    try {
+                                      await _apiService.toggleWishlist(trickId, isWishlisted);
+                                      // Optimistic UI update could be added here
+                                      _loadTricks();
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error: ${e.toString()}')),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              IconButton(
+                                icon: Icon(
+                                  isCompleted ? Icons.check_circle : Icons.check_circle_outline,
+                                  color: isCompleted ? Colors.green : null,
+                                ),
+                                onPressed: () async {
+                                  if (!widget.isLoggedIn) {
+                                    _showLoginWarning();
+                                    return;
+                                  }
+                                  try {
+                                    await _apiService.toggleCompleted(trickId, isCompleted);
+                                    _loadTricks();
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: ${e.toString()}')),
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
     );
   }
 }
