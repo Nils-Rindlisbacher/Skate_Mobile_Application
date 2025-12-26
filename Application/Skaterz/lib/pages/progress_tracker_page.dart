@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
-import 'package:intl/intl.dart';
 import 'package:skaterz/widgets/login_required_view.dart';
 
 class ProgressTrackerPage extends StatefulWidget {
@@ -188,6 +187,12 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> {
           final int totalCompleted = completed.length;
           final double percentage = totalTricks > 0 ? (totalCompleted / totalTricks) * 100 : 0;
 
+          // Filter stats for the pie chart to only include categories with at least one completed trick
+          final pieStats = stats.where((cat) {
+            final catIdStr = (cat['id'] ?? '').toString();
+            return (localCategoryCounts[catIdStr] ?? 0) > 0;
+          }).toList();
+
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {
@@ -206,44 +211,45 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  SizedBox(
-                    height: 200,
-                    child: PieChart(
-                      PieChartData(
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 40,
-                        pieTouchData: PieTouchData(
-                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                            if (!event.isInterestedForInteractions ||
-                                pieTouchResponse == null ||
-                                pieTouchResponse.touchedSection == null ||
-                                event is! FlTapUpEvent) {
-                              return;
-                            }
-                            final index = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                            if (index >= 0 && index < stats.length) {
-                              final cat = stats[index];
-                              final catId = (cat['id'] ?? 0);
-                              _showCategoryTricks(context, catId is int ? catId : int.parse(catId.toString()), cat['name'] ?? '', completed, {});
-                            }
-                          },
+                  if (pieStats.isNotEmpty)
+                    SizedBox(
+                      height: 200,
+                      child: PieChart(
+                        PieChartData(
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 40,
+                          pieTouchData: PieTouchData(
+                            touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                              if (!event.isInterestedForInteractions ||
+                                  pieTouchResponse == null ||
+                                  pieTouchResponse.touchedSection == null ||
+                                  event is! FlTapUpEvent) {
+                                return;
+                              }
+                              final index = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                              if (index >= 0 && index < pieStats.length) {
+                                final cat = pieStats[index];
+                                final catId = (cat['id'] ?? 0);
+                                _showCategoryTricks(context, catId is int ? catId : int.parse(catId.toString()), cat['name'] ?? '', completed, {});
+                              }
+                            },
+                          ),
+                          sections: pieStats.map((cat) {
+                            final catIdStr = (cat['id'] ?? '').toString();
+                            final int finalCount = localCategoryCounts[catIdStr] ?? 0;
+                            
+                            final int catId = int.tryParse(catIdStr) ?? 0;
+                            return PieChartSectionData(
+                              color: categoryColors[catId] ?? Colors.grey,
+                              value: finalCount.toDouble(),
+                              title: '$finalCount',
+                              radius: 40,
+                              titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                            );
+                          }).toList(),
                         ),
-                        sections: stats.map((cat) {
-                          final catIdStr = (cat['id'] ?? '').toString();
-                          final int finalCount = localCategoryCounts[catIdStr] ?? 0;
-                          
-                          final int catId = int.tryParse(catIdStr) ?? 0;
-                          return PieChartSectionData(
-                            color: categoryColors[catId] ?? Colors.grey,
-                            value: finalCount > 0 ? finalCount.toDouble() : 0.01,
-                            title: finalCount > 0 ? '$finalCount' : '',
-                            radius: 40,
-                            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-                          );
-                        }).toList(),
                       ),
                     ),
-                  ),
 
                   const SizedBox(height: 32),
 
