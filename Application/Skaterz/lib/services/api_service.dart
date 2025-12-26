@@ -1,10 +1,10 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  // Production URL points to a subdomain, local URLs for development
   final String baseUrl = kReleaseMode || kIsWeb
       ? "https://skate-mobile-application-api.onrender.com/api"
       : "http://10.0.2.2:8080/api";
@@ -38,7 +38,6 @@ class ApiService {
   Future<void> logout() async {
     try {
       await _storage.delete(key: 'jwt_token');
-      // Clear cache on logout
       await _storage.deleteAll();
     } catch (e) {
       debugPrint("Secure Storage Logout Error: $e");
@@ -63,7 +62,7 @@ class ApiService {
       if (response.body.isEmpty) return null;
       return jsonDecode(response.body);
     } else {
-      throw Exception('Request failed with status: ${response.statusCode}');
+      throw Exception('Server Error (${response.statusCode}): ${response.body}');
     }
   }
 
@@ -87,6 +86,14 @@ class ApiService {
     return null;
   }
 
+  // --- Wrapper für Requests mit Timeout ---
+  Future<http.Response> _get(String path) async {
+    return await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: await _getHeaders(),
+    ).timeout(const Duration(seconds: 15));
+  }
+
   // --- Auth Services ---
 
   Future<void> register(String username, String password, String email, String name) async {
@@ -99,7 +106,7 @@ class ApiService {
         'email': email,
         'name': name,
       }),
-    );
+    ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
   }
 
@@ -111,7 +118,7 @@ class ApiService {
         'username': username,
         'password': password,
       }),
-    );
+    ).timeout(const Duration(seconds: 15));
 
     final data = _handleResponse(response);
     if (data != null && data['token'] != null) {
@@ -121,10 +128,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getCurrentUser() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/users/me'),
-      headers: await _getHeaders(),
-    );
+    final response = await _get('/users/me');
     final data = _handleResponse(response);
     if (data != null) {
       await _cacheData('user_me', data);
@@ -137,7 +141,7 @@ class ApiService {
       Uri.parse('$baseUrl/users/me/image'),
       headers: await _getHeaders(),
       body: jsonEncode({'image': base64Image}),
-    );
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
   }
 
@@ -146,7 +150,7 @@ class ApiService {
       Uri.parse('$baseUrl/users/me/privacy'),
       headers: await _getHeaders(),
       body: jsonEncode({'is_public': isPublic}),
-    );
+    ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
   }
 
@@ -154,25 +158,19 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/users/me'),
       headers: await _getHeaders(),
-    );
+    ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
   }
 
   Future<Map<String, dynamic>> getUserProfile(int userId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/users/profile/$userId'),
-      headers: await _getHeaders(),
-    );
+    final response = await _get('/users/profile/$userId');
     return _handleResponse(response);
   }
 
   // --- Data Services ---
 
   Future<List<dynamic>> getCategories() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/categories'),
-      headers: await _getHeaders(),
-    );
+    final response = await _get('/categories');
     final data = _handleResponse(response);
     if (data != null) {
       await _cacheData('categories', data);
@@ -181,14 +179,8 @@ class ApiService {
   }
 
   Future<List<dynamic>> getTricks({int? categoryId}) async {
-    final url = categoryId == null
-        ? '$baseUrl/tricks'
-        : '$baseUrl/tricks?category_id=$categoryId';
-
-    final response = await http.get(
-      Uri.parse(url),
-      headers: await _getHeaders(),
-    );
+    final path = categoryId == null ? '/tricks' : '/tricks?category_id=$categoryId';
+    final response = await _get(path);
     final data = _handleResponse(response);
     if (data != null) {
       await _cacheData('tricks_${categoryId ?? 'all'}', data);
@@ -197,10 +189,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getCompletedTricks() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/completed'),
-      headers: await _getHeaders(),
-    );
+    final response = await _get('/completed');
     final data = _handleResponse(response);
     if (data != null) {
       await _cacheData('completed_tricks', data);
@@ -209,10 +198,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getWishlistTricks() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/wishlist'),
-      headers: await _getHeaders(),
-    );
+    final response = await _get('/wishlist');
     final data = _handleResponse(response);
     if (data != null) {
       await _cacheData('wishlist_tricks', data);
@@ -221,34 +207,28 @@ class ApiService {
   }
 
   Future<void> toggleWishlist(int trickId, bool isWishlisted) async {
-    final endpoint = isWishlisted ? 'wishlist/remove' : 'wishlist/add';
+    final endpoint = isWishlisted ? '/wishlist/remove' : '/wishlist/add';
     final response = await http.post(
-      Uri.parse('$baseUrl/$endpoint'),
+      Uri.parse('$baseUrl$endpoint'),
       headers: await _getHeaders(),
       body: jsonEncode({'trick_id': trickId}),
-    );
+    ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
   }
 
   Future<void> toggleCompleted(int trickId, bool isCompleted) async {
-    final endpoint = isCompleted ? 'completed/remove' : 'completed/add';
+    final endpoint = isCompleted ? '/completed/remove' : '/completed/add';
     final response = await http.post(
-      Uri.parse('$baseUrl/$endpoint'),
+      Uri.parse('$baseUrl$endpoint'),
       headers: await _getHeaders(),
       body: jsonEncode({'trick_id': trickId}),
-    );
+    ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
   }
 
   Future<List<dynamic>> getCategoryStats({int? userId}) async {
-    final url = userId == null 
-        ? '$baseUrl/categories/stats'
-        : '$baseUrl/categories/stats?user_id=$userId';
-        
-    final response = await http.get(
-      Uri.parse(url),
-      headers: await _getHeaders(),
-    );
+    final path = userId == null ? '/categories/stats' : '/categories/stats?user_id=$userId';
+    final response = await _get(path);
     final data = _handleResponse(response);
     if (data != null && userId == null) {
       await _cacheData('category_stats_me', data);
@@ -257,29 +237,25 @@ class ApiService {
   }
 
   Future<List<dynamic>> getLeaderboard({int? categoryId}) async {
-    final url = categoryId == null
-        ? '$baseUrl/users/leaderboard'
-        : '$baseUrl/users/leaderboard?category_id=$categoryId';
-        
-    final response = await http.get(
-      Uri.parse(url),
-      headers: await _getHeaders(),
-    );
+    final path = categoryId == null ? '/users/leaderboard' : '/users/leaderboard?category_id=$categoryId';
+    final response = await _get(path);
     return _handleResponse(response);
   }
 
   // --- Session Goals ---
 
   Future<List<dynamic>> getSessionGoals() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/goals'),
-      headers: await _getHeaders(),
-    );
-    final data = _handleResponse(response);
-    if (data != null) {
-      await _cacheData('session_goals', data);
+    try {
+      final response = await _get('/goals');
+      final data = _handleResponse(response);
+      if (data != null) {
+        await _cacheData('session_goals', data);
+      }
+      return data ?? [];
+    } catch (e) {
+      debugPrint("API getSessionGoals Error: $e");
+      rethrow;
     }
-    return data;
   }
 
   Future<Map<String, dynamic>> addSessionGoal(Map<String, dynamic> goalData) async {
@@ -287,7 +263,7 @@ class ApiService {
       Uri.parse('$baseUrl/goals'),
       headers: await _getHeaders(),
       body: jsonEncode(goalData),
-    );
+    ).timeout(const Duration(seconds: 15));
     return _handleResponse(response);
   }
 
@@ -296,7 +272,7 @@ class ApiService {
       Uri.parse('$baseUrl/goals/$id'),
       headers: await _getHeaders(),
       body: jsonEncode(goalData),
-    );
+    ).timeout(const Duration(seconds: 15));
     return _handleResponse(response);
   }
 
@@ -304,7 +280,7 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/goals/$id'),
       headers: await _getHeaders(),
-    );
+    ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
   }
 }

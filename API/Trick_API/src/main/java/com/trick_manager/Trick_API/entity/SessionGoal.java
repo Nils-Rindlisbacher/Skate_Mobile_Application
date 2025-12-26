@@ -1,5 +1,7 @@
 package com.trick_manager.Trick_API.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -14,6 +16,7 @@ public class SessionGoal {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
 
     @Column(nullable = false)
@@ -37,6 +40,7 @@ public class SessionGoal {
     @Column(name = "remaining_time")
     private Long remainingTime; // in seconds
 
+    @JsonProperty("completed")
     @Column(name = "is_completed")
     private boolean isCompleted = false;
 

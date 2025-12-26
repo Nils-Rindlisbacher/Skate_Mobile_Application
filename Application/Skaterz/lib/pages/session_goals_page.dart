@@ -43,29 +43,45 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
   }
 
   Future<void> _loadGoals() async {
-    // 1. Zuerst Cache laden (Blitzschnell)
-    final cachedData = await _apiService.getCachedData('session_goals');
-    if (cachedData != null && mounted) {
-      setState(() {
-        _goals = (cachedData as List).map((json) => SessionGoal.fromJson(json)).toList();
-        _isLoading = false; // Nutzer sieht sofort Daten
-      });
-    }
-
-    // 2. Dann im Hintergrund API abfragen
+    // 1. Load from Cache first
     try {
-      final goalsData = await _apiService.getSessionGoals();
-      if (mounted) {
+      final cachedData = await _apiService.getCachedData('session_goals');
+      if (cachedData != null && cachedData is List && mounted) {
         setState(() {
-          _goals = goalsData.map((json) => SessionGoal.fromJson(json)).toList();
+          _goals = cachedData
+              .map((json) => SessionGoal.fromJson(json as Map<String, dynamic>))
+              .toList();
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (mounted && _goals.isEmpty) { // Nur Fehler zeigen, wenn gar keine Daten da sind
+      debugPrint("Cache Load Error: $e");
+    }
+
+    // 2. Load from API
+    try {
+      final goalsData = await _apiService.getSessionGoals();
+      if (mounted) {
+        setState(() {
+          _goals = goalsData.map((json) => SessionGoal.fromJson(json as Map<String, dynamic>)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
         setState(() => _isLoading = false);
+        // Show detailed error in SnackBar
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Network Error: $e')),
+          SnackBar(
+            content: Text('API Error: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _loadGoals,
+            ),
+          ),
         );
       }
     }
@@ -135,7 +151,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
             if (mounted) {
               setState(() => _isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to save goal: $e')),
+                SnackBar(content: Text('Failed to save goal: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -440,9 +456,9 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _countController = TextEditingController();
   final TextEditingController _minutesController = TextEditingController();
-  Map<String, dynamic>? _selectedTrick;
   List<dynamic> _tricks = [];
   bool _isLoadingTricks = false;
+  int? _selectedTrickId;
 
   @override
   void initState() {
@@ -499,29 +515,54 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                 ButtonSegment(value: GoalType.text, label: Text(widget.localizations.textType), icon: const Icon(Icons.text_fields)),
               ],
               selected: {_type},
-              onSelectionChanged: (val) => setState(() => _type = val.first),
+              onSelectionChanged: (val) {
+                setState(() {
+                  _type = val.first;
+                  _selectedTrickId = null;
+                  _titleController.clear();
+                });
+              },
             ),
             const SizedBox(height: 16),
-            if (_type == GoalType.trick) ...[
-              DropdownButtonFormField<Map<String, dynamic>>(
-                decoration: InputDecoration(
-                  labelText: widget.localizations.selectTrick,
-                  prefixIcon: const Icon(Icons.skateboarding),
-                ),
-                items: _tricks.map((t) => DropdownMenuItem(
-                  value: t as Map<String, dynamic>,
-                  child: Text(t['name']),
-                )).toList(),
-                onChanged: (val) => setState(() => _selectedTrick = val),
-              ),
-            ] else
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  labelText: widget.localizations.goalTitle,
-                  prefixIcon: const Icon(Icons.edit),
-                ),
-              ),
+            
+            _type == GoalType.trick
+                ? Autocomplete<Map<String, dynamic>>(
+                    displayStringForOption: (option) => option['name'] ?? "",
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<Map<String, dynamic>>.empty();
+                      }
+                      return _tricks.where((trick) => trick['name']
+                          .toString()
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase()))
+                          .cast<Map<String, dynamic>>();
+                    },
+                    onSelected: (Map<String, dynamic> selection) {
+                      setState(() {
+                        _titleController.text = selection['name'];
+                        _selectedTrickId = selection['id'];
+                      });
+                    },
+                    fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                      return TextField(
+                        controller: textEditingController,
+                        focusNode: focusNode,
+                        decoration: InputDecoration(
+                          labelText: widget.localizations.selectTrick,
+                          prefixIcon: const Icon(Icons.skateboarding),
+                        ),
+                      );
+                    },
+                  )
+                : TextField(
+                    controller: _titleController,
+                    decoration: InputDecoration(
+                      labelText: widget.localizations.goalHint,
+                      prefixIcon: const Icon(Icons.edit),
+                    ),
+                  ),
+            
             const SizedBox(height: 16),
             Row(
               children: [
@@ -558,21 +599,24 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               onPressed: () {
-                final title = _type == GoalType.trick ? _selectedTrick?['name'] : _titleController.text;
-                if (title == null || title.isEmpty) return;
+                final String title = _titleController.text.trim();
+                if (title.isEmpty) return;
 
                 final targetCount = int.tryParse(_countController.text);
                 final minutes = int.tryParse(_minutesController.text);
+                final duration = minutes != null ? Duration(minutes: minutes) : null;
 
                 final newGoal = SessionGoal(
                   title: title,
                   type: _type,
+                  trickId: _selectedTrickId,
                   targetCount: targetCount,
-                  remainingTime: minutes != null ? Duration(minutes: minutes) : null,
+                  timerDuration: duration,
+                  remainingTime: duration,
                 );
                 widget.onGoalAdded(newGoal);
               },
-              child: Text(widget.localizations.save),
+              child: Text(widget.localizations.saveAndContinue),
             ),
             const SizedBox(height: 16),
           ],
