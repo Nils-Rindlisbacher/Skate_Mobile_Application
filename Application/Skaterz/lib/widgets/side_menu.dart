@@ -11,6 +11,7 @@ class SideMenu extends StatelessWidget {
     required this.onProgressTap,
     required this.onLeaderboardTap,
     required this.onTrickListTap,
+    required this.onSessionGoalsTap,
     required this.onSettingsTap,
     required this.onLanguageChange,
     this.userData,
@@ -26,6 +27,7 @@ class SideMenu extends StatelessWidget {
   final VoidCallback onProgressTap;
   final VoidCallback onLeaderboardTap;
   final VoidCallback onTrickListTap;
+  final VoidCallback onSessionGoalsTap;
   final VoidCallback onSettingsTap;
   final Function(String) onLanguageChange;
   final bool isExpanded;
@@ -148,6 +150,7 @@ class SideMenu extends StatelessWidget {
           _buildMenuItem(context, Icons.list_alt, localizations.trickListMenuItem, onTrickListTap),
           _buildMenuItem(context, Icons.trending_up, localizations.progressTrackerMenuItem, onProgressTap),
           _buildMenuItem(context, Icons.emoji_events, localizations.leaderboardMenuItem, onLeaderboardTap),
+          _buildMenuItem(context, Icons.track_changes, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
           _buildMenuItem(context, Icons.settings, localizations.settingsMenuItem, onSettingsTap),
           const Divider(height: 1),
           if (isExpanded || !isDesktop)

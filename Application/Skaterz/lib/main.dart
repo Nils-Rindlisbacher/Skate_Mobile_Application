@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
+import 'package:skaterz/models/session_goal.dart';
 import 'package:skaterz/pages/login_page.dart';
 import 'package:skaterz/pages/profile_page.dart';
 import 'package:skaterz/pages/progress_tracker_page.dart';
 import 'package:skaterz/pages/leaderboard_page.dart';
 import 'package:skaterz/pages/settings_page.dart';
 import 'package:skaterz/pages/trick_category_page.dart';
+import 'package:skaterz/pages/session_goals_page.dart';
 import 'package:skaterz/widgets/side_menu.dart';
 import 'package:skaterz/services/api_service.dart';
 
@@ -194,6 +196,12 @@ class _MyHomePageState extends State<MyHomePage> {
           onNavigateToProfile: () => _onItemTapped(1),
         );
       case 5:
+        return SessionGoalsPage(
+          localizations: widget.localizations,
+          isLoggedIn: widget.isLoggedIn,
+          onLogin: widget.onLogin,
+        );
+      case 6:
         return SettingsPage(
           localizations: widget.localizations,
           isLoggedIn: widget.isLoggedIn,
@@ -223,7 +231,8 @@ class _MyHomePageState extends State<MyHomePage> {
           onTrickListTap: () => _onItemTapped(2),
           onProgressTap: () => _onItemTapped(3),
           onLeaderboardTap: () => _onItemTapped(4),
-          onSettingsTap: () => _onItemTapped(5),
+          onSessionGoalsTap: () => _onItemTapped(5),
+          onSettingsTap: () => _onItemTapped(6),
         );
 
         return Scaffold(

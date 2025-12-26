@@ -20,6 +20,7 @@ abstract class AppLocalizations {
   String get settingsMenuItem;
   String get trickListMenuItem;
   String get leaderboardMenuItem;
+  String get sessionGoalsMenuItem;
   String get language;
   String get english;
   String get german;
@@ -87,6 +88,20 @@ abstract class AppLocalizations {
   String get deleteAccountConfirm;
   String get deleteAccountWarning;
   String get cancel;
+
+  // Session Goals
+  String get sessionGoalsTitle;
+  String get addGoal;
+  String get goalHint;
+  String get noGoals;
+  String get openGoals;
+  String get completedGoals;
+  String get selectTrick;
+  String get targetCount;
+  String get timerMinutes;
+  String get undo;
+  String get textType;
+  String get trickType;
 }
 
 // German translations
@@ -99,6 +114,7 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get settingsMenuItem => 'Einstellungen';
   @override String get trickListMenuItem => 'Trick Liste';
   @override String get leaderboardMenuItem => 'Bestenliste';
+  @override String get sessionGoalsMenuItem => 'Sessionsziele';
   @override String get language => 'Sprache';
   @override String get english => 'Englisch';
   @override String get german => 'Deutsch';
@@ -156,6 +172,18 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get deleteAccountConfirm => 'Konto wirklich löschen?';
   @override String get deleteAccountWarning => 'Dieser Vorgang kann nicht rückgängig gemacht werden. Alle deine Daten werden dauerhaft gelöscht.';
   @override String get cancel => 'Abbrechen';
+  @override String get sessionGoalsTitle => 'Sessionsziele';
+  @override String get addGoal => 'Ziel hinzufügen';
+  @override String get goalHint => 'Was möchtest du heute erreichen?';
+  @override String get noGoals => 'Noch keine Ziele für heute gesetzt.';
+  @override String get openGoals => 'Offene Ziele';
+  @override String get completedGoals => 'Abgeschlossene Ziele';
+  @override String get selectTrick => 'Trick auswählen';
+  @override String get targetCount => 'Zielanzahl';
+  @override String get timerMinutes => 'Timer (Minuten, optional)';
+  @override String get undo => 'Rückgängig';
+  @override String get textType => 'Text';
+  @override String get trickType => 'Trick';
 }
 
 // English translations
@@ -168,6 +196,7 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get settingsMenuItem => 'Settings';
   @override String get trickListMenuItem => 'Trick List';
   @override String get leaderboardMenuItem => 'Leaderboard';
+  @override String get sessionGoalsMenuItem => 'Session Goals';
   @override String get language => 'Language';
   @override String get english => 'English';
   @override String get german => 'German';
@@ -225,6 +254,18 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get deleteAccountConfirm => 'Delete account?';
   @override String get deleteAccountWarning => 'This action cannot be undone. All your data will be permanently deleted.';
   @override String get cancel => 'Cancel';
+  @override String get sessionGoalsTitle => 'Session Goals';
+  @override String get addGoal => 'Add Goal';
+  @override String get goalHint => 'What do you want to achieve today?';
+  @override String get noGoals => 'No goals set for today yet.';
+  @override String get openGoals => 'Open Goals';
+  @override String get completedGoals => 'Completed Goals';
+  @override String get selectTrick => 'Select Trick';
+  @override String get targetCount => 'Target Count';
+  @override String get timerMinutes => 'Timer (Minutes, optional)';
+  @override String get undo => 'Undo';
+  @override String get textType => 'Text';
+  @override String get trickType => 'Trick';
 }
 
 // Spanish translations
@@ -237,6 +278,7 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get settingsMenuItem => 'Configuración';
   @override String get trickListMenuItem => 'Lista de Trucos';
   @override String get leaderboardMenuItem => 'Tabla de Clasificación';
+  @override String get sessionGoalsMenuItem => 'Objetivos de la sesión';
   @override String get language => 'Idioma';
   @override String get english => 'Inglés';
   @override String get german => 'Alemán';
@@ -294,6 +336,18 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get deleteAccountConfirm => '¿Eliminar cuenta?';
   @override String get deleteAccountWarning => 'Esta acción no se puede deshacer. Todos sus datos serán eliminados permanentemente.';
   @override String get cancel => 'Cancelar';
+  @override String get sessionGoalsTitle => 'Objetivos de la sesión';
+  @override String get addGoal => 'Añadir objetivo';
+  @override String get goalHint => '¿Qué quieres conseguir hoy?';
+  @override String get noGoals => 'Aún no hay objetivos fijados para hoy.';
+  @override String get openGoals => 'Objetivos abiertos';
+  @override String get completedGoals => 'Objetivos completados';
+  @override String get selectTrick => 'Seleccionar truco';
+  @override String get targetCount => 'Cantidad objetivo';
+  @override String get timerMinutes => 'Temporizador (Minutos, opcional)';
+  @override String get undo => 'Deshacer';
+  @override String get textType => 'Texto';
+  @override String get trickType => 'Truco';
 }
 
 // Italian translations
@@ -306,6 +360,7 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get settingsMenuItem => 'Impostazioni';
   @override String get trickListMenuItem => 'Elenco Trick';
   @override String get leaderboardMenuItem => 'Classifica';
+  @override String get sessionGoalsMenuItem => 'Obiettivi della sessione';
   @override String get language => 'Lingua';
   @override String get english => 'Inglese';
   @override String get german => 'Tedesco';
@@ -363,6 +418,18 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get deleteAccountConfirm => 'Eliminare l\'account?';
   @override String get deleteAccountWarning => 'Questa azione non può essere annullata. Tutti i tuoi dati saranno eliminati permanentemente.';
   @override String get cancel => 'Annulla';
+  @override String get sessionGoalsTitle => 'Obiettivi della sessione';
+  @override String get addGoal => 'Aggiungi obiettivo';
+  @override String get goalHint => 'Cosa vuoi ottenere oggi?';
+  @override String get noGoals => 'Non sono ancora stati fissati obiettivi per oggi.';
+  @override String get openGoals => 'Obiettivi aperti';
+  @override String get completedGoals => 'Obiettivi completati';
+  @override String get selectTrick => 'Seleziona trick';
+  @override String get targetCount => 'Quantità obiettivo';
+  @override String get timerMinutes => 'Timer (Minuti, opzionale)';
+  @override String get undo => 'Annulla';
+  @override String get textType => 'Testo';
+  @override String get trickType => 'Trick';
 }
 
 // French translations
@@ -375,6 +442,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get settingsMenuItem => 'Paramètres';
   @override String get trickListMenuItem => 'Liste de Tricks';
   @override String get leaderboardMenuItem => 'Classement';
+  @override String get sessionGoalsMenuItem => 'Objectifs de la session';
   @override String get language => 'Langue';
   @override String get english => 'Anglais';
   @override String get german => 'Allemand';
@@ -421,7 +489,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get publicProfileSubtitle => 'Autoriser les autres à voir vos progrès.';
   @override String get privateProfile => 'Profil Privé';
   @override String get profileIsPrivate => 'Ce profil est privé.';
-  @override String get profileVisibility => 'Visibilité du Profil';
+  @override String get profileVisibility => 'Visibilità del Profilo';
   @override String get recentlyCompleted => 'Complété Récemment';
   @override String get noTricksYet => 'Aucun trick complété encore.';
   @override String get profilePictureUpdated => 'Photo de profil mise à jour !';
@@ -432,4 +500,16 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get deleteAccountConfirm => 'Supprimer le compte ?';
   @override String get deleteAccountWarning => 'Cette action est irréversible. Toutes vos données seront définitivement supprimées.';
   @override String get cancel => 'Annuler';
+  @override String get sessionGoalsTitle => 'Objectifs de la session';
+  @override String get addGoal => 'Ajouter un objectif';
+  @override String get goalHint => 'Que voulez-vous accomplir aujourd\'hui ?';
+  @override String get noGoals => 'Aucun objectif n\'a encore été fixé pour aujourd\'hui.';
+  @override String get openGoals => 'Objectifs ouverts';
+  @override String get completedGoals => 'Objectifs complétés';
+  @override String get selectTrick => 'Sélectionner le trick';
+  @override String get targetCount => 'Quantité cible';
+  @override String get timerMinutes => 'Minuteur (Minutes, facultatif)';
+  @override String get undo => 'Annuler';
+  @override String get textType => 'Texte';
+  @override String get trickType => 'Trick';
 }

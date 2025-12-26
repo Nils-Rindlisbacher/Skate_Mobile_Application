@@ -221,4 +221,40 @@ class ApiService {
     );
     return _handleResponse(response);
   }
+
+  // --- Session Goals ---
+
+  Future<List<dynamic>> getSessionGoals() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/goals'),
+      headers: await _getHeaders(),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> addSessionGoal(Map<String, dynamic> goalData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/goals'),
+      headers: await _getHeaders(),
+      body: jsonEncode(goalData),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> updateSessionGoal(int id, Map<String, dynamic> goalData) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/goals/$id'),
+      headers: await _getHeaders(),
+      body: jsonEncode(goalData),
+    );
+    return _handleResponse(response);
+  }
+
+  Future<void> deleteSessionGoal(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/goals/$id'),
+      headers: await _getHeaders(),
+    );
+    _handleResponse(response);
+  }
 }
