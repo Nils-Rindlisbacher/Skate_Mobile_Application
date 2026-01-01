@@ -75,6 +75,18 @@ class _TrickListPageState extends State<TrickListPage> {
     return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
   }
 
+  List<String> _getAvailableStances(String trickName) {
+    final name = trickName.toLowerCase();
+    if (name == 'ollie' || 
+        name == 'nollie' || 
+        name == 'rock to fakie' || 
+        name == 'rock n roll' || 
+        name == 'blunt to fakie') {
+      return ['REGULAR'];
+    }
+    return ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
+  }
+
   Future<void> _loadInitialTricks() async {
     setState(() {
       _isLoading = true;
@@ -208,6 +220,11 @@ class _TrickListPageState extends State<TrickListPage> {
     }
 
     String innerSelectedStance = _selectedStance == 'ALL' ? 'REGULAR' : _selectedStance;
+    final availableStances = _getAvailableStances(trick['name'] ?? '');
+    
+    if (!availableStances.contains(innerSelectedStance)) {
+      innerSelectedStance = 'REGULAR';
+    }
 
     showModalBottomSheet(
       context: context,
@@ -267,7 +284,7 @@ class _TrickListPageState extends State<TrickListPage> {
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
-                    children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((stance) {
+                    children: availableStances.map((stance) {
                       final isSelected = innerSelectedStance == stance;
                       final bool stanceDone = _isTrickCompleted(currentTrickData, stance);
                       final Color sColor = stanceColors[stance] ?? AppColors.primary;
@@ -345,9 +362,14 @@ class _TrickListPageState extends State<TrickListPage> {
   }
 
   Widget _buildStanceIndicators(Map<String, dynamic> trick) {
+    final availableStances = _getAvailableStances(trick['name'] ?? '');
+    final allPossibleStances = ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
+
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((stance) {
+      children: allPossibleStances.map((stance) {
+        if (!availableStances.contains(stance)) return const SizedBox.shrink();
+
         final bool isDone = _isTrickCompleted(trick, stance);
         final bool isWishlisted = _isTrickWishlisted(trick, stance);
         

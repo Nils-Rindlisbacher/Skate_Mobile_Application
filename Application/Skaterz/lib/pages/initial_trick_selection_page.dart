@@ -60,6 +60,18 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
     }
   }
 
+  List<String> _getAvailableStances(String trickName) {
+    final name = trickName.toLowerCase();
+    if (name == 'ollie' || 
+        name == 'nollie' || 
+        name == 'rock to fakie' || 
+        name == 'rock n roll' || 
+        name == 'blunt to fakie') {
+      return ['REGULAR'];
+    }
+    return _stances;
+  }
+
   Future<void> _handleSave() async {
     setState(() => _isSaving = true);
     try {
@@ -160,6 +172,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                       final int id = trick['id'];
                       final String categoryName = trick['type'] ?? 'General';
                       final selectedStances = _selectedStances[id] ?? {};
+                      final availableStances = _getAvailableStances(trick['name'] ?? '');
 
                       bool showCategoryHeader = false;
                       if (index == 0 || filteredTricks[index - 1]['type'] != categoryName) {
@@ -196,7 +209,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                                 const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 8,
-                                  children: _stances.map((stance) {
+                                  children: availableStances.map((stance) {
                                     final isSelected = selectedStances.contains(stance);
                                     return ChoiceChip(
                                       label: Text(

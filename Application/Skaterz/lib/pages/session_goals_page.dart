@@ -580,8 +580,25 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
     }
   }
 
+  List<String> _getAvailableStances(String trickName) {
+    final name = trickName.toLowerCase();
+    if (name == 'ollie' || 
+        name == 'nollie' || 
+        name == 'rock to fakie' || 
+        name == 'rock n roll' || 
+        name == 'blunt to fakie') {
+      return ['REGULAR'];
+    }
+    return ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
+  }
+
   @override
   Widget build(BuildContext context) {
+    final availableStances = _getAvailableStances(_titleController.text);
+    if (!availableStances.contains(_selectedStance)) {
+      _selectedStance = 'REGULAR';
+    }
+
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
@@ -650,6 +667,9 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
 
                     return filtered;
                   },
+                  onSelected: (option) {
+                    setState(() {}); // Refresh to update stance options
+                  },
                   displayStringForOption: (option) => option['name']?.toString() ?? "",
                   fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
                     return TextFormField(
@@ -663,6 +683,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                           child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                         ) : null,
                       ),
+                      onChanged: (value) => setState(() {}),
                       onFieldSubmitted: (value) => onFieldSubmitted(),
                       validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterCredentials : null,
                     );
@@ -675,7 +696,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                     labelText: '${widget.localizations.stances} *',
                     prefixIcon: const Icon(Icons.directions_run),
                   ),
-                  items: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((stance) {
+                  items: availableStances.map((stance) {
                     return DropdownMenuItem(
                       value: stance,
                       child: Text(stance[0].toUpperCase() + stance.substring(1).toLowerCase()),
