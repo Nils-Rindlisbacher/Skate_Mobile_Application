@@ -1,0 +1,54 @@
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+compiler.xml
+dataSources.xml
+data_source_mapping.xml
+modules.xml
+vcs.xml
+workspace.xml
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+app.dill
+
+# Web Debugging artifacts
+.web_assets/
+canvaskit.js
+canvaskit.js.symbols
+skwasm_heavy.wasm
+AssetManifest.bin
+FontManifest.json
+outputs.json
+
+# Browser / LevelDB temp files (from debugging)
+*.ldb
+*.log
+CURRENT
+LOCK
+LOG
+LOG.old
+MANIFEST-*
+InterestGroups/
+BrowsingTopicsState/
+"Login Data*"
+"Network Action Predictor"
+
+# Android
+.gradle/
+local.properties
+captures/
+assets/debug/
+release/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini

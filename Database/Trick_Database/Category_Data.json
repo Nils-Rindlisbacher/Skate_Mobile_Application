@@ -1,0 +1,9 @@
+[
+  { "id": 1, "category": "Basic Tricks" },
+  { "id": 2, "category": "Flip, Shove-It Tricks" },
+  { "id": 3, "category": "Grind, Slide Tricks" },
+  { "id": 4, "category": "Air, Grab, Bowl, Ramp Tricks" },
+  { "id": 5, "category": "Footplant Tricks" },
+  { "id": 6, "category": "Balance Tricks" },
+  { "id": 7, "category": "Freestyle Tricks" }
+]
