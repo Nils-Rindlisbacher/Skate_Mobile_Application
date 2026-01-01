@@ -75,6 +75,10 @@ class _LogInPageState extends State<LogInPage> {
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
