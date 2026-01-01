@@ -20,10 +20,13 @@ class InitialTrickSelectionPage extends StatefulWidget {
 class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
   final ApiService _apiService = ApiService();
   List<dynamic> _allTricks = [];
-  final Set<int> _selectedTrickIds = {};
+  // Stores trickId -> Set of selected stances
+  final Map<int, Set<String>> _selectedStances = {};
   bool _isLoading = true;
   bool _isSaving = false;
   String _searchQuery = "";
+
+  final List<String> _stances = ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
 
   @override
   void initState() {
@@ -33,16 +36,23 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
   Future<void> _loadTricks() async {
     try {
-      final tricks = await _apiService.getTricks();
-      tricks.sort((a, b) => a['name'].toString().toLowerCase().compareTo(b['name'].toString().toLowerCase()));
+      final tricks = await _apiService.getTricks(size: 1000);
       
-      setState(() {
-        _allTricks = tricks;
-        _isLoading = false;
+      tricks.sort((a, b) {
+        int catComp = (a['category_id'] ?? 0).compareTo(b['category_id'] ?? 0);
+        if (catComp != 0) return catComp;
+        return (a['id'] ?? 0).compareTo(b['id'] ?? 0);
       });
-    } catch (e) {
-      setState(() => _isLoading = false);
+      
       if (mounted) {
+        setState(() {
+          _allTricks = tricks;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading tricks: $e')),
         );
@@ -53,10 +63,17 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
   Future<void> _handleSave() async {
     setState(() => _isSaving = true);
     try {
-      for (int trickId in _selectedTrickIds) {
-        // HIER GEFIXED: Dritten Parameter 'REGULAR' hinzugefügt
-        await _apiService.toggleCompleted(trickId, false, 'REGULAR');
-      }
+      final List<Future> saveTasks = [];
+      
+      _selectedStances.forEach((trickId, stances) {
+        for (String stance in stances) {
+          saveTasks.add(_apiService.toggleCompleted(trickId, false, stance));
+        }
+      });
+
+      // Execute all toggles. Depending on server capacity, maybe chunk these or use a bulk endpoint if available.
+      // For now, simple Future.wait.
+      await Future.wait(saveTasks);
       
       if (mounted) {
         widget.onComplete();
@@ -71,6 +88,27 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  void _toggleStance(int trickId, String stance) {
+    setState(() {
+      if (!_selectedStances.containsKey(trickId)) {
+        _selectedStances[trickId] = {stance};
+      } else {
+        if (_selectedStances[trickId]!.contains(stance)) {
+          _selectedStances[trickId]!.remove(stance);
+          if (_selectedStances[trickId]!.isEmpty) {
+            _selectedStances.remove(trickId);
+          }
+        } else {
+          _selectedStances[trickId]!.add(stance);
+        }
+      }
+    });
+  }
+
+  String _formatStance(String stance) {
+    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
   }
 
   @override
@@ -107,6 +145,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                           hintText: widget.localizations.searchTricks,
                           prefixIcon: const Icon(Icons.search),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                         ),
                         onChanged: (value) => setState(() => _searchQuery = value),
                       ),
@@ -114,29 +153,74 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                   ),
                 ),
                 Expanded(
-                  child: ListView.separated(
+                  child: ListView.builder(
                     itemCount: filteredTricks.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final trick = filteredTricks[index];
                       final int id = trick['id'];
-                      final bool isSelected = _selectedTrickIds.contains(id);
+                      final String categoryName = trick['type'] ?? 'General';
+                      final selectedStances = _selectedStances[id] ?? {};
 
-                      return CheckboxListTile(
-                        title: Text(trick['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(trick['description'] ?? ''),
-                        secondary: const Icon(Icons.skateboarding, color: AppColors.primary),
-                        value: isSelected,
-                        activeColor: AppColors.primary,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value == true) {
-                              _selectedTrickIds.add(id);
-                            } else {
-                              _selectedTrickIds.remove(id);
-                            }
-                          });
-                        },
+                      bool showCategoryHeader = false;
+                      if (index == 0 || filteredTricks[index - 1]['type'] != categoryName) {
+                        showCategoryHeader = true;
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (showCategoryHeader)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              color: Colors.grey.withValues(alpha: 0.1),
+                              child: Text(
+                                categoryName,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary.withValues(alpha: 0.8),
+                                  fontSize: 14,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  trick['name'],
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  children: _stances.map((stance) {
+                                    final isSelected = selectedStances.contains(stance);
+                                    return ChoiceChip(
+                                      label: Text(
+                                        _formatStance(stance),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isSelected ? Colors.white : Colors.black87,
+                                        ),
+                                      ),
+                                      selected: isSelected,
+                                      selectedColor: AppColors.primary,
+                                      backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                                      showCheckmark: false,
+                                      onSelected: (_) => _toggleStance(id, stance),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      visualDensity: VisualDensity.compact,
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Divider(height: 1),
+                        ],
                       );
                     },
                   ),
