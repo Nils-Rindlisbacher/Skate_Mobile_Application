@@ -5,8 +5,13 @@ import 'package:skaterz/pages/initial_trick_selection_page.dart';
 import 'package:skaterz/core/constants.dart';
 
 class SignInPage extends StatefulWidget {
-  const SignInPage({super.key, required this.onLogin});
+  const SignInPage({
+    super.key,
+    required this.localizations,
+    required this.onLogin,
+  });
 
+  final AppLocalizations localizations;
   final VoidCallback onLogin;
 
   @override
@@ -34,7 +39,6 @@ class _SignInPageState extends State<SignInPage> {
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      final localizations = AppLocalizations.of(Localizations.localeOf(context).languageCode);
       
       try {
         await _apiService.register(
@@ -54,7 +58,7 @@ class _SignInPageState extends State<SignInPage> {
             context,
             MaterialPageRoute(
               builder: (context) => InitialTrickSelectionPage(
-                localizations: localizations,
+                localizations: widget.localizations,
                 onComplete: widget.onLogin,
               ),
             ),
@@ -62,11 +66,11 @@ class _SignInPageState extends State<SignInPage> {
         }
       } catch (e) {
         if (mounted) {
-          String errorMessage = localizations.registrationFailed;
+          String errorMessage = widget.localizations.registrationFailed;
           if (e.toString().toLowerCase().contains('email') && e.toString().toLowerCase().contains('exists')) {
-            errorMessage = localizations.emailAlreadyExists;
+            errorMessage = widget.localizations.emailAlreadyExists;
           } else {
-            errorMessage = '${localizations.registrationFailed}: ${e.toString()}';
+            errorMessage = '${widget.localizations.registrationFailed}: ${e.toString()}';
           }
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -81,13 +85,11 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(Localizations.localeOf(context).languageCode);
-    
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
         title: Text(
-          localizations.registerButton,
+          widget.localizations.registerPageTitle,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -105,39 +107,39 @@ class _SignInPageState extends State<SignInPage> {
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
-                    labelText: localizations.name,
+                    labelText: widget.localizations.name,
                     prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
                   ),
-                  validator: (value) => value!.isEmpty ? localizations.enterName : null,
+                  validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterName : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    labelText: localizations.username,
+                    labelText: widget.localizations.username,
                     prefixIcon: const Icon(Icons.alternate_email, color: AppColors.primary),
                   ),
-                  validator: (value) => value!.isEmpty ? localizations.enterUsername : null,
+                  validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterUsername : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailController,
                   decoration: InputDecoration(
-                    labelText: localizations.email,
+                    labelText: widget.localizations.email,
                     prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
                   ),
                   keyboardType: TextInputType.emailAddress,
-                  validator: (value) => value!.isEmpty ? localizations.enterEmail : null,
+                  validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterEmail : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: localizations.password,
+                    labelText: widget.localizations.password,
                     prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
                   ),
                   obscureText: true,
-                  validator: (value) => value!.length < 6 ? localizations.passwordTooShort : null,
+                  validator: (value) => (value == null || value.length < 6) ? widget.localizations.passwordTooShort : null,
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
@@ -150,7 +152,7 @@ class _SignInPageState extends State<SignInPage> {
                   ),
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white) 
-                    : Text(localizations.registerButton, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    : Text(widget.localizations.registerButton, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

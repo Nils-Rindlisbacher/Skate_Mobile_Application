@@ -127,7 +127,10 @@ class _LogInPageState extends State<LogInPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SignInPage(onLogin: widget.onLogin),
+                    builder: (context) => SignInPage(
+                      localizations: widget.localizations,
+                      onLogin: widget.onLogin
+                    ),
                   ),
                 );
               },
