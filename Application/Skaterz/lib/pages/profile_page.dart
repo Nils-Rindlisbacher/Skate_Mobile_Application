@@ -216,6 +216,18 @@ class _ProfilePageState extends State<ProfilePage> {
     return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
   }
 
+  List<String> _getAvailableStances(String trickName) {
+    final name = trickName.toLowerCase();
+    if (name == 'ollie' || 
+        name == 'nollie' || 
+        name == 'rock to fakie' || 
+        name == 'rock n roll' || 
+        name == 'blunt to fakie') {
+      return ['REGULAR'];
+    }
+    return ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
+  }
+
   void _showMoodPicker() {
     showModalBottomSheet(
       context: context,
@@ -317,17 +329,17 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Future<void> _handleCompleteFromWishlist(dynamic trick) async {
+  Future<void> _handleCompleteFromWishlist(dynamic trick, String stance) async {
     final int trickId = trick['id'];
     try {
       // 1. Mark as completed
-      await _apiService.toggleCompleted(trickId, false, 'REGULAR');
+      await _apiService.toggleCompleted(trickId, false, stance);
       // 2. Remove from wishlist
-      await _apiService.toggleWishlist(trickId, true, 'REGULAR');
+      await _apiService.toggleWishlist(trickId, true, stance);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${trick['name']} completed!'))
+          SnackBar(content: Text('${trick['name']} (${_formatStance(stance)}) completed!'))
         );
         _loadData(forceRefresh: true);
       }
@@ -338,6 +350,82 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     }
+  }
+
+  void _showWishlistCompleteModal(String trickName, List<String> wishlistedStances, List<dynamic> allTricksInWishlist) {
+    final availableStances = _getAvailableStances(trickName);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              trickName,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              widget.localizations.stances,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: availableStances.map((stance) {
+                final color = stanceColors[stance] ?? AppColors.primary;
+                final bool isWishlisted = wishlistedStances.contains(stance);
+                
+                return Opacity(
+                  opacity: isWishlisted ? 1.0 : 0.5,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      if (!isWishlisted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('$stance is not in wishlist'))
+                        );
+                        return;
+                      }
+                      Navigator.pop(context);
+                      final trickData = allTricksInWishlist.firstWhere((t) => (t['stance'] ?? 'REGULAR').toString().toUpperCase() == stance);
+                      _handleCompleteFromWishlist(trickData, stance);
+                    },
+                    icon: Icon(isWishlisted ? Icons.check_circle_outline : Icons.block, size: 20),
+                    label: Text(_formatStance(stance)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color.withValues(alpha: 0.1),
+                      foregroundColor: color,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -459,52 +547,74 @@ class _ProfilePageState extends State<ProfilePage> {
 
                     Builder(
                       builder: (context) {
-                        // Group wishlist by trick name to ensure each trick is shown only once
-                        final Map<String, dynamic> uniqueTricks = {};
+                        // Group wishlist by trick name
+                        final Map<String, List<dynamic>> groupedWishlist = {};
                         for (var t in _wishlistTricks) {
-                          if ((t['stance'] ?? 'REGULAR').toString().toUpperCase() == 'REGULAR') {
-                            final name = t['name'] ?? 'Trick';
-                            if (!uniqueTricks.containsKey(name)) {
-                              uniqueTricks[name] = t;
-                            }
+                          final name = t['name'] ?? 'Trick';
+                          if (!groupedWishlist.containsKey(name)) {
+                            groupedWishlist[name] = [];
                           }
+                          groupedWishlist[name]!.add(t);
                         }
-                        final filteredWishlist = uniqueTricks.values.toList();
-                        final displayCount = _isWishlistExpanded ? filteredWishlist.length : (filteredWishlist.length > 5 ? 5 : filteredWishlist.length);
-                        final displayTricks = filteredWishlist.take(displayCount).toList();
+
+                        final trickNames = groupedWishlist.keys.toList();
+                        final displayCount = _isWishlistExpanded ? trickNames.length : (trickNames.length > 5 ? 5 : trickNames.length);
+                        final displayTrickNames = trickNames.take(displayCount).toList();
                         
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildSectionHeader(widget.localizations.wishlist, Icons.favorite_rounded, color: Colors.red, count: filteredWishlist.length),
+                            _buildSectionHeader(widget.localizations.wishlist, Icons.favorite_rounded, color: Colors.red, count: _wishlistTricks.length),
                             Container(
                               decoration: BoxDecoration(
                                 color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
                               ),
-                              child: filteredWishlist.isEmpty
+                              child: trickNames.isEmpty
                                   ? Padding(padding: const EdgeInsets.all(16), child: Text(widget.localizations.wishlistEmpty))
                                   : Column(
                                       children: [
                                         ListView.builder(
                                           shrinkWrap: true,
                                           physics: const NeverScrollableScrollPhysics(),
-                                          itemCount: displayTricks.length,
+                                          itemCount: displayTrickNames.length,
                                           itemBuilder: (context, index) {
-                                            final trick = displayTricks[index];
+                                            final name = displayTrickNames[index];
+                                            final tricks = groupedWishlist[name]!;
+                                            final stances = tricks.map((t) => (t['stance'] ?? 'REGULAR').toString().toUpperCase()).toList();
+
                                             return ListTile(
                                               leading: const Icon(Icons.skateboarding, color: AppColors.primary),
-                                              title: Text(trick['name'] ?? ''),
-                                              trailing: IconButton(
-                                                icon: const Icon(Icons.check_circle_outline, color: Colors.green),
-                                                tooltip: widget.localizations.complete,
-                                                onPressed: () => _handleCompleteFromWishlist(trick),
+                                              title: Text(name),
+                                              subtitle: Row(
+                                                children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
+                                                  final active = stances.contains(s);
+                                                  return Container(
+                                                    margin: const EdgeInsets.only(right: 4),
+                                                    child: Icon(
+                                                      active ? Icons.favorite : Icons.favorite_border,
+                                                      size: 14,
+                                                      color: active ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
+                                                    ),
+                                                  );
+                                                }).toList(),
+                                              ),
+                                              trailing: ElevatedButton(
+                                                onPressed: () => _showWishlistCompleteModal(name, stances, tricks),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: Colors.green.withValues(alpha: 0.1),
+                                                  foregroundColor: Colors.green,
+                                                  elevation: 0,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                                ),
+                                                child: Text(widget.localizations.complete),
                                               ),
                                             );
                                           },
                                         ),
-                                        if (filteredWishlist.length > 5)
+                                        if (trickNames.length > 5)
                                           TextButton(
                                             onPressed: () {
                                               setState(() {

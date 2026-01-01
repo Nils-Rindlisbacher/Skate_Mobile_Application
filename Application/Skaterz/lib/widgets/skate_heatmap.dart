@@ -3,7 +3,7 @@ import 'package:skaterz/models/skating_session.dart';
 import 'package:skaterz/core/constants.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 
-class SkateHeatmap extends StatelessWidget {
+class SkateHeatmap extends StatefulWidget {
   final List<SkatingSession> sessions;
   final Function(DateTime)? onDeleteSession;
   final VoidCallback? onSessionUpdated;
@@ -18,88 +18,257 @@ class SkateHeatmap extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Start from Monday of the current week
-    final startDate = now.subtract(Duration(days: now.weekday - 1));
-    
-    final sessionMap = {
-      for (var s in sessions) 
-        DateUtils.dateOnly(s.sessionDate): s
-    };
+  State<SkateHeatmap> createState() => _SkateHeatmapState();
+}
 
-    final days = List.generate(7, (index) => DateUtils.dateOnly(startDate.add(Duration(days: index))));
+class _SkateHeatmapState extends State<SkateHeatmap> {
+  final ScrollController _scrollController = ScrollController();
+  
+  final int _totalWeeks = 52; 
+  static const double _blockSize = 32.0;
+  static const double _spacing = 4.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = 4.0;
-        final squareSize = (constraints.maxWidth - (6 * spacing)) / 7;
-        
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(7, (index) {
-                final date = days[index];
-                final isToday = DateUtils.isSameDay(date, now);
-                return SizedBox(
-                  width: squareSize,
-                  child: Text(
-                    _getDayLetter(date.weekday),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                      color: isToday 
-                        ? (isDark ? AppColors.secondary : AppColors.primary)
-                        : Colors.grey[500],
-                    ),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(7, (index) {
-                final date = days[index];
-                final session = sessionMap[date];
-                final isFuture = date.isAfter(DateUtils.dateOnly(now));
-                
-                return SizedBox(
-                  width: squareSize,
-                  height: squareSize * 0.9,
-                  child: _HeatmapBlock(
-                    date: date,
-                    session: session,
-                    isFuture: isFuture,
-                    index: index,
-                    onDelete: onDeleteSession != null ? () => onDeleteSession!(date) : null,
-                    localizations: localizations,
-                  ),
-                );
-              }),
-            ),
-          ],
-        );
-      },
+  bool _canScrollLeft = true;
+  bool _canScrollRight = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Use a small delay to allow the scroll controller to attach and find its bounds
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.addListener(_updateScrollButtons);
+        _updateScrollButtons();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _updateScrollButtons() {
+    if (!_scrollController.hasClients) return;
+    
+    final max = _scrollController.position.maxScrollExtent;
+    final offset = _scrollController.offset;
+
+    setState(() {
+      // SingleChildScrollView(reverse: true)
+      // Offset 0 is far RIGHT (current week)
+      // Offset max is far LEFT (oldest week)
+      _canScrollRight = offset > 10; 
+      _canScrollLeft = offset < (max - 10);
+    });
+  }
+
+  void _scrollLeft() {
+    if (!_scrollController.hasClients) return;
+    final target = (_scrollController.offset + (_blockSize + _spacing) * 4)
+        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
     );
   }
 
-  String _getDayLetter(int weekday) {
+  void _scrollRight() {
+    if (!_scrollController.hasClients) return;
+    final target = (_scrollController.offset - (_blockSize + _spacing) * 4)
+        .clamp(0.0, _scrollController.position.maxScrollExtent);
+    _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  String _getDayLabel(int weekday) {
     switch (weekday) {
-      case 1: return localizations.mon;
-      case 2: return localizations.tue;
-      case 3: return localizations.wed;
-      case 4: return localizations.thu;
-      case 5: return localizations.fri;
-      case 6: return localizations.sat;
-      case 7: return localizations.sun;
+      case 1: return widget.localizations.mon.substring(0, 1);
+      case 3: return widget.localizations.wed.substring(0, 1);
+      case 5: return widget.localizations.fri.substring(0, 1);
+      case 7: return widget.localizations.sun.substring(0, 1);
       default: return '';
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final currentWeekMonday = today.subtract(Duration(days: today.weekday - 1));
+    final startDate = currentWeekMonday.subtract(Duration(days: (_totalWeeks - 1) * 7));
+    
+    final sessionMap = {
+      for (var s in widget.sessions) 
+        DateUtils.dateOnly(s.sessionDate): s
+    };
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.chevron_left, 
+                size: 28, 
+                color: _canScrollLeft 
+                    ? (isDark ? AppColors.secondary : AppColors.primary) 
+                    : Colors.grey.withOpacity(0.3)
+              ),
+              onPressed: _canScrollLeft ? _scrollLeft : null,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: 16),
+            IconButton(
+              icon: Icon(
+                Icons.chevron_right, 
+                size: 28, 
+                color: _canScrollRight 
+                    ? (isDark ? AppColors.secondary : AppColors.primary) 
+                    : Colors.grey.withOpacity(0.3)
+              ),
+              onPressed: _canScrollRight ? _scrollRight : null,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const double labelWidth = 20.0;
+
+            return SizedBox(
+              height: (_blockSize * 7) + (_spacing * 6) + 35, 
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 25.0),
+                    child: SizedBox(
+                      width: labelWidth,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: List.generate(7, (index) {
+                          final label = _getDayLabel(index + 1);
+                          return SizedBox(
+                            height: _blockSize,
+                            child: Center(
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white38 : Colors.grey[400],
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is ScrollUpdateNotification) {
+                          _updateScrollButtons();
+                        }
+                        return false;
+                      },
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        reverse: true,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: List.generate(_totalWeeks, (weekIdx) {
+                            final weekMonday = startDate.add(Duration(days: weekIdx * 7));
+                            
+                            bool showMonth = false;
+                            String monthName = "";
+                            
+                            for (int i = 0; i < 7; i++) {
+                              final d = weekMonday.add(Duration(days: i));
+                              if (d.day == 1 || (weekIdx == 0 && i == 0)) {
+                                showMonth = true;
+                                monthName = "${_getMonthName(d)} '${d.year.toString().substring(2)}";
+                                break;
+                              }
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(right: _spacing),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    height: 20,
+                                    child: showMonth 
+                                      ? Text(
+                                          monthName.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w900,
+                                            color: isDark ? AppColors.secondary : AppColors.primary,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        )
+                                      : null,
+                                  ),
+                                  const SizedBox(height: 5),
+                                  ...List.generate(7, (dayIdx) {
+                                    final date = DateUtils.dateOnly(weekMonday.add(Duration(days: dayIdx)));
+                                    final session = sessionMap[date];
+                                    final isFuture = date.isAfter(today);
+
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: _spacing),
+                                      child: SizedBox(
+                                        width: _blockSize,
+                                        height: _blockSize,
+                                        child: _HeatmapBlock(
+                                          date: date,
+                                          session: session,
+                                          isFuture: isFuture,
+                                          index: weekIdx * 7 + dayIdx,
+                                          onDelete: widget.onDeleteSession != null ? () => widget.onDeleteSession!(date) : null,
+                                          localizations: widget.localizations,
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  String _getMonthName(DateTime date) {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months[date.month - 1];
   }
 }
 
@@ -127,32 +296,18 @@ class _HeatmapBlock extends StatefulWidget {
 class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 600),
     );
 
     _scaleAnimation = CurvedAnimation(
       parent: _controller,
-      curve: Interval(
-        widget.index * 0.08,
-        (widget.index * 0.08 + 0.5).clamp(0, 1.0),
-        curve: Curves.elasticOut,
-      ),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(
-        widget.index * 0.08,
-        (widget.index * 0.08 + 0.4).clamp(0, 1.0),
-        curve: Curves.easeIn,
-      ),
+      curve: Curves.easeOutBack,
     );
 
     _controller.forward();
@@ -166,7 +321,6 @@ class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderS
 
   void _showDeleteConfirmation(BuildContext context) {
     final bool isToday = DateUtils.isSameDay(widget.date, DateTime.now());
-    
     if (widget.session == null || widget.isFuture || !isToday) return;
 
     showDialog(
@@ -196,12 +350,12 @@ class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderS
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
     
-    Color color = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.1);
+    Color color = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.12);
     IconData? moodIcon;
     Color? moodColor;
 
     if (widget.isFuture) {
-      color = isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.withValues(alpha: 0.03);
+      color = isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.withValues(alpha: 0.05);
     } else if (widget.session != null) {
       switch (widget.session!.mood) {
         case 'GREAT':
@@ -218,71 +372,45 @@ class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderS
           break;
         case 'INJURED':
           moodColor = const Color(0xFFEF9A9A);
-          moodIcon = Icons.medical_services_rounded;
+          monthRepresentative: moodIcon = Icons.medical_services_rounded;
           break;
       }
-      color = moodColor!.withValues(alpha: 0.3);
+      color = moodColor!.withValues(alpha: 0.4);
     }
 
-    return Stack(
-      children: [
-        GestureDetector(
-          onLongPress: () => _showDeleteConfirmation(context),
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(10),
-                  border: isToday 
-                    ? Border.all(
-                        color: isDark ? AppColors.secondary : AppColors.primary, 
-                        width: 2.0
-                      ) 
-                    : Border.all(color: Colors.transparent),
-                  boxShadow: (widget.session != null && !widget.isFuture) ? [
-                    BoxShadow(
-                      color: moodColor!.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    )
-                  ] : null,
-                ),
-                child: moodIcon != null 
-                  ? Icon(
-                      moodIcon, 
-                      size: 24, 
-                      color: isDark ? Colors.black87 : Colors.black54,
-                    ) 
-                  : null,
-              ),
-            ),
+    return GestureDetector(
+      onLongPress: () => _showDeleteConfirmation(context),
+      onTap: isToday && widget.session != null ? () => _showDeleteConfirmation(context) : null,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(6),
+            border: isToday 
+              ? Border.all(
+                  color: isDark ? AppColors.secondary : AppColors.primary, 
+                  width: 1.5
+                ) 
+              : null,
           ),
+          child: widget.session != null 
+            ? Icon(
+                moodIcon, 
+                size: 16, 
+                color: isDark ? Colors.black87 : Colors.black54,
+              ) 
+            : Text(
+                '${widget.date.day}',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white24 : Colors.black12,
+                ),
+              ),
         ),
-        if (isToday && widget.session != null)
-          Positioned(
-            top: -2,
-            right: -2,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showDeleteConfirmation(context),
-                borderRadius: BorderRadius.circular(10),
-                child: const Padding(
-                  padding: EdgeInsets.all(4.0),
-                  child: Icon(
-                    Icons.delete_forever_rounded, 
-                    size: 18, 
-                    color: Colors.redAccent
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
