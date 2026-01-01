@@ -170,13 +170,27 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _selectedIndex = 0;
+  final List<int> _navigationHistory = [0];
   bool _isMenuExpanded = false;
 
   void _onItemTapped(int index) {
     if (_selectedIndex != index) {
-      setState(() => _selectedIndex = index);
+      setState(() {
+        _navigationHistory.add(index);
+      });
     }
+  }
+
+  int get _selectedIndex => _navigationHistory.last;
+
+  bool _onWillPop() {
+    if (_navigationHistory.length > 1) {
+      setState(() {
+        _navigationHistory.removeLast();
+      });
+      return false;
+    }
+    return true;
   }
 
   void _toggleMenu() {
@@ -185,86 +199,95 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 800;
-        
-        final sideMenu = SideMenu(
-          localizations: widget.localizations,
-          isLoggedIn: widget.isLoggedIn,
-          userData: widget.userData,
-          isExpanded: _isMenuExpanded,
-          isDesktop: isDesktop,
-          onToggleMenu: _toggleMenu,
-          onLanguageChange: widget.onLanguageChange,
-          onProfileTap: () => _onItemTapped(1),
-          onTrickListTap: () => _onItemTapped(2),
-          onProgressTap: () => _onItemTapped(3),
-          onLeaderboardTap: () => _onItemTapped(4),
-          onSessionGoalsTap: () => _onItemTapped(5),
-          onSettingsTap: () => _onItemTapped(6),
-          isDarkMode: widget.isDarkMode,
-          onThemeToggle: widget.onThemeToggle,
-        );
-
-        return Scaffold(
-          drawer: isDesktop ? null : sideMenu,
-          body: Row(
-            children: [
-              if (isDesktop) SizedBox(width: _isMenuExpanded ? 250 : 80, child: sideMenu),
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    return IndexedStack(
-                      index: _selectedIndex,
-                      children: [
-                        _HomeView(localizations: widget.localizations, isDarkMode: widget.isDarkMode, isDesktop: isDesktop),
-                        widget.isLoggedIn
-                            ? ProfilePage(
-                                localizations: widget.localizations, 
-                                onLogout: widget.onLogout,
-                                onUserDataChanged: widget.onRefreshUser,
-                                isLoggedIn: widget.isLoggedIn,
-                                isActive: _selectedIndex == 1,
-                              )
-                            : LogInPage(localizations: widget.localizations, onLogin: widget.onLogin),
-                        TrickCategoryPage(localizations: widget.localizations, isLoggedIn: widget.isLoggedIn),
-                        ProgressTrackerPage(
-                          localizations: widget.localizations,
-                          isLoggedIn: widget.isLoggedIn,
-                          onLogin: widget.onLogin,
-                        ),
-                        LeaderboardPage(
-                          localizations: widget.localizations,
-                          isLoggedIn: widget.isLoggedIn,
-                          onLogin: widget.onLogin,
-                          onNavigateToSettings: () => _onItemTapped(6),
-                          userData: widget.userData,
-                        ),
-                        SessionGoalsPage(
-                          localizations: widget.localizations,
-                          isLoggedIn: widget.isLoggedIn,
-                          onLogin: widget.onLogin,
-                        ),
-                        SettingsPage(
-                          localizations: widget.localizations,
-                          isLoggedIn: widget.isLoggedIn,
-                          onLogin: widget.onLogin,
-                          onLogout: widget.onLogout,
-                          isDarkMode: widget.isDarkMode,
-                          onThemeToggle: widget.onThemeToggle,
-                          userData: widget.userData,
-                          onPrivacyChanged: widget.onRefreshUser,
-                        ),
-                      ],
-                    );
-                  }
-                ),
-              ),
-            ],
-          ),
-        );
+    return PopScope(
+      canPop: _navigationHistory.length <= 1,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _onWillPop();
       },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 800;
+          
+          final sideMenu = SideMenu(
+            localizations: widget.localizations,
+            isLoggedIn: widget.isLoggedIn,
+            userData: widget.userData,
+            isExpanded: _isMenuExpanded,
+            isDesktop: isDesktop,
+            onToggleMenu: _toggleMenu,
+            onLanguageChange: widget.onLanguageChange,
+            onProfileTap: () => _onItemTapped(1),
+            onTrickListTap: () => _onItemTapped(2),
+            onProgressTap: () => _onItemTapped(3),
+            onLeaderboardTap: () => _onItemTapped(4),
+            onSessionGoalsTap: () => _onItemTapped(5),
+            onSettingsTap: () => _onItemTapped(6),
+            isDarkMode: widget.isDarkMode,
+            onThemeToggle: widget.onThemeToggle,
+          );
+  
+          return Scaffold(
+            drawer: isDesktop ? null : sideMenu,
+            body: Row(
+              children: [
+                if (isDesktop) SizedBox(width: _isMenuExpanded ? 250 : 80, child: sideMenu),
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      return IndexedStack(
+                        index: _selectedIndex,
+                        children: [
+                          _HomeView(localizations: widget.localizations, isDarkMode: widget.isDarkMode, isDesktop: isDesktop),
+                          widget.isLoggedIn
+                              ? ProfilePage(
+                                  localizations: widget.localizations, 
+                                  onLogout: widget.onLogout,
+                                  onUserDataChanged: widget.onRefreshUser,
+                                  isLoggedIn: widget.isLoggedIn,
+                                  isActive: _selectedIndex == 1,
+                                )
+                              : LogInPage(localizations: widget.localizations, onLogin: widget.onLogin),
+                          TrickCategoryPage(localizations: widget.localizations, isLoggedIn: widget.isLoggedIn),
+                          ProgressTrackerPage(
+                            localizations: widget.localizations,
+                            isLoggedIn: widget.isLoggedIn,
+                            onLogin: widget.onLogin,
+                            isActive: _selectedIndex == 3,
+                          ),
+                          LeaderboardPage(
+                            localizations: widget.localizations,
+                            isLoggedIn: widget.isLoggedIn,
+                            onLogin: widget.onLogin,
+                            onNavigateToSettings: () => _onItemTapped(6),
+                            userData: widget.userData,
+                            isActive: _selectedIndex == 4,
+                          ),
+                          SessionGoalsPage(
+                            localizations: widget.localizations,
+                            isLoggedIn: widget.isLoggedIn,
+                            onLogin: widget.onLogin,
+                          ),
+                          SettingsPage(
+                            localizations: widget.localizations,
+                            isLoggedIn: widget.isLoggedIn,
+                            onLogin: widget.onLogin,
+                            onLogout: widget.onLogout,
+                            isDarkMode: widget.isDarkMode,
+                            onThemeToggle: widget.onThemeToggle,
+                            userData: widget.userData,
+                            onPrivacyChanged: widget.onRefreshUser,
+                          ),
+                        ],
+                      );
+                    }
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }
