@@ -242,9 +242,10 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> getTricks({int? categoryId, int page = 0, int size = 20}) async {
+  Future<List<dynamic>> getTricks({int? categoryId, String? search, int page = 0, int size = 20}) async {
     String path = '/tricks?page=$page&size=$size';
     if (categoryId != null) path += '&category_id=$categoryId';
+    if (search != null && search.isNotEmpty) path += '&search=${Uri.encodeComponent(search)}';
     
     try {
       final response = await _get(path, timeout: const Duration(seconds: 20));
@@ -348,6 +349,21 @@ class ApiService {
         final cached = await getCachedData('category_stats_me');
         if (cached != null && cached is List) return cached;
       }
+      rethrow;
+    }
+  }
+
+  Future<List<dynamic>> getCategoryStatsFiltered({int? userId, String? search}) async {
+    String path = userId == null ? '/categories/stats' : '/categories/stats?user_id=$userId';
+    if (search != null && search.isNotEmpty) {
+      path += (path.contains('?') ? '&' : '?') + 'search=${Uri.encodeComponent(search)}';
+    }
+    
+    try {
+      final response = await _get(path);
+      final data = _handleResponse(response);
+      return (data != null && data is List) ? data : [];
+    } catch (e) {
       rethrow;
     }
   }

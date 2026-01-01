@@ -35,6 +35,7 @@ public class TrickController {
     @GetMapping
     public ResponseEntity<?> getAllTricks(
             @RequestParam(name = "category_id", required = false) Long categoryId,
+            @RequestParam(name = "search", required = false) String search,
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "20") int size,
             Principal principal) {
@@ -42,14 +43,14 @@ public class TrickController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
 
         if (principal == null) {
-            Page<Map<String, Object>> result = trickService.getAllTricksWithFalseFlags(categoryId, pageable);
+            Page<Map<String, Object>> result = trickService.getAllTricksWithFalseFlags(categoryId, search, pageable);
             return ResponseEntity.ok(result.getContent());
         }
 
         User user = userService.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Page<Map<String, Object>> result = trickService.getTricksForUser(user.getId(), categoryId, pageable);
+        Page<Map<String, Object>> result = trickService.getTricksForUser(user.getId(), categoryId, search, pageable);
         return ResponseEntity.ok(result.getContent());
     }
 

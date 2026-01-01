@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -28,6 +29,7 @@ class _TrickListPageState extends State<TrickListPage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Timer? _searchDebounce;
   
   List<dynamic> _tricks = [];
   bool _isLoading = true;
@@ -58,6 +60,7 @@ class _TrickListPageState extends State<TrickListPage> {
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
   }
 
@@ -98,6 +101,7 @@ class _TrickListPageState extends State<TrickListPage> {
     try {
       final tricks = await _apiService.getTricks(
         categoryId: widget.categoryId,
+        search: _searchQuery,
         page: 0,
         size: _pageSize,
       );
@@ -128,6 +132,7 @@ class _TrickListPageState extends State<TrickListPage> {
       final nextPage = _currentPage + 1;
       final newTricks = await _apiService.getTricks(
         categoryId: widget.categoryId,
+        search: _searchQuery,
         page: nextPage,
         size: _pageSize,
       );
@@ -145,6 +150,18 @@ class _TrickListPageState extends State<TrickListPage> {
         setState(() => _isFetchingMore = false);
       }
     }
+  }
+
+  void _onSearchChanged(String query) {
+    if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = query;
+        });
+        _loadInitialTricks();
+      }
+    });
   }
 
   bool _isTrickCompleted(Map<String, dynamic> trick, String stance) {
@@ -402,9 +419,6 @@ class _TrickListPageState extends State<TrickListPage> {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final filteredTricks = _tricks.where((trick) {
-      final name = trick['name']?.toString().toLowerCase() ?? "";
-      final matchesSearch = name.contains(_searchQuery.toLowerCase());
-      
       bool matchesFilter = true;
       if (_currentFilter == TrickFilter.completed) {
         matchesFilter = _isTrickCompleted(trick, _selectedStance);
@@ -412,7 +426,7 @@ class _TrickListPageState extends State<TrickListPage> {
         matchesFilter = _isTrickWishlisted(trick, _selectedStance);
       }
       
-      return matchesSearch && matchesFilter;
+      return matchesFilter;
     }).toList();
 
     return Scaffold(
@@ -443,15 +457,12 @@ class _TrickListPageState extends State<TrickListPage> {
                   decoration: InputDecoration(
                     hintText: widget.localizations.searchTricks,
                     prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                    suffixIcon: _searchQuery.isNotEmpty 
+                    suffixIcon: _searchController.text.isNotEmpty 
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded),
                           onPressed: () {
-                            setState(() {
-                              _searchController.clear();
-                              _searchQuery = "";
-                            });
-                            _loadInitialTricks();
+                            _searchController.clear();
+                            _onSearchChanged("");
                           },
                         )
                       : null,
@@ -463,11 +474,7 @@ class _TrickListPageState extends State<TrickListPage> {
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
-                  onChanged: (value) {
-                    setState(() => _searchQuery = value);
-                    // For searching, we might want to do server-side search eventually, 
-                    // but for now we just filter the loaded list.
-                  },
+                  onChanged: _onSearchChanged,
                 ),
                 const SizedBox(height: 12),
                 Row(

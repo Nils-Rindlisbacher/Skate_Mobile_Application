@@ -19,6 +19,12 @@ public interface TrickRepository extends JpaRepository<Trick, Long> {
     @EntityGraph(attributePaths = {"category"})
     Page<Trick> findAll(Pageable pageable);
 
+    @EntityGraph(attributePaths = {"category"})
+    Page<Trick> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"category"})
+    Page<Trick> findByCategoryIdAndNameContainingIgnoreCase(Long categoryId, String name, Pageable pageable);
+
     long countByCategoryId(Long categoryId);
 
     @Query(value = "SELECT t.id as id, t.name as name, t.category_id as category_id, ct.created_at as created_at, ct.stance as stance FROM tricks t " +

@@ -27,10 +27,17 @@ public class TrickService {
     @Autowired
     private WishlistTrickRepository wishlistRepository;
 
-    public Page<Map<String, Object>> getTricksForUser(Long userId, Long categoryId, Pageable pageable) {
-        Page<Trick> trickPage = (categoryId == null)
-                ? trickRepository.findAll(pageable)
-                : trickRepository.findByCategoryId(categoryId, pageable);
+    public Page<Map<String, Object>> getTricksForUser(Long userId, Long categoryId, String search, Pageable pageable) {
+        Page<Trick> trickPage;
+        if (search != null && !search.isEmpty()) {
+            trickPage = (categoryId == null)
+                    ? trickRepository.findByNameContainingIgnoreCase(search, pageable)
+                    : trickRepository.findByCategoryIdAndNameContainingIgnoreCase(categoryId, search, pageable);
+        } else {
+            trickPage = (categoryId == null)
+                    ? trickRepository.findAll(pageable)
+                    : trickRepository.findByCategoryId(categoryId, pageable);
+        }
 
         List<Long> trickIds = trickPage.getContent().stream().map(Trick::getId).collect(Collectors.toList());
         
@@ -65,10 +72,17 @@ public class TrickService {
         });
     }
 
-    public Page<Map<String, Object>> getAllTricksWithFalseFlags(Long categoryId, Pageable pageable) {
-        Page<Trick> trickPage = (categoryId == null)
-                ? trickRepository.findAll(pageable)
-                : trickRepository.findByCategoryId(categoryId, pageable);
+    public Page<Map<String, Object>> getAllTricksWithFalseFlags(Long categoryId, String search, Pageable pageable) {
+        Page<Trick> trickPage;
+        if (search != null && !search.isEmpty()) {
+            trickPage = (categoryId == null)
+                    ? trickRepository.findByNameContainingIgnoreCase(search, pageable)
+                    : trickRepository.findByCategoryIdAndNameContainingIgnoreCase(categoryId, search, pageable);
+        } else {
+            trickPage = (categoryId == null)
+                    ? trickRepository.findAll(pageable)
+                    : trickRepository.findByCategoryId(categoryId, pageable);
+        }
 
         return trickPage.map(trick -> {
             Map<String, Object> map = new HashMap<>();
