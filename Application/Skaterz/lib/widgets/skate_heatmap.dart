@@ -44,9 +44,27 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
   }
 
   @override
+  void didUpdateWidget(SkateHeatmap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If a new session was added (count increased), scroll to the right (current week)
+    if (widget.sessions.length > oldWidget.sessions.length) {
+      _scrollToCurrent();
+    }
+  }
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToCurrent() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0.0, // Scroll to far right (current week in reverse mode)
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _updateScrollButtons() {
@@ -372,7 +390,7 @@ class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderS
           break;
         case 'INJURED':
           moodColor = const Color(0xFFEF9A9A);
-          monthRepresentative: moodIcon = Icons.medical_services_rounded;
+          moodIcon = Icons.medical_services_rounded;
           break;
       }
       color = moodColor!.withValues(alpha: 0.4);

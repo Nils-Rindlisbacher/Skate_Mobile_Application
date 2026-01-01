@@ -11,10 +11,12 @@ class TrickCategoryPage extends StatefulWidget {
     super.key,
     required this.localizations,
     required this.isLoggedIn,
+    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
+  final VoidCallback onMenuTap;
 
   @override
   State<TrickCategoryPage> createState() => _TrickCategoryPageState();
@@ -73,7 +75,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         leading: !isDesktop ? IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: widget.onMenuTap,
         ) : null,
       ),
       body: _isLoading && _allCategories.isEmpty

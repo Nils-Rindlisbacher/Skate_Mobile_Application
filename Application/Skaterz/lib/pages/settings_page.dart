@@ -12,6 +12,7 @@ class SettingsPage extends StatefulWidget {
     required this.onLogout,
     required this.isDarkMode,
     required this.onThemeToggle,
+    required this.onMenuTap,
     this.userData,
     this.onPrivacyChanged,
   });
@@ -22,6 +23,7 @@ class SettingsPage extends StatefulWidget {
   final VoidCallback onLogout;
   final bool isDarkMode;
   final Function(bool) onThemeToggle;
+  final VoidCallback onMenuTap;
   final Map<String, dynamic>? userData;
   final VoidCallback? onPrivacyChanged;
 
@@ -181,7 +183,7 @@ class _SettingsPageState extends State<SettingsPage> {
               iconTheme: const IconThemeData(color: Colors.white),
               leading: IconButton(
                 icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(context).openDrawer(),
+                onPressed: widget.onMenuTap,
               ),
             ) 
           : null,

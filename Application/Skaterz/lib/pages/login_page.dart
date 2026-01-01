@@ -9,10 +9,12 @@ class LogInPage extends StatefulWidget {
     super.key,
     required this.localizations,
     required this.onLogin,
+    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
   final VoidCallback onLogin;
+  final VoidCallback onMenuTap;
 
   @override
   State<LogInPage> createState() => _LogInPageState();
@@ -77,7 +79,7 @@ class _LogInPageState extends State<LogInPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: widget.onMenuTap,
         ),
       ),
       body: Padding(

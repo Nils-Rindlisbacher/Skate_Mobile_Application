@@ -10,15 +10,19 @@ class LoginRequiredView extends StatelessWidget {
     required this.onLogin,
     required this.featureName,
     required this.icon,
+    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
   final VoidCallback onLogin;
   final String featureName;
   final IconData icon;
+  final VoidCallback onMenuTap;
 
   @override
   Widget build(BuildContext context) {
+    final bool isDesktop = MediaQuery.of(context).size.width > 800;
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -32,6 +36,10 @@ class LoginRequiredView extends StatelessWidget {
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        leading: !isDesktop ? IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: onMenuTap,
+        ) : null,
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -39,7 +47,7 @@ class LoginRequiredView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 120, color: Colors.grey.withValues(alpha: 0.4)),
+              Icon(icon, size: 120, color: Colors.grey.withOpacity(0.4)),
               const SizedBox(height: 24),
               Text(
                 featureName,
@@ -56,7 +64,7 @@ class LoginRequiredView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16, 
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
               const SizedBox(height: 32),
@@ -69,6 +77,7 @@ class LoginRequiredView extends StatelessWidget {
                       builder: (_) => LogInPage(
                         localizations: localizations,
                         onLogin: onLogin,
+                        onMenuTap: onMenuTap,
                       ),
                     ),
                   ),

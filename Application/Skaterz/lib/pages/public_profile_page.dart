@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -34,10 +35,10 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   };
 
   final Map<String, Color> stanceColors = {
-    'REGULAR': Colors.blueAccent,
-    'NOLLIE': Colors.deepOrangeAccent,
-    'SWITCH': Colors.purpleAccent,
-    'FAKIE': Colors.tealAccent,
+    'REGULAR': const Color(0xFF4FC3F7), 
+    'NOLLIE': const Color(0xFFFF8A65),  
+    'SWITCH': const Color(0xFF9575CD),  
+    'FAKIE': const Color(0xFF4DB6AC),   
   };
 
   String _formatStance(String stance) {
@@ -54,35 +55,112 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     };
   }
 
-  void _showTricksSheet(BuildContext context, String title, List<dynamic> tricks) {
+  Future<void> _showTricksSheet(BuildContext context, String title, int? categoryId) async {
+    HapticFeedback.mediumImpact();
+    
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
-            const Divider(),
-            if (tricks.isEmpty)
-              const Padding(padding: EdgeInsets.all(20), child: Text("No tricks recorded"))
-            else
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: tricks.length,
-                  itemBuilder: (context, index) => ListTile(
-                    visualDensity: VisualDensity.compact,
-                    leading: const Icon(Icons.check_circle, color: AppColors.primary),
-                    title: Text(tricks[index]['name'] ?? 'Trick'),
-                    subtitle: tricks[index]['stance'] != null ? Text(_formatStance(tricks[index]['stance'])) : null,
-                  ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FutureBuilder<List<dynamic>>(
+        future: _apiService.getTricks(categoryId: categoryId, size: 1000), // Note: This might show ALL tricks, we need completed only
+        // Ideally we'd have a getCompletedTricks(userId, categoryId) endpoint.
+        // For now, let's just group whatever data we have.
+        builder: (context, snapshot) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 20),
+                Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const Divider(),
+                Expanded(
+                  child: snapshot.connectionState == ConnectionState.waiting
+                      ? const Center(child: CircularProgressIndicator())
+                      : (snapshot.data == null || snapshot.data!.isEmpty)
+                          ? Center(child: Text(widget.localizations.noTricksYet))
+                          : _buildGroupedTrickList(snapshot.data!),
                 ),
-              ),
-          ],
-        ),
+              ],
+            ),
+          );
+        }
       ),
+    );
+  }
+
+  Widget _buildGroupedTrickList(List<dynamic> tricks) {
+    // Group tricks by name
+    final Map<String, List<String>> groupedTricks = {};
+    for (var t in tricks) {
+      // Filter for completed tricks only if the data contains flags
+      final name = t['name'] ?? 'Trick';
+      final stances = t['stances'] as Map<String, dynamic>?;
+      
+      if (stances != null) {
+        final completedStances = stances.entries
+            .where((e) => e.value['completed'] == true)
+            .map((e) => e.key)
+            .toList();
+        
+        if (completedStances.isNotEmpty) {
+          groupedTricks[name] = completedStances;
+        }
+      }
+    }
+
+    if (groupedTricks.isEmpty) {
+      return Center(child: Text(widget.localizations.noTricksYet));
+    }
+
+    final sortedNames = groupedTricks.keys.toList()..sort();
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: sortedNames.length,
+      itemBuilder: (context, index) {
+        final name = sortedNames[index];
+        final stances = groupedTricks[name]!;
+        
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Row(
+            children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
+              final isDone = stances.contains(s);
+              final label = s == 'REGULAR' ? 'R' : (s == 'NOLLIE' ? 'N' : (s == 'SWITCH' ? 'S' : 'F'));
+              return Container(
+                margin: const EdgeInsets.only(right: 12, top: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                      size: 16,
+                      color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -144,7 +222,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 SegmentedButton<TrackerView>(
                   segments: [
                     ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category)),
-                    ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stances), icon: const Icon(Icons.directions_run)),
+                    ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run)),
                   ],
                   selected: {_currentView},
                   onSelectionChanged: (val) => setState(() => _currentView = val.first),
@@ -162,7 +240,29 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   const SizedBox(height: 32),
                   _buildCategoryList(stats),
                 ] else ...[
-                  const Center(child: Text("Stance details for public profiles coming soon (Requires updated API endpoint)")),
+                  const SizedBox(height: 60),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.query_stats_rounded, size: 80, color: Colors.grey.withValues(alpha: 0.3)),
+                        const SizedBox(height: 24),
+                        Text(
+                          widget.localizations.stances, 
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 12),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 40),
+                          child: Text(
+                            "Stance details for public profiles are coming soon!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -190,7 +290,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
                 if (event is FlTapUpEvent) {
                   final cat = activeStats[_touchedIndex!];
-                  _showTricksSheet(context, cat['name'], []); 
+                  _showTricksSheet(context, cat['name'], cat['id']); 
                 }
               });
             },
@@ -220,6 +320,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       itemBuilder: (context, index) {
         final cat = stats[index];
         return ListTile(
+          onTap: () => _showTricksSheet(context, cat['name'], cat['id']),
           leading: CircleAvatar(radius: 8, backgroundColor: categoryColors[cat['id']] ?? Colors.grey),
           title: Text(cat['name']),
           trailing: Text(

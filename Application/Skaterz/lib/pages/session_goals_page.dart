@@ -13,11 +13,13 @@ class SessionGoalsPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
+    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
+  final VoidCallback onMenuTap;
 
   @override
   State<SessionGoalsPage> createState() => _SessionGoalsPageState();
@@ -170,6 +172,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
         onLogin: widget.onLogin,
         featureName: widget.localizations.sessionGoalsTitle,
         icon: Icons.track_changes,
+        onMenuTap: widget.onMenuTap,
       );
     }
 
@@ -190,7 +193,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         leading: !isDesktop ? IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: widget.onMenuTap,
         ) : null,
       ),
       body: _isLoading && _goals.isEmpty 

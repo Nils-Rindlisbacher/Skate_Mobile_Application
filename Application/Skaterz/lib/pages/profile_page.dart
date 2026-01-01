@@ -15,6 +15,7 @@ class ProfilePage extends StatefulWidget {
     required this.onLogout,
     required this.onUserDataChanged,
     required this.isLoggedIn,
+    required this.onMenuTap,
     this.isActive = true,
   });
 
@@ -22,6 +23,7 @@ class ProfilePage extends StatefulWidget {
   final VoidCallback onLogout;
   final VoidCallback onUserDataChanged;
   final bool isLoggedIn;
+  final VoidCallback onMenuTap;
   final bool isActive;
 
   @override
@@ -285,11 +287,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _showStanceTricks(String stance) {
     final tricks = _allCompleted.where((item) => (item['stance'] ?? 'REGULAR').toString().toUpperCase() == stance).toList();
-    _showTricksSheet(_formatStance(stance), tricks, stanceColors[stance] ?? AppColors.primary);
+    _showTricksSheet(_formatStance(stance), tricks, filteredStance: stance);
   }
 
-  void _showTricksSheet(String title, List<dynamic> tricks, Color color) {
+  void _showTricksSheet(String title, List<dynamic> tricks, {String? filteredStance}) {
     HapticFeedback.mediumImpact();
+    
+    // Group tricks by name to show stances as icons
+    final Map<String, List<String>> groupedTricks = {};
+    for (var t in tricks) {
+      final name = t['name'] ?? 'Trick';
+      if (!groupedTricks.containsKey(name)) {
+        groupedTricks[name] = [];
+      }
+      groupedTricks[name]!.add(t['stance'] ?? 'REGULAR');
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -312,13 +325,32 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? Center(child: Text(widget.localizations.noTricksYet))
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: tricks.length,
+                      itemCount: groupedTricks.length,
                       itemBuilder: (context, index) {
-                        final trick = tricks[index];
+                        final name = groupedTricks.keys.elementAt(index);
+                        final stances = groupedTricks[name]!;
+                        
                         return ListTile(
-                          leading: Icon(Icons.check_circle, color: color),
-                          title: Text(trick['name'] ?? 'Trick'),
-                          subtitle: trick['stance'] != null ? Text(_formatStance(trick['stance'])) : null,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Row(
+                            children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
+                              // If filteredStance is provided, we only show icons for that stance
+                              if (filteredStance != null && s != filteredStance) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final isDone = stances.contains(s);
+                              return Container(
+                                margin: const EdgeInsets.only(right: 8, top: 4),
+                                child: Icon(
+                                  isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                                  size: 16,
+                                  color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         );
                       },
                     ),
@@ -440,7 +472,7 @@ class _ProfilePageState extends State<ProfilePage> {
         iconTheme: const IconThemeData(color: Colors.white),
         leading: !isDesktop ? IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: widget.onMenuTap,
         ) : null,
         actions: [
           if (_currentStreak > 0)

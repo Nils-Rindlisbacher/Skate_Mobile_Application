@@ -170,10 +170,16 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<int> _navigationHistory = [0];
   bool _isMenuExpanded = false;
 
   void _onItemTapped(int index) {
+    // If we are on a pushed page, pop to root first
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+    
     if (_selectedIndex != index) {
       setState(() {
         _navigationHistory.add(index);
@@ -195,6 +201,10 @@ class _MainShellState extends State<MainShell> {
 
   void _toggleMenu() {
     setState(() => _isMenuExpanded = !_isMenuExpanded);
+  }
+
+  void _openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
   }
 
   @override
@@ -228,6 +238,7 @@ class _MainShellState extends State<MainShell> {
           );
   
           return Scaffold(
+            key: _scaffoldKey,
             drawer: isDesktop ? null : sideMenu,
             body: Row(
               children: [
@@ -238,7 +249,12 @@ class _MainShellState extends State<MainShell> {
                       return IndexedStack(
                         index: _selectedIndex,
                         children: [
-                          _HomeView(localizations: widget.localizations, isDarkMode: widget.isDarkMode, isDesktop: isDesktop),
+                          _HomeView(
+                            localizations: widget.localizations, 
+                            isDarkMode: widget.isDarkMode, 
+                            isDesktop: isDesktop,
+                            onMenuTap: _openDrawer,
+                          ),
                           widget.isLoggedIn
                               ? ProfilePage(
                                   localizations: widget.localizations, 
@@ -246,14 +262,24 @@ class _MainShellState extends State<MainShell> {
                                   onUserDataChanged: widget.onRefreshUser,
                                   isLoggedIn: widget.isLoggedIn,
                                   isActive: _selectedIndex == 1,
+                                  onMenuTap: _openDrawer,
                                 )
-                              : LogInPage(localizations: widget.localizations, onLogin: widget.onLogin),
-                          TrickCategoryPage(localizations: widget.localizations, isLoggedIn: widget.isLoggedIn),
+                              : LogInPage(
+                                  localizations: widget.localizations, 
+                                  onLogin: widget.onLogin,
+                                  onMenuTap: _openDrawer,
+                                ),
+                          TrickCategoryPage(
+                            localizations: widget.localizations, 
+                            isLoggedIn: widget.isLoggedIn,
+                            onMenuTap: _openDrawer,
+                          ),
                           ProgressTrackerPage(
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
                             isActive: _selectedIndex == 3,
+                            onMenuTap: _openDrawer,
                           ),
                           LeaderboardPage(
                             localizations: widget.localizations,
@@ -262,11 +288,13 @@ class _MainShellState extends State<MainShell> {
                             onNavigateToSettings: () => _onItemTapped(6),
                             userData: widget.userData,
                             isActive: _selectedIndex == 4,
+                            onMenuTap: _openDrawer,
                           ),
                           SessionGoalsPage(
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
+                            onMenuTap: _openDrawer,
                           ),
                           SettingsPage(
                             localizations: widget.localizations,
@@ -277,6 +305,7 @@ class _MainShellState extends State<MainShell> {
                             onThemeToggle: widget.onThemeToggle,
                             userData: widget.userData,
                             onPrivacyChanged: widget.onRefreshUser,
+                            onMenuTap: _openDrawer,
                           ),
                         ],
                       );
@@ -293,10 +322,17 @@ class _MainShellState extends State<MainShell> {
 }
 
 class _HomeView extends StatelessWidget {
-  const _HomeView({required this.localizations, required this.isDarkMode, required this.isDesktop});
+  const _HomeView({
+    required this.localizations, 
+    required this.isDarkMode, 
+    required this.isDesktop,
+    required this.onMenuTap,
+  });
+  
   final AppLocalizations localizations;
   final bool isDarkMode;
   final bool isDesktop;
+  final VoidCallback onMenuTap;
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +365,7 @@ class _HomeView extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         leading: !isDesktop ? IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: onMenuTap,
         ) : null,
       ),
       body: content,

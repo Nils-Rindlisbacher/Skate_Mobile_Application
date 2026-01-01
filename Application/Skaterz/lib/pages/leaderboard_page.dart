@@ -13,6 +13,7 @@ class LeaderboardPage extends StatefulWidget {
     required this.isLoggedIn,
     required this.onLogin,
     required this.onNavigateToSettings,
+    required this.onMenuTap,
     this.userData,
     this.isActive = true,
   });
@@ -21,6 +22,7 @@ class LeaderboardPage extends StatefulWidget {
   final bool isLoggedIn;
   final VoidCallback onLogin;
   final VoidCallback onNavigateToSettings;
+  final VoidCallback onMenuTap;
   final Map<String, dynamic>? userData;
   final bool isActive;
 
@@ -109,6 +111,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         onLogin: widget.onLogin,
         featureName: widget.localizations.leaderboardMenuItem,
         icon: Icons.emoji_events_outlined,
+        onMenuTap: widget.onMenuTap,
       );
     }
 
@@ -119,7 +122,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           title: Text(widget.localizations.leaderboardMenuItem, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           leading: !isDesktop ? IconButton(
             icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+            onPressed: widget.onMenuTap,
           ) : null,
         ),
         body: Center(
@@ -179,7 +182,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         leading: !isDesktop ? IconButton(
           icon: const Icon(Icons.menu),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: widget.onMenuTap,
         ) : null,
       ),
       body: Column(
@@ -302,7 +305,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       ),
                                       const SizedBox(width: 8),
                                       CircleAvatar(
-                                        backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                                        backgroundColor: Colors.grey.withOpacity(0.2),
                                         backgroundImage: (base64Image != null && base64Image.isNotEmpty)
                                             ? MemoryImage(const Base64Decoder().convert(base64Image))
                                             : null,
@@ -320,7 +323,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                   trailing: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.15),
+                                      color: AppColors.primary.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(

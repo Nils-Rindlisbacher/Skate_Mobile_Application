@@ -13,12 +13,14 @@ class ProgressTrackerPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
+    required this.onMenuTap,
     this.isActive = true,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
+  final VoidCallback onMenuTap;
   final bool isActive;
 
   @override
@@ -106,6 +108,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         onLogin: widget.onLogin,
         featureName: widget.localizations.progressTrackerMenuItem,
         icon: Icons.analytics_outlined,
+        onMenuTap: widget.onMenuTap,
       );
     }
 
@@ -135,7 +138,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
             iconTheme: const IconThemeData(color: Colors.white),
             leading: !isDesktop ? IconButton(
               icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openDrawer(),
+              onPressed: widget.onMenuTap,
             ) : null,
           ),
           body: _isLoading && _stats.isEmpty
@@ -420,11 +423,22 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   void _showStanceTricks(BuildContext context, String stance) {
     final tricks = _completed.where((item) => (item['stance'] ?? 'REGULAR') == stance).toList();
-    _showTricksSheet(context, _formatStance(stance), tricks);
+    _showTricksSheet(context, _formatStance(stance), tricks, filteredStance: stance);
   }
 
-  void _showTricksSheet(BuildContext context, String title, List<dynamic> tricks) {
+  void _showTricksSheet(BuildContext context, String title, List<dynamic> tricks, {String? filteredStance}) {
     HapticFeedback.mediumImpact();
+    
+    // Group tricks by name to show stances as icons
+    final Map<String, List<String>> groupedTricks = {};
+    for (var t in tricks) {
+      final name = t['name'] ?? 'Trick';
+      if (!groupedTricks.containsKey(name)) {
+        groupedTricks[name] = [];
+      }
+      groupedTricks[name]!.add(t['stance'] ?? 'REGULAR');
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -447,16 +461,47 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                   ? Center(child: Text(widget.localizations.noTricksYet))
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: tricks.length,
+                      itemCount: groupedTricks.length,
                       itemBuilder: (context, index) {
-                        final trick = tricks[index];
-                        final stance = trick['stance'] ?? 'REGULAR';
-                        final color = stanceColors[stance] ?? AppColors.secondary;
+                        final name = groupedTricks.keys.elementAt(index);
+                        final stances = groupedTricks[name]!;
                         
                         return ListTile(
-                          leading: Icon(Icons.check_circle, color: color),
-                          title: Text(trick['name'] ?? 'Trick'),
-                          subtitle: trick['stance'] != null ? Text(_formatStance(trick['stance'])) : null,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Row(
+                            children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
+                              // If filteredStance is provided, we only show icons for that stance
+                              if (filteredStance != null && s != filteredStance) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final isDone = stances.contains(s);
+                              final label = s == 'REGULAR' ? 'R' : (s == 'NOLLIE' ? 'N' : (s == 'SWITCH' ? 'S' : 'F'));
+                              return Container(
+                                margin: const EdgeInsets.only(right: 12, top: 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                                      size: 16,
+                                      color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      label,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
                         );
                       },
                     ),
