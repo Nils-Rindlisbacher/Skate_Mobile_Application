@@ -70,7 +70,7 @@ class _SettingsPageState extends State<SettingsPage> {
         widget.onPrivacyChanged?.call();
         
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sichtbarkeit aktualisiert')),
+          SnackBar(content: Text(widget.localizations.visibilityUpdated)),
         );
       }
     } catch (e) {
@@ -79,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _isUpdatingPrivacy = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')),
+          SnackBar(content: Text('${widget.localizations.error}: $e')),
         );
       }
     }

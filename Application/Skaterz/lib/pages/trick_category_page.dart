@@ -54,7 +54,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
       if (mounted && _allCategories.isEmpty) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('${widget.localizations.error}: $e')),
         );
       }
     }
@@ -111,7 +111,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
                       
                       return _buildCategoryTile(
                         context,
-                        category['name'] ?? 'Category',
+                        category['name'] ?? widget.localizations.category,
                         Icons.skateboarding_rounded,
                         category['id'],
                         AppColors.primary,
@@ -144,7 +144,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: color.withOpacity(0.15), width: 1),
+          side: BorderSide(color: color.withValues(alpha: 0.15), width: 1),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),

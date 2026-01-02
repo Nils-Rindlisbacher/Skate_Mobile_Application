@@ -197,7 +197,7 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       if (mounted) {
         _calculateSessionStats();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -214,8 +214,13 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   String _formatStance(String stance) {
-    if (stance.isEmpty) return "";
-    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
+    switch (stance.toUpperCase()) {
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
   }
 
   List<String> _getAvailableStances(String trickName) {
@@ -275,7 +280,7 @@ class _ProfilePageState extends State<ProfilePage> {
             } catch (e) {
               if (mounted) {
                 _calculateSessionStats();
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
               }
             }
           },
@@ -296,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
     // Group tricks by name to show stances as icons
     final Map<String, List<String>> groupedTricks = {};
     for (var t in tricks) {
-      final name = t['name'] ?? 'Trick';
+      final name = t['name'] ?? widget.localizations.tricks;
       if (!groupedTricks.containsKey(name)) {
         groupedTricks[name] = [];
       }
@@ -371,14 +376,14 @@ class _ProfilePageState extends State<ProfilePage> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${trick['name']} (${_formatStance(stance)}) completed!'))
+          SnackBar(content: Text('${trick['name']} (${_formatStance(stance)}) ${widget.localizations.completed}!'))
         );
         _loadData(forceRefresh: true);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'))
+          SnackBar(content: Text('${widget.localizations.error}: $e'))
         );
       }
     }
@@ -432,7 +437,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () {
                       if (!isWishlisted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('$stance is not in wishlist'))
+                          SnackBar(content: Text('${_formatStance(stance)} is not in wishlist'))
                         );
                         return;
                       }
@@ -520,7 +525,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Center(
                       child: Column(
                         children: [
-                          Text(_userData?['name'] ?? 'User', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                          Text(_userData?['name'] ?? widget.localizations.guest, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                           Text('@${_userData?['username'] ?? ''}', style: TextStyle(color: Colors.grey[600], fontSize: 14)),
                         ],
                       ),
@@ -569,7 +574,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Icons.check_circle,
                                   color: stanceColors[trick['stance']] ?? AppColors.secondary,
                                 ),
-                                title: Text(trick['name'] ?? ''),
+                                title: Text(trick['name'] ?? widget.localizations.tricks),
                                 subtitle: Text(_formatStance(trick['stance'] ?? 'REGULAR')),
                               )).toList(),
                             ),
@@ -582,7 +587,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         // Group wishlist by trick name
                         final Map<String, List<dynamic>> groupedWishlist = {};
                         for (var t in _wishlistTricks) {
-                          final name = t['name'] ?? 'Trick';
+                          final name = t['name'] ?? widget.localizations.tricks;
                           if (!groupedWishlist.containsKey(name)) {
                             groupedWishlist[name] = [];
                           }
@@ -653,7 +658,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 _isWishlistExpanded = !_isWishlistExpanded;
                                               });
                                             },
-                                            child: Text(_isWishlistExpanded ? "Show Less" : "Show More"),
+                                            child: Text(_isWishlistExpanded ? widget.localizations.showLess : widget.localizations.showMore),
                                           ),
                                       ],
                                     ),

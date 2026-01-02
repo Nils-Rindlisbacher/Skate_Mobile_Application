@@ -9,6 +9,7 @@ import 'package:skaterz/pages/leaderboard_page.dart';
 import 'package:skaterz/pages/settings_page.dart';
 import 'package:skaterz/pages/trick_category_page.dart';
 import 'package:skaterz/pages/session_goals_page.dart';
+import 'package:skaterz/pages/equipment_page.dart';
 import 'package:skaterz/widgets/side_menu.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/core/app_theme.dart';
@@ -232,7 +233,8 @@ class _MainShellState extends State<MainShell> {
             onProgressTap: () => _onItemTapped(3),
             onLeaderboardTap: () => _onItemTapped(4),
             onSessionGoalsTap: () => _onItemTapped(5),
-            onSettingsTap: () => _onItemTapped(6),
+            onEquipmentTap: () => _onItemTapped(6),
+            onSettingsTap: () => _onItemTapped(7),
             isDarkMode: widget.isDarkMode,
             onThemeToggle: widget.onThemeToggle,
           );
@@ -285,12 +287,18 @@ class _MainShellState extends State<MainShell> {
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
-                            onNavigateToSettings: () => _onItemTapped(6),
+                            onNavigateToSettings: () => _onItemTapped(7),
                             userData: widget.userData,
                             isActive: _selectedIndex == 4,
                             onMenuTap: _openDrawer,
                           ),
                           SessionGoalsPage(
+                            localizations: widget.localizations,
+                            isLoggedIn: widget.isLoggedIn,
+                            onLogin: widget.onLogin,
+                            onMenuTap: _openDrawer,
+                          ),
+                          EquipmentPage(
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,

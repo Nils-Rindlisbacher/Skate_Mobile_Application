@@ -54,7 +54,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading tricks: $e')),
+          SnackBar(content: Text('${widget.localizations.errorLoadingTricks}: $e')),
         );
       }
     }
@@ -94,7 +94,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('${widget.localizations.errorSaving}: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -120,7 +120,13 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
   }
 
   String _formatStance(String stance) {
-    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
+    switch (stance.toUpperCase()) {
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
   }
 
   @override
@@ -170,7 +176,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                     itemBuilder: (context, index) {
                       final trick = filteredTricks[index];
                       final int id = trick['id'];
-                      final String categoryName = trick['type'] ?? 'General';
+                      final String categoryName = trick['type'] ?? widget.localizations.allTricks;
                       final selectedStances = _selectedStances[id] ?? {};
                       final availableStances = _getAvailableStances(trick['name'] ?? '');
 

@@ -13,6 +13,7 @@ class SideMenu extends StatelessWidget {
     required this.onLeaderboardTap,
     required this.onTrickListTap,
     required this.onSessionGoalsTap,
+    required this.onEquipmentTap,
     required this.onSettingsTap,
     required this.onLanguageChange,
     required this.isDarkMode,
@@ -31,6 +32,7 @@ class SideMenu extends StatelessWidget {
   final VoidCallback onLeaderboardTap;
   final VoidCallback onTrickListTap;
   final VoidCallback onSessionGoalsTap;
+  final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
   final Function(String) onLanguageChange;
   final bool isDarkMode;
@@ -65,6 +67,7 @@ class SideMenu extends StatelessWidget {
           _buildMenuItem(context, Icons.trending_up, localizations.progressTrackerMenuItem, onProgressTap),
           _buildMenuItem(context, Icons.emoji_events, localizations.leaderboardMenuItem, onLeaderboardTap),
           _buildMenuItem(context, Icons.track_changes, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
+          _buildMenuItem(context, Icons.handyman, localizations.equipmentMenuItem, onEquipmentTap),
           _buildMenuItem(context, Icons.settings, localizations.settingsMenuItem, onSettingsTap),
           
           const Divider(height: 1),

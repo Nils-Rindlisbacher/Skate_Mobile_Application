@@ -96,8 +96,14 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   }
 
   String _formatStance(String stance) {
-    if (stance == 'ALL') return widget.localizations.allTricks;
-    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
+    switch (stance.toUpperCase()) {
+      case 'ALL': return widget.localizations.allTricks;
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
   }
 
   @override
@@ -207,7 +213,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                     ..._categories.map((cat) {
                       return DropdownMenuItem<int?>(
                         value: cat['id'],
-                        child: Text(cat['name']),
+                        child: Text(cat['name'] ?? widget.localizations.category),
                       );
                     }).toList(),
                   ],
@@ -264,7 +270,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                             final entry = filteredLeaderboard[index];
                             final int rank = index + 1;
                             final int completedCount = entry['completedCount'] ?? 0;
-                            final String name = entry['name'] ?? 'User';
+                            final String name = entry['name'] ?? widget.localizations.guest;
                             final String? base64Image = entry['profile_image'];
                             
                             final dynamic rawId = entry['id'];

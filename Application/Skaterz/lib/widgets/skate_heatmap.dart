@@ -285,8 +285,21 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
   }
 
   String _getMonthName(DateTime date) {
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return months[date.month - 1];
+    switch (date.month) {
+      case 1: return widget.localizations.jan;
+      case 2: return widget.localizations.feb;
+      case 3: return widget.localizations.mar;
+      case 4: return widget.localizations.apr;
+      case 5: return widget.localizations.may;
+      case 6: return widget.localizations.jun;
+      case 7: return widget.localizations.jul;
+      case 8: return widget.localizations.aug;
+      case 9: return widget.localizations.sep;
+      case 10: return widget.localizations.oct;
+      case 11: return widget.localizations.nov;
+      case 12: return widget.localizations.dec;
+      default: return "";
+    }
   }
 }
 
@@ -345,7 +358,7 @@ class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderS
       context: context,
       builder: (context) => AlertDialog(
         title: Text(widget.localizations.undo),
-        content: Text(widget.localizations.skatedToday),
+        content: Text(widget.localizations.deleteSessionConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

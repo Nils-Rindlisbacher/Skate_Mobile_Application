@@ -61,8 +61,13 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   }
 
   String _formatStance(String stance) {
-    if (stance.isEmpty) return "";
-    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
+    switch (stance.toUpperCase()) {
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
   }
 
   Future<void> _loadData() async {
@@ -93,7 +98,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
     } catch (e) {
       if (mounted && _stats.isEmpty) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -256,11 +261,11 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         final total = ((cat['totalTricks'] ?? 0) as num) * 4;
         
         return _buildMasteryBarCard(
-          title: cat['name'] ?? '',
+          title: cat['name'] ?? widget.localizations.category,
           count: count,
           total: total.toInt(),
           color: AppColors.primary, 
-          onTap: () => _showCategoryTricks(context, id, cat['name'] ?? ''),
+          onTap: () => _showCategoryTricks(context, id, cat['name'] ?? widget.localizations.category),
         );
       },
     );
@@ -432,7 +437,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
     // Group tricks by name to show stances as icons
     final Map<String, List<String>> groupedTricks = {};
     for (var t in tricks) {
-      final name = t['name'] ?? 'Trick';
+      final name = t['name'] ?? widget.localizations.tricks;
       if (!groupedTricks.containsKey(name)) {
         groupedTricks[name] = [];
       }

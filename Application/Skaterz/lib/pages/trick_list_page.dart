@@ -73,9 +73,14 @@ class _TrickListPageState extends State<TrickListPage> {
   }
 
   String _formatStance(String stance) {
-    if (stance.isEmpty) return "";
-    if (stance == 'ALL') return widget.localizations.allTricks;
-    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
+    switch (stance.toUpperCase()) {
+      case 'ALL': return widget.localizations.allTricks;
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
   }
 
   List<String> _getAvailableStances(String trickName) {
@@ -116,7 +121,7 @@ class _TrickListPageState extends State<TrickListPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -201,7 +206,7 @@ class _TrickListPageState extends State<TrickListPage> {
         setModalState(() {});
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -225,7 +230,7 @@ class _TrickListPageState extends State<TrickListPage> {
         setModalState(() {});
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -285,7 +290,7 @@ class _TrickListPageState extends State<TrickListPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(currentTrickData['name'] ?? 'Trick', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            Text(currentTrickData['name'] ?? widget.localizations.tricks, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
                           ],
                         ),
                       ),
@@ -544,7 +549,7 @@ class _TrickListPageState extends State<TrickListPage> {
                             children: [
                               Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withValues(alpha: 0.5)),
                               const SizedBox(height: 16),
-                              const Text("No tricks found", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                              Text(widget.localizations.noTricksFound, style: const TextStyle(color: Colors.grey, fontSize: 16)),
                             ],
                           ),
                         )
@@ -574,7 +579,7 @@ class _TrickListPageState extends State<TrickListPage> {
                                 onTap: () => _showTrickDetails(trick, index),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                                 title: Text(
-                                  trick['name'] ?? 'Trick',
+                                  trick['name'] ?? widget.localizations.tricks,
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
                                 trailing: Row(

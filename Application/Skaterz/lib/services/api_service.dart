@@ -242,10 +242,11 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> getTricks({int? categoryId, String? search, int page = 0, int size = 20}) async {
+  Future<List<dynamic>> getTricks({int? categoryId, String? search, int page = 0, int size = 20, int? userId}) async {
     String path = '/tricks?page=$page&size=$size';
     if (categoryId != null) path += '&category_id=$categoryId';
     if (search != null && search.isNotEmpty) path += '&search=${Uri.encodeComponent(search)}';
+    if (userId != null) path += '&user_id=$userId';
     
     try {
       final response = await _get(path, timeout: const Duration(seconds: 20));
@@ -273,18 +274,21 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> getCompletedTricks() async {
+  Future<List<dynamic>> getCompletedTricks({int? userId}) async {
+    final path = userId == null ? '/completed' : '/completed?user_id=$userId';
     try {
-      final response = await _get('/completed');
+      final response = await _get(path);
       final data = _handleResponse(response);
       if (data != null && data is List) {
-        await _cacheData('completed_tricks', data);
+        if (userId == null) await _cacheData('completed_tricks', data);
         return data;
       }
       return [];
     } catch (e) {
-      final cached = await getCachedData('completed_tricks');
-      if (cached != null && cached is List) return cached;
+      if (userId == null) {
+        final cached = await getCachedData('completed_tricks');
+        if (cached != null && cached is List) return cached;
+      }
       rethrow;
     }
   }
@@ -428,18 +432,21 @@ class ApiService {
   }
 
   // --- Skating Sessions ---
-  Future<List<dynamic>> getSkatingSessions() async {
+  Future<List<dynamic>> getSkatingSessions({int? userId}) async {
+    final path = userId == null ? '/sessions' : '/sessions?user_id=$userId';
     try {
-      final response = await _get('/sessions');
+      final response = await _get(path);
       final data = _handleResponse(response);
       if (data != null && data is List) {
-        await _cacheData('skating_sessions', data);
+        if (userId == null) await _cacheData('skating_sessions', data);
         return data;
       }
       return [];
     } catch (e) {
-      final cached = await getCachedData('skating_sessions');
-      if (cached != null && cached is List) return cached;
+      if (userId == null) {
+        final cached = await getCachedData('skating_sessions');
+        if (cached != null && cached is List) return cached;
+      }
       rethrow;
     }
   }
@@ -465,5 +472,53 @@ class ApiService {
     ).timeout(const Duration(seconds: 15));
     _handleResponse(response);
     await clearCache('skating_sessions');
+  }
+
+  // --- Equipment Services ---
+  Future<List<dynamic>> getEquipment() async {
+    try {
+      final response = await _get('/equipment');
+      final data = _handleResponse(response);
+      if (data != null && data is List) {
+        await _cacheData('equipment_list', data);
+        return data;
+      }
+      return [];
+    } catch (e) {
+      final cached = await getCachedData('equipment_list');
+      if (cached != null && cached is List) return cached;
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> addEquipment(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/equipment'),
+      headers: await _getHeaders(),
+      body: jsonEncode(data),
+    ).timeout(const Duration(seconds: 15));
+    final result = _handleResponse(response);
+    await clearCache('equipment_list');
+    return result != null ? Map<String, dynamic>.from(result) : null;
+  }
+
+  Future<Map<String, dynamic>?> updateEquipment(int id, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/equipment/$id'),
+      headers: await _getHeaders(),
+      body: jsonEncode(data),
+    ).timeout(const Duration(seconds: 15));
+    final result = _handleResponse(response);
+    await clearCache('equipment_list');
+    return result != null ? Map<String, dynamic>.from(result) : null;
+  }
+
+  Future<void> deleteEquipment(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/equipment/$id'),
+      headers: await _getHeaders(),
+    ).timeout(const Duration(seconds: 15));
+    _handleResponse(response);
+    await clearCache('equipment_list');
   }
 }

@@ -124,7 +124,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Delete failed: $e')),
+          SnackBar(content: Text('${widget.localizations.deleteFailed}: $e')),
         );
       }
     }
@@ -153,7 +153,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
             if (mounted) {
               setState(() => _isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to save goal: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('${widget.localizations.saveFailed}: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -373,8 +373,13 @@ class _GoalTile extends StatelessWidget {
   }
 
   String _formatStance(String stance) {
-    if (stance.isEmpty) return "";
-    return stance[0].toUpperCase() + stance.substring(1).toLowerCase();
+    switch (stance.toUpperCase()) {
+      case 'REGULAR': return localizations.regular;
+      case 'NOLLIE': return localizations.nollie;
+      case 'SWITCH': return localizations.switchStance;
+      case 'FAKIE': return localizations.fakie;
+      default: return stance;
+    }
   }
 
   @override
@@ -595,6 +600,16 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
     return ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
   }
 
+  String _formatStance(String stance) {
+    switch (stance.toUpperCase()) {
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final availableStances = _getAvailableStances(_titleController.text);
@@ -702,7 +717,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                   items: availableStances.map((stance) {
                     return DropdownMenuItem(
                       value: stance,
-                      child: Text(stance[0].toUpperCase() + stance.substring(1).toLowerCase()),
+                      child: Text(_formatStance(stance)),
                     );
                   }).toList(),
                   onChanged: (val) {
