@@ -55,6 +55,7 @@ class _MyAppState extends State<MyApp> {
   Future<void> _initializeApp() async {
     await Future.wait([
       _loadThemeMode(),
+      _loadLocale(),
       _checkLoginStatus(),
       _apiService.warmUp(),
     ]);
@@ -67,6 +68,15 @@ class _MyAppState extends State<MyApp> {
     if (mode != null && mounted) {
       setState(() {
         _themeMode = mode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+      });
+    }
+  }
+
+  Future<void> _loadLocale() async {
+    final locale = await _apiService.getCachedData('app_locale');
+    if (locale != null && mounted) {
+      setState(() {
+        _locale = locale.toString();
       });
     }
   }
@@ -102,6 +112,7 @@ class _MyAppState extends State<MyApp> {
 
   void _changeLanguage(String newLocale) {
     setState(() => _locale = newLocale);
+    _apiService.saveData('app_locale', newLocale);
   }
 
   void _handleLogin() {
@@ -314,6 +325,7 @@ class _MainShellState extends State<MainShell> {
                             userData: widget.userData,
                             onPrivacyChanged: widget.onRefreshUser,
                             onMenuTap: _openDrawer,
+                            onLanguageChange: widget.onLanguageChange,
                           ),
                         ],
                       );

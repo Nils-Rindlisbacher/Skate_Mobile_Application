@@ -13,6 +13,7 @@ class SettingsPage extends StatefulWidget {
     required this.isDarkMode,
     required this.onThemeToggle,
     required this.onMenuTap,
+    required this.onLanguageChange,
     this.userData,
     this.onPrivacyChanged,
   });
@@ -24,6 +25,7 @@ class SettingsPage extends StatefulWidget {
   final bool isDarkMode;
   final Function(bool) onThemeToggle;
   final VoidCallback onMenuTap;
+  final Function(String) onLanguageChange;
   final Map<String, dynamic>? userData;
   final VoidCallback? onPrivacyChanged;
 
@@ -143,6 +145,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   trailing: Text(lang['flag']!, style: const TextStyle(fontSize: 24)),
                   onTap: () {
+                    widget.onLanguageChange(lang['code']!);
                     Navigator.pop(context);
                   },
                 );

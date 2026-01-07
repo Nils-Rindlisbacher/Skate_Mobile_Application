@@ -321,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),),
             const SizedBox(height: 20),
             Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
             const Divider(),
@@ -403,7 +403,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
@@ -437,7 +437,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     onPressed: () {
                       if (!isWishlisted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${_formatStance(stance)} is not in wishlist'))
+                          SnackBar(content: Text('${_formatStance(stance)} ${widget.localizations.notInWishlist}'))
                         );
                         return;
                       }
@@ -505,6 +505,7 @@ class _ProfilePageState extends State<ProfilePage> {
       floatingActionButton: (_isLoading && _sessions.isEmpty) || _alreadySkatedToday 
           ? null 
           : FloatingActionButton.extended(
+              heroTag: 'profile_fab',
               onPressed: _showMoodPicker,
               icon: const Icon(Icons.skateboarding, color: Colors.white),
               label: Text(widget.localizations.skatedToday, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

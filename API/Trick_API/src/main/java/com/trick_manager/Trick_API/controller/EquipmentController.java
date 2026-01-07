@@ -64,6 +64,7 @@ public class EquipmentController {
         equipment.setNotes(equipmentDetails.getNotes());
         equipment.setSetupDate(equipmentDetails.getSetupDate());
         equipment.setActive(equipmentDetails.isActive());
+        equipment.setPrice(equipmentDetails.getPrice());
 
         return ResponseEntity.ok(equipmentRepository.save(equipment));
     }

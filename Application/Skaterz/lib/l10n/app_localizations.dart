@@ -179,6 +179,7 @@ abstract class AppLocalizations {
   String get typeGrip;
   String get typeHardware;
   String get active;
+  String get price;
 
   // Language names
   String get language;
@@ -322,6 +323,7 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get typeGrip => 'Grip';
   @override String get typeHardware => 'Hardware';
   @override String get active => 'Aktiv';
+  @override String get price => 'Preis';
 }
 
 // English translations
@@ -457,6 +459,7 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get typeGrip => 'Grip';
   @override String get typeHardware => 'Hardware';
   @override String get active => 'Active';
+  @override String get price => 'Price';
 }
 
 // Spanish translations
@@ -592,6 +595,7 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get typeGrip => 'Lija';
   @override String get typeHardware => 'Tornillos';
   @override String get active => 'Activo';
+  @override String get price => 'Precio';
 }
 
 // Italian translations
@@ -727,6 +731,7 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get typeGrip => 'Grip';
   @override String get typeHardware => 'Viti';
   @override String get active => 'Attivo';
+  @override String get price => 'Prezzo';
 }
 
 // French translations
@@ -855,4 +860,5 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get typeGrip => 'Grip';
   @override String get typeHardware => 'Visserie';
   @override String get active => 'Actif';
+  @override String get price => 'Prix';
 }

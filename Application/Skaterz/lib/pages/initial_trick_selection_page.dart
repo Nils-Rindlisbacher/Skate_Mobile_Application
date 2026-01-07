@@ -62,9 +62,13 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
   List<String> _getAvailableStances(String trickName) {
     final name = trickName.toLowerCase();
-    if (name == 'ollie' || 
-        name == 'nollie' || 
-        name == 'rock to fakie' || 
+    if (name == 'ollie') {
+      return ['REGULAR', 'SWITCH', 'FAKIE'];
+    }
+    if (name == 'nollie') {
+      return ['REGULAR', 'SWITCH'];
+    }
+    if (name == 'rock to fakie' || 
         name == 'rock n roll' || 
         name == 'blunt to fakie') {
       return ['REGULAR'];
