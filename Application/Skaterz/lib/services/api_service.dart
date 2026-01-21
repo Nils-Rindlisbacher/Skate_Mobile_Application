@@ -99,6 +99,11 @@ class ApiService {
     }
   }
 
+  // Public method to save arbitrary data
+  Future<void> saveData(String key, dynamic data) async {
+    await _cacheData(key, data);
+  }
+
   Future<void> clearCache(String key) async {
     _memoryCache.remove(key);
     await _storage.delete(key: 'cache_$key');

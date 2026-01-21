@@ -112,7 +112,7 @@ class _MyAppState extends State<MyApp> {
 
   void _changeLanguage(String newLocale) {
     setState(() => _locale = newLocale);
-    _apiService.saveData('app_locale', newLocale);
+    _apiService.saveThemeMode(newLocale);
   }
 
   void _handleLogin() {

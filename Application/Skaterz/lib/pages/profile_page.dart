@@ -403,7 +403,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisSize: min,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
