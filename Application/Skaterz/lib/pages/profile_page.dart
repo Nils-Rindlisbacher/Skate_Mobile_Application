@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/models/skating_session.dart';
 import 'package:skaterz/services/api_service.dart';
@@ -32,6 +33,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ApiService _apiService = ApiService();
+  final ImagePicker _picker = ImagePicker();
   
   Map<String, dynamic>? _userData;
   List<dynamic> _wishlistTricks = [];
@@ -44,6 +46,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _alreadySkatedToday = false;
   bool _isLoading = true;
   bool _isWishlistExpanded = false;
+  bool _isUploadingImage = false;
 
   final Map<String, Color> stanceColors = {
     'REGULAR': const Color(0xFF4FC3F7), 
@@ -465,6 +468,45 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploadingImage = true);
+
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      await _apiService.uploadProfileImage(base64Image);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(widget.localizations.profileMenuItem)) // Using localized string as fallback or just success
+        );
+        _loadData(forceRefresh: true);
+        widget.onUserDataChanged();
+      }
+    } catch (e) {
+      debugPrint("Upload Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${widget.localizations.error}: $e'))
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = MediaQuery.of(context).size.width > 800;
@@ -819,21 +861,28 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? MemoryImage(const Base64Decoder().convert(base64String)) 
                   : null,
               child: (base64String == null || base64String.isEmpty)
-                  ? const Icon(Icons.person, size: 50, color: Colors.grey) 
-                  : null,
+                  ? (_isUploadingImage 
+                      ? const CircularProgressIndicator()
+                      : const Icon(Icons.person, size: 50, color: Colors.grey))
+                  : (_isUploadingImage ? const CircularProgressIndicator(color: Colors.white) : null),
             ),
           ),
         ),
         Positioned(
           bottom: 4,
           right: 4,
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-            child: CircleAvatar(
-              backgroundColor: AppColors.primary,
-              radius: 16,
-              child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+          child: GestureDetector(
+            onTap: _isUploadingImage ? null : _pickAndUploadImage,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: CircleAvatar(
+                backgroundColor: AppColors.primary,
+                radius: 16,
+                child: _isUploadingImage 
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+              ),
             ),
           ),
         ),
