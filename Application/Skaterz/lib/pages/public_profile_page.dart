@@ -30,6 +30,10 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   final ApiService _apiService = ApiService();
   TrackerView _currentView = TrackerView.category;
   int? _touchedIndex;
+  
+  bool _isFollowing = false;
+  int _followerCount = 0;
+  bool _isInitialized = false;
 
   final Map<int, Color> categoryColors = {
     1: Colors.blue, 2: Colors.red, 3: Colors.green, 
@@ -59,9 +63,25 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       _apiService.getUserProfile(widget.userId),
       _apiService.getCompletedTricks(userId: widget.userId),
       _apiService.getSkatingSessions(userId: widget.userId),
+      _apiService.getCurrentUser(), // To check if following
     ];
     
     final results = await Future.wait(requests);
+    
+    if (!_isInitialized) {
+      final currentUser = results[4] as Map<String, dynamic>?;
+      if (currentUser != null) {
+        final following = (currentUser['followingIds'] ?? currentUser['following_ids'] ?? []) as List;
+        _isFollowing = following.contains(widget.userId);
+      }
+      
+      final profile = results[1] as Map<String, dynamic>?;
+      if (profile != null) {
+        _followerCount = (profile['followerCount'] ?? profile['follower_count'] ?? 0) as int;
+      }
+      _isInitialized = true;
+    }
+
     return {
       'stats': results[0],
       'profile': results[1],
@@ -70,13 +90,110 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     };
   }
 
+  void _handleFollowToggle() async {
+    try {
+      if (_isFollowing) {
+        await _apiService.unfollowUser(widget.userId);
+        setState(() {
+          _isFollowing = false;
+          _followerCount--;
+        });
+      } else {
+        await _apiService.followUser(widget.userId);
+        setState(() {
+          _isFollowing = true;
+          _followerCount++;
+        });
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  void _showOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(_isFollowing ? Icons.person_remove_outlined : Icons.person_add_outlined),
+              title: Text(_isFollowing ? widget.localizations.unfollow : widget.localizations.follow),
+              onTap: () {
+                Navigator.pop(context);
+                _handleFollowToggle();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
+              title: Text(widget.localizations.reportUser),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmAction(
+                  widget.localizations.reportUser,
+                  widget.localizations.reportConfirm,
+                  () async {
+                    await _apiService.reportUser(widget.userId, "Inappropriate content");
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
+                  }
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block, color: Colors.red),
+              title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmAction(
+                  widget.localizations.blockUser,
+                  widget.localizations.blockConfirm,
+                  () async {
+                    await _apiService.blockUser(widget.userId);
+                    if (mounted) {
+                      Navigator.pop(context); // Go back from profile
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
+                    }
+                  }
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmAction(String title, String message, Future<void> Function() action) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await action();
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showTricksSheet(BuildContext context, String title, int? categoryId, List<dynamic> allCompleted, {String? filteredStance}) async {
     HapticFeedback.mediumImpact();
     
-    // Group tricks by name to show stances as icons
     final Map<String, List<String>> groupedTricks = {};
     
-    // Filter the provided completed tricks list
     final filteredList = allCompleted.where((item) {
       if (categoryId != null) {
         final trickCatId = (item['category_id'] ?? item['categoryId'] ?? 
@@ -175,6 +292,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
         title: Text(widget.username, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: _showOptions,
+          ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _loadProfileData(),
@@ -222,9 +345,28 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 Text('@${widget.username}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+                const SizedBox(height: 8),
+                Text(
+                  '$_followerCount ${widget.localizations.followers}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                ),
+                const SizedBox(height: 24),
+                
+                ElevatedButton.icon(
+                  onPressed: _handleFollowToggle,
+                  icon: Icon(_isFollowing ? Icons.check : Icons.person_add),
+                  label: Text(_isFollowing ? widget.localizations.following : widget.localizations.follow),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _isFollowing ? Colors.grey[200] : AppColors.primary,
+                    foregroundColor: _isFollowing ? Colors.black87 : Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                ),
+
                 const SizedBox(height: 32),
 
-                // Activity Heatmap
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(

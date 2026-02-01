@@ -34,6 +34,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   final ApiService _apiService = ApiService();
   List<dynamic> _leaderboard = [];
   List<dynamic> _categories = [];
+  List<int> _followedUserIds = [];
+  List<int> _blockedUserIds = [];
   bool _isLoading = true;
   int? _selectedCategoryId;
   String _selectedStance = 'ALL';
@@ -55,36 +57,31 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       setState(() => _isLoading = true);
       _loadData();
     } else if (widget.isLoggedIn && widget.isActive && !oldWidget.isActive) {
-      _loadData(); // Refresh data when page becomes active
+      _loadData(); 
     }
   }
 
   bool get _isUserPublic => widget.userData?['isPublic'] ?? widget.userData?['is_public'] ?? true;
 
   Future<void> _loadData() async {
-    final cacheKey = 'leaderboard_${_selectedCategoryId ?? 'all'}_$_selectedStance';
-    
-    final cachedLeaderboard = await _apiService.getCachedData(cacheKey);
-    final cachedCategories = await _apiService.getCachedData('categories');
-    
-    if (mounted && (cachedLeaderboard != null || cachedCategories != null)) {
-      setState(() {
-        if (cachedLeaderboard != null) _leaderboard = cachedLeaderboard;
-        if (cachedCategories != null) _categories = cachedCategories;
-        _isLoading = false;
-      });
-    }
-
     try {
       final results = await Future.wait([
         _apiService.getLeaderboard(categoryId: _selectedCategoryId, stance: _selectedStance),
         _apiService.getCategories(),
+        _apiService.getCurrentUser(),
       ]);
 
       if (mounted) {
         setState(() {
           _leaderboard = results[0];
           _categories = results[1];
+          
+          final user = results[2] as Map<String, dynamic>?;
+          if (user != null) {
+            _followedUserIds = List<int>.from(user['followingIds'] ?? user['following_ids'] ?? []);
+            _blockedUserIds = List<int>.from(user['blockedIds'] ?? user['blocked_ids'] ?? []);
+          }
+          
           _isLoading = false;
         });
       }
@@ -107,6 +104,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   }
 
   void _showUserOptions(int userId, String username) {
+    final bool isFollowing = _followedUserIds.contains(userId);
+    
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
@@ -116,13 +115,17 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.person_add_outlined),
-                title: Text(widget.localizations.follow),
+                leading: Icon(isFollowing ? Icons.person_remove_outlined : Icons.person_add_outlined),
+                title: Text(isFollowing ? widget.localizations.unfollow : widget.localizations.follow),
                 onTap: () async {
                   Navigator.pop(context);
                   try {
-                    await _apiService.followUser(userId);
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${widget.localizations.following} @$username")));
+                    if (isFollowing) {
+                      await _apiService.unfollowUser(userId);
+                    } else {
+                      await _apiService.followUser(userId);
+                    }
+                    _loadData(); // Refresh to update "Following" tags
                   } catch (e) {
                     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
                   }
@@ -259,6 +262,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     }
 
     final filteredLeaderboard = _leaderboard.where((entry) {
+      final dynamic rawId = entry['id'];
+      final int? userId = rawId != null 
+          ? (rawId is int ? rawId : int.tryParse(rawId.toString()))
+          : null;
+      
+      if (userId != null && _blockedUserIds.contains(userId)) return false;
+      
       final int count = entry['completedCount'] ?? 0;
       return count > 0;
     }).toList();
@@ -284,7 +294,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             child: Column(
               children: [
                 DropdownButtonFormField<int?>(
-                  value: _selectedCategoryId,
+                  initialValue: _selectedCategoryId,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: widget.localizations.trickListMenuItem,
@@ -313,7 +323,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _selectedStance,
+                  initialValue: _selectedStance,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: widget.localizations.stance,
@@ -364,6 +374,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                             final int? userId = rawId != null 
                                 ? (rawId is int ? rawId : int.tryParse(rawId.toString()))
                                 : null;
+                            
+                            final bool isFollowing = userId != null && _followedUserIds.contains(userId);
 
                             return Card(
                               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -398,7 +410,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       ),
                                       const SizedBox(width: 8),
                                       CircleAvatar(
-                                        backgroundColor: Colors.grey.withOpacity(0.2),
+                                        backgroundColor: Colors.grey.withValues(alpha: 0.2),
                                         backgroundImage: (base64Image != null && base64Image.isNotEmpty)
                                             ? MemoryImage(const Base64Decoder().convert(base64Image))
                                             : null,
@@ -408,9 +420,24 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       ),
                                     ],
                                   ),
-                                  title: Text(
-                                    name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  title: Row(
+                                    children: [
+                                      Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                                      if (isFollowing)
+                                        Container(
+                                          margin: const EdgeInsets.only(left: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                                          ),
+                                          child: Text(
+                                            widget.localizations.following.toUpperCase(),
+                                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.green),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   subtitle: Text('@$username'),
                                   trailing: Row(
@@ -419,7 +446,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.15),
+                                          color: AppColors.primary.withValues(alpha: 0.15),
                                           borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: Text(
