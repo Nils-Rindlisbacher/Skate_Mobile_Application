@@ -230,6 +230,63 @@ class ApiService {
     return data != null ? Map<String, dynamic>.from(data) : null;
   }
 
+  // --- Store Compliance (UGC) ---
+  Future<void> reportUser(int userId, String reason) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/report'),
+      headers: await _getHeaders(),
+      body: jsonEncode({
+        'user_id': userId,
+        'reason': reason,
+      }),
+    ).timeout(const Duration(seconds: 15));
+    _handleResponse(response);
+  }
+
+  Future<void> blockUser(int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/block'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'user_id': userId}),
+    ).timeout(const Duration(seconds: 15));
+    _handleResponse(response);
+    await clearCache('leaderboard'); // Invalidate cache
+  }
+
+  Future<void> unblockUser(int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/unblock'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'user_id': userId}),
+    ).timeout(const Duration(seconds: 15));
+    _handleResponse(response);
+  }
+
+  Future<List<dynamic>> getBlockedUsers() async {
+    final response = await _get('/users/blocked');
+    final data = _handleResponse(response);
+    return (data != null && data is List) ? data : [];
+  }
+
+  // --- Social Features ---
+  Future<void> followUser(int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/follow'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'user_id': userId}),
+    ).timeout(const Duration(seconds: 15));
+    _handleResponse(response);
+  }
+
+  Future<void> unfollowUser(int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/unfollow'),
+      headers: await _getHeaders(),
+      body: jsonEncode({'user_id': userId}),
+    ).timeout(const Duration(seconds: 15));
+    _handleResponse(response);
+  }
+
   // --- Data Services ---
   Future<List<dynamic>> getCategories() async {
     try {

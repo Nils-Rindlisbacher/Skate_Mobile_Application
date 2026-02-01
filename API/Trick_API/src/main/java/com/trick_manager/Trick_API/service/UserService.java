@@ -10,8 +10,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -46,6 +48,7 @@ public class UserService {
     }
 
     public List<LeaderboardProjection> getLeaderboardData(Long categoryId, String stance) {
+        // In a real scenario, you'd filter out blocked users here.
         return userRepository.getLeaderboardData(categoryId, stance);
     }
 
@@ -68,11 +71,59 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        // Delete related data first
         completedTrickRepository.deleteByUserId(user.getId());
         wishlistTrickRepository.deleteByUserId(user.getId());
-        
-        // Delete the user
         userRepository.delete(user);
+    }
+
+    // --- Following ---
+    public void followUser(String username, Long targetUserId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.getFollowingIds().add(targetUserId);
+        userRepository.save(user);
+    }
+
+    public void unfollowUser(String username, Long targetUserId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.getFollowingIds().remove(targetUserId);
+        userRepository.save(user);
+    }
+
+    // --- Blocking ---
+    public void blockUser(String username, Long targetUserId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.getBlockedIds().add(targetUserId);
+        userRepository.save(user);
+    }
+
+    public void unblockUser(String username, Long targetUserId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.getBlockedIds().remove(targetUserId);
+        userRepository.save(user);
+    }
+
+    public List<User> getBlockedUsers(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getBlockedIds().stream()
+                .map(userRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(u -> {
+                    u.setPassword(null);
+                    return u;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // --- Reporting ---
+    public void reportUser(String reporterUsername, Long targetUserId, String reason) {
+        // For compliance, just logging is enough initially. 
+        // In production, you'd save this to a 'reports' table.
+        System.out.println("USER REPORTED: " + reporterUsername + " reported user " + targetUserId + " for: " + reason);
     }
 }

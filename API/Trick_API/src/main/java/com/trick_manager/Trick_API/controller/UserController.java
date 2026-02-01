@@ -2,7 +2,6 @@ package com.trick_manager.Trick_API.controller;
 
 import com.trick_manager.Trick_API.entity.User;
 import com.trick_manager.Trick_API.repository.LeaderboardProjection;
-import com.trick_manager.Trick_API.repository.UserRepository;
 import com.trick_manager.Trick_API.service.UserService;
 import com.trick_manager.Trick_API.config.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,5 +113,45 @@ public class UserController {
         
         String filterStance = (stance == null || stance.equalsIgnoreCase("ALL")) ? null : stance.toUpperCase();
         return ResponseEntity.ok(userService.getLeaderboardData(categoryId, filterStance));
+    }
+
+    // --- Following ---
+    @PostMapping("/follow")
+    public ResponseEntity<?> followUser(@RequestBody Map<String, Long> request, Principal principal) {
+        userService.followUser(principal.getName(), request.get("user_id"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/unfollow")
+    public ResponseEntity<?> unfollowUser(@RequestBody Map<String, Long> request, Principal principal) {
+        userService.unfollowUser(principal.getName(), request.get("user_id"));
+        return ResponseEntity.ok().build();
+    }
+
+    // --- Blocking ---
+    @PostMapping("/block")
+    public ResponseEntity<?> blockUser(@RequestBody Map<String, Long> request, Principal principal) {
+        userService.blockUser(principal.getName(), request.get("user_id"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/unblock")
+    public ResponseEntity<?> unblockUser(@RequestBody Map<String, Long> request, Principal principal) {
+        userService.unblockUser(principal.getName(), request.get("user_id"));
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/blocked")
+    public ResponseEntity<?> getBlockedUsers(Principal principal) {
+        return ResponseEntity.ok(userService.getBlockedUsers(principal.getName()));
+    }
+
+    // --- Reporting ---
+    @PostMapping("/report")
+    public ResponseEntity<?> reportUser(@RequestBody Map<String, Object> request, Principal principal) {
+        Long targetUserId = ((Number) request.get("user_id")).longValue();
+        String reason = (String) request.get("reason");
+        userService.reportUser(principal.getName(), targetUserId, reason);
+        return ResponseEntity.ok().build();
     }
 }

@@ -106,6 +106,92 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     }
   }
 
+  void _showUserOptions(int userId, String username) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person_add_outlined),
+                title: Text(widget.localizations.follow),
+                onTap: () async {
+                  Navigator.pop(context);
+                  try {
+                    await _apiService.followUser(userId);
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${widget.localizations.following} @$username")));
+                  } catch (e) {
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
+                title: Text(widget.localizations.reportUser),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmAction(
+                    widget.localizations.reportUser,
+                    widget.localizations.reportConfirm,
+                    () async {
+                      await _apiService.reportUser(userId, "Inappropriate content");
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
+                    }
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.red),
+                title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmAction(
+                    widget.localizations.blockUser,
+                    widget.localizations.blockConfirm,
+                    () async {
+                      await _apiService.blockUser(userId);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
+                        _loadData();
+                      }
+                    }
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _confirmAction(String title, String message, Future<void> Function() action) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await action();
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -271,6 +357,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                             final int rank = index + 1;
                             final int completedCount = entry['completedCount'] ?? 0;
                             final String name = entry['name'] ?? widget.localizations.guest;
+                            final String username = entry['username'] ?? 'User';
                             final String? base64Image = entry['profile_image'];
                             
                             final dynamic rawId = entry['id'];
@@ -289,7 +376,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       builder: (context) => PublicProfilePage(
                                         localizations: widget.localizations,
                                         userId: userId,
-                                        username: entry['username'] ?? 'User',
+                                        username: username,
                                       ),
                                     ),
                                   );
@@ -325,20 +412,30 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                     name,
                                     style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  subtitle: Text('@${entry['username'] ?? ''}'),
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      '$completedCount ${widget.localizations.tricks}',
-                                      style: TextStyle(
-                                        color: isDark ? AppColors.secondary : AppColors.primary,
-                                        fontWeight: FontWeight.bold,
+                                  subtitle: Text('@$username'),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          '$completedCount ${widget.localizations.tricks}',
+                                          style: TextStyle(
+                                            color: isDark ? AppColors.secondary : AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      if (userId != null && userId != widget.userData?['id'])
+                                        IconButton(
+                                          icon: const Icon(Icons.more_vert),
+                                          onPressed: () => _showUserOptions(userId, username),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               ),

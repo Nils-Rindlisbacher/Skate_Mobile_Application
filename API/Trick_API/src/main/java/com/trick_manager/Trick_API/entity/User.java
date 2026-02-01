@@ -3,6 +3,8 @@ package com.trick_manager.Trick_API.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -31,4 +33,14 @@ public class User {
     @Column(name = "is_public", nullable = false)
     @JsonProperty("is_public")
     private boolean isPublic = true;
+
+    @ElementCollection
+    @CollectionTable(name = "user_following", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "followed_user_id")
+    private Set<Long> followingIds = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "user_blocked", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "blocked_user_id")
+    private Set<Long> blockedIds = new HashSet<>();
 }

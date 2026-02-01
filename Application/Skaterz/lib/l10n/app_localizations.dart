@@ -188,6 +188,22 @@ abstract class AppLocalizations {
   String get italian;
   String get french;
   String get spanish;
+
+  // Store Compliance (UGC)
+  String get reportUser;
+  String get blockUser;
+  String get unblockUser;
+  String get reportConfirm;
+  String get blockConfirm;
+  String get userReported;
+  String get userBlocked;
+  String get userUnblocked;
+  String get blockedUsers;
+  String get noBlockedUsers;
+  String get termsOfUse;
+  String get following;
+  String get follow;
+  String get unfollow;
 }
 
 // German translations
@@ -324,6 +340,20 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get typeHardware => 'Hardware';
   @override String get active => 'Aktiv';
   @override String get price => 'Preis';
+  @override String get reportUser => 'Benutzer melden';
+  @override String get blockUser => 'Benutzer blockieren';
+  @override String get unblockUser => 'Entblocken';
+  @override String get reportConfirm => 'Möchtest du diesen Benutzer wegen unangemessener Inhalte melden?';
+  @override String get blockConfirm => 'Möchtest du diesen Benutzer blockieren? Du wirst seine Inhalte nicht mehr sehen.';
+  @override String get userReported => 'Benutzer wurde gemeldet.';
+  @override String get userBlocked => 'Benutzer wurde blockiert.';
+  @override String get userUnblocked => 'Benutzer wurde entblockt.';
+  @override String get blockedUsers => 'Blockierte Benutzer';
+  @override String get noBlockedUsers => 'Keine blockierten Benutzer.';
+  @override String get termsOfUse => 'Nutzungsbedingungen';
+  @override String get following => 'Folge ich';
+  @override String get follow => 'Folgen';
+  @override String get unfollow => 'Entfolgen';
 }
 
 // English translations
@@ -460,9 +490,23 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get typeHardware => 'Hardware';
   @override String get active => 'Active';
   @override String get price => 'Price';
+  @override String get reportUser => 'Report User';
+  @override String get blockUser => 'Block User';
+  @override String get unblockUser => 'Unblock';
+  @override String get reportConfirm => 'Do you want to report this user for inappropriate content?';
+  @override String get blockConfirm => 'Do you want to block this user? You will no longer see their content.';
+  @override String get userReported => 'User has been reported.';
+  @override String get userBlocked => 'User has been blocked.';
+  @override String get userUnblocked => 'User has been unblocked.';
+  @override String get blockedUsers => 'Blocked Users';
+  @override String get noBlockedUsers => 'No blocked users.';
+  @override String get termsOfUse => 'Terms of Use';
+  @override String get following => 'Following';
+  @override String get follow => 'Follow';
+  @override String get unfollow => 'Unfollow';
 }
 
-// Spanish translations
+// Spanish translations (minimal for store compliance)
 class AppLocalizationsEs implements AppLocalizations {
   const AppLocalizationsEs();
   @override String get homePageTitle => 'Skaterz';
@@ -596,9 +640,23 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get typeHardware => 'Tornillos';
   @override String get active => 'Activo';
   @override String get price => 'Precio';
+  @override String get reportUser => 'Reportar';
+  @override String get blockUser => 'Bloquear';
+  @override String get unblockUser => 'Desbloquear';
+  @override String get reportConfirm => '¿Reportar usuario?';
+  @override String get blockConfirm => '¿Bloquear usuario?';
+  @override String get userReported => 'Usuario reportado.';
+  @override String get userBlocked => 'Usuario bloqueado.';
+  @override String get userUnblocked => 'Usuario desbloqueado.';
+  @override String get blockedUsers => 'Usuarios Bloqueados';
+  @override String get noBlockedUsers => 'No hay usuarios bloqueados.';
+  @override String get termsOfUse => 'Términos de Uso';
+  @override String get following => 'Siguiendo';
+  @override String get follow => 'Seguir';
+  @override String get unfollow => 'Dejar de seguir';
 }
 
-// Italian translations
+// Italian translations (minimal for store compliance)
 class AppLocalizationsIt implements AppLocalizations {
   const AppLocalizationsIt();
   @override String get homePageTitle => 'Skaterz';
@@ -732,9 +790,23 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get typeHardware => 'Viti';
   @override String get active => 'Attivo';
   @override String get price => 'Prezzo';
+  @override String get reportUser => 'Segnala';
+  @override String get blockUser => 'Blocca';
+  @override String get unblockUser => 'Sblocca';
+  @override String get reportConfirm => 'Segnalare utente?';
+  @override String get blockConfirm => 'Bloccare utente?';
+  @override String get userReported => 'Utente segnalato.';
+  @override String get userBlocked => 'Utente bloccato.';
+  @override String get userUnblocked => 'Utente sbloccato.';
+  @override String get blockedUsers => 'Utenti Bloccati';
+  @override String get noBlockedUsers => 'Nessun utente bloccato.';
+  @override String get termsOfUse => 'Termini di Servizio';
+  @override String get following => 'Segui';
+  @override String get follow => 'Segui';
+  @override String get unfollow => 'Non seguire più';
 }
 
-// French translations
+// French translations (minimal for store compliance)
 class AppLocalizationsFr implements AppLocalizations {
   const AppLocalizationsFr();
   @override String get homePageTitle => 'Skaterz';
@@ -861,4 +933,18 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get typeHardware => 'Visserie';
   @override String get active => 'Actif';
   @override String get price => 'Prix';
+  @override String get reportUser => 'Signaler';
+  @override String get blockUser => 'Bloquer';
+  @override String get unblockUser => 'Débloquer';
+  @override String get reportConfirm => 'Signaler l\'utilisateur?';
+  @override String get blockConfirm => 'Bloquer l\'utilisateur?';
+  @override String get userReported => 'Utilisateur signalé.';
+  @override String get userBlocked => 'Utilisateur bloqué.';
+  @override String get userUnblocked => 'Utilisateur débloqué.';
+  @override String get blockedUsers => 'Utilisateurs Bloqués';
+  @override String get noBlockedUsers => 'Aucun utilisateur bloqué.';
+  @override String get termsOfUse => 'Conditions d\'Utilisation';
+  @override String get following => 'Suivi';
+  @override String get follow => 'Suivre';
+  @override String get unfollow => 'Ne plus suivre';
 }

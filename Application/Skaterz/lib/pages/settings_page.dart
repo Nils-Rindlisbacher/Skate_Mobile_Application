@@ -117,6 +117,60 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void _showBlockedUsers() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Text(widget.localizations.blockedUsers, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Divider(),
+            Expanded(
+              child: FutureBuilder<List<dynamic>>(
+                future: _apiService.getBlockedUsers(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                  if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+                  final blocked = snapshot.data ?? [];
+                  if (blocked.isEmpty) return Center(child: Text(widget.localizations.noBlockedUsers));
+                  
+                  return ListView.builder(
+                    itemCount: blocked.length,
+                    itemBuilder: (context, index) {
+                      final user = blocked[index];
+                      return ListTile(
+                        title: Text(user['name'] ?? user['username']),
+                        subtitle: Text('@${user['username']}'),
+                        trailing: TextButton(
+                          onPressed: () async {
+                            try {
+                              await _apiService.unblockUser(user['id']);
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userUnblocked)));
+                              }
+                            } catch (e) {
+                              if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                            }
+                          },
+                          child: Text(widget.localizations.unblockUser),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showLanguageDialog() {
     final languages = [
       {'name': widget.localizations.german, 'flag': '🇩🇪', 'code': 'de'},
@@ -221,6 +275,13 @@ class _SettingsPageState extends State<SettingsPage> {
               activeColor: AppColors.primary,
             ),
             
+            _buildSectionHeader(widget.localizations.blockedUsers),
+            ListTile(
+              leading: Icon(Icons.block, color: primaryIconColor),
+              title: Text(widget.localizations.blockedUsers),
+              onTap: _showBlockedUsers,
+            ),
+
             _buildSectionHeader(widget.localizations.deleteAccount),
             ListTile(
               leading: const Icon(Icons.delete_forever, color: Colors.red),
@@ -228,6 +289,28 @@ class _SettingsPageState extends State<SettingsPage> {
               onTap: _showDeleteConfirmation,
             ),
           ],
+          
+          _buildSectionHeader(widget.localizations.termsOfUse),
+          ListTile(
+            leading: Icon(Icons.description_outlined, color: primaryIconColor),
+            title: Text(widget.localizations.termsOfUse),
+            onTap: () {
+              // Usually opens a URL. For now, show a dialog.
+              showAboutDialog(
+                context: context,
+                applicationName: 'Skaterz',
+                applicationVersion: '1.0.0',
+                applicationLegalese: '© 2024 Skaterz App. All rights reserved.',
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: Text('By using Skaterz, you agree to our zero-tolerance policy for abusive content. Users who upload inappropriate profile pictures or use offensive language will be permanently banned.'),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 40),
         ],
       ),
     );
