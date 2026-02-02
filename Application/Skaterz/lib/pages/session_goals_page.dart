@@ -182,7 +182,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
     return Scaffold(
       appBar: AppBar(
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
           ),
         ),
@@ -209,7 +209,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                     clipBehavior: Clip.antiAlias,
                     child: Container(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,
                       ),
                       child: ListTile(

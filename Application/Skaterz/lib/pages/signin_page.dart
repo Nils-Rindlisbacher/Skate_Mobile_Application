@@ -87,7 +87,9 @@ class _SignInPageState extends State<SignInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
+        ),
         title: Text(
           widget.localizations.registerPageTitle,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -108,7 +110,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _nameController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.name,
-                    prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.person_outline, color: AppColors.getDynamicPrimary(context)),
                   ),
                   validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterName : null,
                 ),
@@ -117,7 +119,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _usernameController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.username,
-                    prefixIcon: const Icon(Icons.alternate_email, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.alternate_email, color: AppColors.getDynamicPrimary(context)),
                   ),
                   validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterUsername : null,
                 ),
@@ -126,7 +128,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.email,
-                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.email_outlined, color: AppColors.getDynamicPrimary(context)),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterEmail : null,
@@ -136,7 +138,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.password,
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.lock_outline, color: AppColors.getDynamicPrimary(context)),
                   ),
                   obscureText: true,
                   validator: (value) => (value == null || value.length < 6) ? widget.localizations.passwordTooShort : null,
@@ -145,13 +147,17 @@ class _SignInPageState extends State<SignInPage> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: AppColors.getDynamicPrimary(context),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white) 
+                    ? const SizedBox(
+                        height: 20, 
+                        width: 20, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      ) 
                     : Text(widget.localizations.registerButton, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],

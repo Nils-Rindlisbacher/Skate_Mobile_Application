@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:skaterz/core/constants.dart';
 
 class ApiService {
   static const bool useProduction = true; 
@@ -87,6 +89,32 @@ class ApiService {
     _memoryCache['theme_mode'] = mode;
   }
 
+  // --- Custom Colors Management ---
+  Future<void> saveCustomColor(String key, Color color) async {
+    final hex = color.value.toRadixString(16);
+    await _storage.write(key: 'color_$key', value: hex);
+    _memoryCache['color_$key'] = hex;
+  }
+
+  Future<void> loadCustomColors() async {
+    final keys = ['primary', 'primaryDark', 'secondary', 'primaryOld', 'secondaryOld', 'sidebarTop', 'sidebarBottom'];
+    for (var key in keys) {
+      final hex = await _storage.read(key: 'color_$key');
+      if (hex != null) {
+        final color = Color(int.parse(hex, radix: 16));
+        switch (key) {
+          case 'primary': AppColors.primary = color; break;
+          case 'primaryDark': AppColors.primaryDark = color; break;
+          case 'secondary': AppColors.secondary = color; break;
+          case 'primaryOld': AppColors.primaryOld = color; break;
+          case 'secondaryOld': AppColors.secondaryOld = color; break;
+          case 'sidebarTop': AppColors.sidebarTop = color; break;
+          case 'sidebarBottom': AppColors.sidebarBottom = color; break;
+        }
+      }
+    }
+  }
+
   // --- Caching Helpers ---
   final Map<String, dynamic> _memoryCache = {};
 
@@ -133,7 +161,6 @@ class ApiService {
   }
 
   Future<http.Response> _get(String path, {Duration timeout = const Duration(seconds: 60)}) async {
-    // Add a cache-busting timestamp to the URL for web
     final Uri uri = Uri.parse('$baseUrl$path');
     final Map<String, String> queryParams = Map.from(uri.queryParameters);
     queryParams['_t'] = DateTime.now().millisecondsSinceEpoch.toString();
@@ -311,6 +338,34 @@ class ApiService {
       if (cached != null && cached is List) return cached;
       rethrow;
     }
+  }
+
+  // --- Media Gallery ---
+  Future<List<dynamic>> getMyMedia() async {
+    try {
+      final response = await _get('/media');
+      final data = _handleResponse(response);
+      return (data != null && data is List) ? data : [];
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> addMedia(Map<String, dynamic> mediaData) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/media'),
+      headers: await _getHeaders(),
+      body: jsonEncode(mediaData),
+    ).timeout(const Duration(seconds: 60));
+    _handleResponse(response);
+  }
+
+  Future<void> deleteMedia(int id) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/media/$id'),
+      headers: await _getHeaders(),
+    ).timeout(const Duration(seconds: 30));
+    _handleResponse(response);
   }
 
   // --- Data Services ---

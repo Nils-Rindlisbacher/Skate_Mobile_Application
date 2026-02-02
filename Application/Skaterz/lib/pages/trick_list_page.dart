@@ -294,7 +294,7 @@ class _TrickListPageState extends State<TrickListPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(currentTrickData['name'] ?? widget.localizations.tricks, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            Text(currentTrickData['name'] ?? widget.localizations.tricks, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
                           ],
                         ),
                       ),
@@ -440,7 +440,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
         title: Text(widget.categoryName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
@@ -465,7 +465,7 @@ class _TrickListPageState extends State<TrickListPage> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: widget.localizations.searchTricks,
-                    prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                    prefixIcon: Icon(Icons.search_rounded, color: AppColors.primary),
                     suffixIcon: _searchController.text.isNotEmpty 
                       ? IconButton(
                           icon: const Icon(Icons.clear_rounded),

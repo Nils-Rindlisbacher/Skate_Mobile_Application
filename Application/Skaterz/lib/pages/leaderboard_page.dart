@@ -121,7 +121,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     if (!_isUserPublic) {
       return Scaffold(
         appBar: AppBar(
-          flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+          flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
           title: Text(widget.localizations.leaderboardMenuItem, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           leading: !isDesktop ? IconButton(
             icon: const Icon(Icons.menu),
@@ -184,7 +184,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
         title: Text(
           widget.localizations.leaderboardMenuItem,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

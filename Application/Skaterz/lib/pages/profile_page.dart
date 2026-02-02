@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:giphy_get/giphy_get.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/models/skating_session.dart';
 import 'package:skaterz/services/api_service.dart';
@@ -40,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
   List<dynamic> _recentlyCompleted = [];
   List<dynamic> _allCompleted = [];
   List<SkatingSession> _sessions = [];
+  List<dynamic> _mediaItems = [];
   
   int _totalBaseTricks = 0;
   int _currentStreak = 0;
@@ -148,6 +150,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _apiService.getSkatingSessions(),
         _apiService.getTrickCount(),
         _apiService.getWishlistTricks(),
+        _apiService.getMyMedia(),
       ];
       final results = await Future.wait(requests);
       if (mounted) {
@@ -163,6 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
           }
           _totalBaseTricks = results[3] as int? ?? 0;
           _wishlistTricks = (results[4] as List?) ?? [];
+          _mediaItems = results[5] as List<dynamic>;
           _isLoading = false;
         });
         const storage = FlutterSecureStorage();
@@ -208,7 +212,56 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _pickAndUploadImage() async {
+  void _showImageSourcePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(widget.localizations.profilePictureUpdated.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2)),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _sourceButton(Icons.image_rounded, 'Gallery', _pickFromGallery),
+                _sourceButton(Icons.gif_box_rounded, 'Giphy', _pickFromGiphy),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sourceButton(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: Icon(icon, color: AppColors.primary, size: 32),
+          ),
+          const SizedBox(height: 12),
+          Text(label.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickFromGallery() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery, maxWidth: 512, maxHeight: 512, imageQuality: 75);
       if (image == null) return;
@@ -227,9 +280,78 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _pickFromGiphy() async {
+    try {
+      final giphyGif = await GiphyGet.getGif(
+        context: context,
+        apiKey: 'l86itSDv66Z6vIDZFr6vPyitshnyMT6Z', 
+        tabColor: AppColors.primary,
+        debounceTimeInMilliseconds: 350,
+      );
+
+      if (giphyGif == null || giphyGif.images?.original?.url == null) return;
+
+      setState(() => _isUploadingImage = true);
+      await _apiService.uploadProfileImage(giphyGif.images!.original!.url!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.profilePictureUpdated)));
+        _loadData(forceRefresh: true);
+        widget.onUserDataChanged();
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
+    }
+  }
+
+  void _addMediaItem() async {
+    final XFile? file = await _picker.pickMedia();
+    if (file == null) return;
+
+    final trickController = TextEditingController();
+    final noteController = TextEditingController();
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add to Private Gallery'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: trickController, decoration: const InputDecoration(labelText: 'Trick Name', hintText: 'e.g. Kickflip')),
+            const SizedBox(height: 12),
+            TextField(controller: noteController, decoration: const InputDecoration(labelText: 'Note / Location', hintText: 'e.g. Berlin Skatepark')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
+          ElevatedButton(
+            onPressed: () async {
+              final bytes = await file.readAsBytes();
+              final base64Media = base64Encode(bytes);
+              
+              await _apiService.addMedia({
+                'path': base64Media,
+                'trickName': trickController.text,
+                'note': noteController.text,
+                'isVideo': file.name.toLowerCase().endsWith('.mp4') || file.name.toLowerCase().endsWith('.mov'),
+              });
+              
+              Navigator.pop(context);
+              _loadData();
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
@@ -243,11 +365,11 @@ class _ProfilePageState extends State<ProfilePage> {
             Container(
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: AppColors.getDynamicPrimary(context).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
               child: Row(children: [
-                const Icon(Icons.local_fire_department_rounded, color: AppColors.primary, size: 18),
+                Icon(Icons.local_fire_department_rounded, color: AppColors.getDynamicPrimary(context), size: 18),
                 const SizedBox(width: 4),
-                Text('$_currentStreak', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900)),
+                Text('$_currentStreak', style: TextStyle(color: AppColors.getDynamicPrimary(context), fontWeight: FontWeight.w900)),
               ]),
             ),
         ],
@@ -259,7 +381,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () => _showMoodPicker(),
               icon: const Icon(Icons.skateboarding_rounded, color: Colors.white),
               label: Text(widget.localizations.skatedToday.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1)),
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.getDynamicPrimary(context),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
       body: _isLoading && _userData == null
@@ -285,6 +407,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           const SizedBox(height: 24),
+                          
+                          _buildMediaGallery(),
+                          const SizedBox(height: 24),
+
                           _buildRecentlyCompletedSection(),
                           const SizedBox(height: 24),
                           _buildStanceMasteryGrid(),
@@ -307,14 +433,96 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildMediaGallery() {
+    return _buildSectionContainer(
+      title: 'Private Media Gallery',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_mediaItems.isEmpty)
+            const Text('No private photos or videos yet.', style: TextStyle(color: Colors.grey, fontSize: 12))
+          else
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _mediaItems.length,
+                itemBuilder: (context, index) {
+                  final item = _mediaItems[index];
+                  final bool isUrl = item['path'].startsWith('http');
+                  
+                  return Container(
+                    width: 110,
+                    margin: const EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                      image: item['isVideo'] ? null : DecorationImage(
+                        image: isUrl ? NetworkImage(item['path']) : MemoryImage(base64Decode(item['path'])) as ImageProvider,
+                        fit: BoxFit.cover
+                      ),
+                    ),
+                    child: Stack(
+                      children: [
+                        if (item['isVideo']) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 40)),
+                        Positioned(
+                          bottom: 0, left: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+                                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(item['trickName'] ?? 'Session', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                if (item['note'] != null) Text(item['note'], style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 8), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton.icon(
+                onPressed: _addMediaItem,
+                icon: const Icon(Icons.add_a_photo_rounded, size: 18),
+                label: const Text('Add Media', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              const Expanded(
+                child: Text(
+                  'Content Sharing will come soon!',
+                  style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.grey, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.right,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHeroHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 100, bottom: 40),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withValues(alpha: 0.1), Colors.transparent],
+          colors: [AppColors.getDynamicPrimary(context).withValues(alpha: 0.1), Colors.transparent],
           begin: Alignment.topCenter, end: Alignment.bottomCenter,
         ),
       ),
@@ -327,8 +535,8 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
-            child: Text('$_friendCount ${widget.localizations.friends.toUpperCase()}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+            decoration: BoxDecoration(color: AppColors.getDynamicPrimary(context).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
+            child: Text('$_friendCount ${widget.localizations.friends.toUpperCase()}', style: TextStyle(color: AppColors.getDynamicPrimary(context), fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
           ),
         ],
       ),
@@ -350,7 +558,7 @@ class _ProfilePageState extends State<ProfilePage> {
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.primary.withValues(alpha: 0.05)),
+            border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.05) : AppColors.primaryOld.withValues(alpha: 0.05)),
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 20, offset: const Offset(0, 10))],
           ),
           child: child,
@@ -387,31 +595,37 @@ class _ProfilePageState extends State<ProfilePage> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.4),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.65),
       itemCount: 4,
       itemBuilder: (context, index) {
         final stance = stanceColors.keys.elementAt(index);
         final count = counts[stance] ?? 0;
         final color = stanceColors[stance]!;
         final double progress = _totalBaseTricks > 0 ? count / _totalBaseTricks : 0;
+
         return Container(
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: color.withValues(alpha: 0.1)),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(_formatStance(stance).toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color, letterSpacing: 1)),
-              const SizedBox(height: 8),
-              Text('${(progress * 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color)),
-              const SizedBox(height: 4),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(value: progress, backgroundColor: color.withValues(alpha: 0.1), valueColor: AlwaysStoppedAnimation(color), minHeight: 4),
+              Text(stance.substring(0, 3).toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: color, letterSpacing: 0.5)),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(width: 45, height: 45, child: CircularProgressIndicator(value: progress, strokeWidth: 4, backgroundColor: color.withValues(alpha: 0.1), valueColor: AlwaysStoppedAnimation(color), strokeCap: StrokeCap.round)),
+                    Text('${(progress * 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color)),
+                  ],
+                ),
               ),
+              const SizedBox(height: 8),
+              Text('$count/$_totalBaseTricks', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5))),
             ],
           ),
         );
@@ -420,26 +634,32 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAvatar() {
-    final String? base64String = _userData?['profile_image'] ?? _userData?['profileImage'];
+    final String? avatarData = _userData?['profile_image'] ?? _userData?['profileImage'];
+    final bool isUrl = avatarData != null && avatarData.startsWith('http');
+
     return Center(
       child: Stack(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(gradient: AppColors.primaryGradient, shape: BoxShape.circle),
+            decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context), shape: BoxShape.circle),
             child: CircleAvatar(
               radius: 60, backgroundColor: Colors.white,
               child: CircleAvatar(
                 radius: 56, backgroundColor: Colors.grey[100],
-                backgroundImage: (base64String != null && base64String.isNotEmpty) ? MemoryImage(const Base64Decoder().convert(base64String)) : null,
-                child: (base64String == null || base64String.isEmpty) ? (_isUploadingImage ? const CircularProgressIndicator() : const Icon(Icons.person_rounded, size: 50, color: Colors.grey)) : (_isUploadingImage ? const CircularProgressIndicator() : null),
+                backgroundImage: avatarData != null && avatarData.isNotEmpty
+                    ? (isUrl ? NetworkImage(avatarData) : MemoryImage(const Base64Decoder().convert(avatarData)) as ImageProvider)
+                    : null,
+                child: (avatarData == null || avatarData.isEmpty) 
+                    ? (_isUploadingImage ? const CircularProgressIndicator() : const Icon(Icons.person_rounded, size: 50, color: Colors.grey)) 
+                    : (_isUploadingImage ? const CircularProgressIndicator() : null),
               ),
             ),
           ),
           Positioned(
             bottom: 5, right: 5,
             child: GestureDetector(
-              onTap: _isUploadingImage ? null : _pickAndUploadImage,
+              onTap: _isUploadingImage ? null : _showImageSourcePicker,
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),

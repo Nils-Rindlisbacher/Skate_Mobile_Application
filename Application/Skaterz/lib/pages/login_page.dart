@@ -71,7 +71,9 @@ class _LogInPageState extends State<LogInPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
+        ),
         title: Text(
           widget.localizations.loginPageTitle,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -92,7 +94,7 @@ class _LogInPageState extends State<LogInPage> {
               controller: _usernameController,
               decoration: InputDecoration(
                 labelText: widget.localizations.username,
-                prefixIcon: const Icon(Icons.person, color: AppColors.primary),
+                prefixIcon: Icon(Icons.person, color: AppColors.getDynamicPrimary(context)),
               ),
               onFieldSubmitted: (_) => _handleLogin(),
             ),
@@ -102,7 +104,7 @@ class _LogInPageState extends State<LogInPage> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: widget.localizations.password,
-                prefixIcon: const Icon(Icons.lock, color: AppColors.primary),
+                prefixIcon: Icon(Icons.lock, color: AppColors.getDynamicPrimary(context)),
               ),
               onFieldSubmitted: (_) => _handleLogin(),
             ),
@@ -110,7 +112,7 @@ class _LogInPageState extends State<LogInPage> {
             ElevatedButton(
               onPressed: _isLoading ? null : _handleLogin,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: AppColors.getDynamicPrimary(context),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.all(16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -139,9 +141,9 @@ class _LogInPageState extends State<LogInPage> {
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.all(16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                side: const BorderSide(color: AppColors.primary),
+                side: BorderSide(color: AppColors.getDynamicPrimary(context)),
               ),
-              child: Text(widget.localizations.registerButton, style: const TextStyle(color: AppColors.primary)),
+              child: Text(widget.localizations.registerButton, style: TextStyle(color: AppColors.getDynamicPrimary(context))),
             ),
           ],
         ),

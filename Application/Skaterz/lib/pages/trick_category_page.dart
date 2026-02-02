@@ -67,7 +67,9 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
+        ),
         title: Text(
           widget.localizations.trickListMenuItem,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -104,7 +106,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
                           widget.localizations.allTricks,
                           Icons.apps_rounded,
                           null,
-                          AppColors.primary,
+                          AppColors.getDynamicPrimary(context),
                         );
                       }
                       final category = _allCategories[index - 1];
@@ -114,7 +116,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
                         category['name'] ?? widget.localizations.category,
                         Icons.skateboarding_rounded,
                         category['id'],
-                        AppColors.primary,
+                        AppColors.getDynamicPrimary(context),
                       );
                     },
                   );
@@ -154,7 +156,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 40, color: color),

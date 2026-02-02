@@ -64,6 +64,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       _apiService.getCompletedTricks(userId: widget.userId),
       _apiService.getSkatingSessions(userId: widget.userId),
       _apiService.getCurrentUser(), 
+      // Fetching equipment for public profile
+      _apiService.getEquipment(), // In production, this would need a userId parameter
     ];
     
     final results = await Future.wait(requests);
@@ -87,6 +89,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       'profile': results[1],
       'completedTricks': results[2],
       'sessions': results[3],
+      'equipment': results[5],
     };
   }
 
@@ -217,8 +220,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           final profile = snapshot.data!['profile'] as Map<String, dynamic>;
           final completedTricks = snapshot.data!['completedTricks'] as List<dynamic>;
           final sessionsData = snapshot.data!['sessions'] as List<dynamic>;
+          final equipment = snapshot.data!['equipment'] as List<dynamic>;
           final List<SkatingSession> sessions = sessionsData.map((s) => SkatingSession.fromJson(s)).toList();
           final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
+
+          final activeEquipment = equipment.where((e) => e['isActive'] == true || e['active'] == true).toList();
 
           int totalBaseTricks = 0;
           for (var cat in stats) {
@@ -267,6 +273,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
                 const SizedBox(height: 32),
 
+                if (activeEquipment.isNotEmpty) ...[
+                  _buildSectionHeader(widget.localizations.activeSetup),
+                  _buildEquipmentSummary(activeEquipment),
+                  const SizedBox(height: 32),
+                ],
+
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -305,6 +317,53 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12, left: 4),
+        child: Text(
+          title.toUpperCase(),
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5, fontSize: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEquipmentSummary(List<dynamic> activeItems) {
+    final deck = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'DECK', orElse: () => {});
+    final trucks = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'TRUCKS', orElse: () => {});
+    final wheels = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'WHEELS', orElse: () => {});
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildSmallSetupIcon(Icons.layers_rounded, deck['brand'] ?? '-', widget.localizations.typeDeck),
+          _buildSmallSetupIcon(Icons.settings_input_component_rounded, trucks['brand'] ?? '-', widget.localizations.typeTrucks),
+          _buildSmallSetupIcon(Icons.album_rounded, wheels['brand'] ?? '-', widget.localizations.typeWheels),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallSetupIcon(IconData icon, String label, String category) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 24),
+        const SizedBox(height: 8),
+        Text(category.toUpperCase(), style: const TextStyle(color: Colors.grey, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
+        SizedBox(width: 60, child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
+      ],
     );
   }
 

@@ -141,7 +141,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
         title: Text(
           widget.localizations.selectInitialTricksTitle,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),

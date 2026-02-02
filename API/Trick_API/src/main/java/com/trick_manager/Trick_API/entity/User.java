@@ -34,6 +34,12 @@ public class User {
     @JsonProperty("is_public")
     private boolean isPublic = true;
 
+    @Column(name = "skate_wins")
+    private int skateWins = 0;
+
+    @Column(name = "skate_losses")
+    private int skateLosses = 0;
+
     @ElementCollection
     @CollectionTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "friend_user_id")

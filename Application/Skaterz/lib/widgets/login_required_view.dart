@@ -27,7 +27,7 @@ class LoginRequiredView extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
           ),
         ),

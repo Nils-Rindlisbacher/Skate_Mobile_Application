@@ -56,7 +56,9 @@ class _FriendsPageState extends State<FriendsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
+        ),
         title: Text(widget.localizations.friends.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
         leading: !isDesktop ? IconButton(
           icon: const Icon(Icons.menu_rounded, color: Colors.white),
@@ -89,17 +91,18 @@ class _FriendsPageState extends State<FriendsPage> {
                     itemCount: _friends.length,
                     itemBuilder: (context, index) {
                       final friend = _friends[index];
-                      final String? base64Image = friend['profile_image'] ?? friend['profileImage'];
+                      final String? avatarData = friend['profile_image'] ?? friend['profileImage'];
+                      final bool isUrl = avatarData != null && avatarData.startsWith('http');
                       
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey.withValues(alpha: 0.1),
-                            backgroundImage: (base64Image != null && base64Image.isNotEmpty)
-                                ? MemoryImage(const Base64Decoder().convert(base64Image))
+                            backgroundImage: avatarData != null && avatarData.isNotEmpty
+                                ? (isUrl ? NetworkImage(avatarData) : MemoryImage(base64Decode(avatarData)) as ImageProvider)
                                 : null,
-                            child: (base64Image == null || base64Image.isEmpty) 
+                            child: (avatarData == null || avatarData.isEmpty) 
                                 ? const Icon(Icons.person_rounded, color: Colors.grey) 
                                 : null,
                           ),

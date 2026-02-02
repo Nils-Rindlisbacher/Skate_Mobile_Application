@@ -34,6 +34,7 @@ abstract class AppLocalizations {
   String get allTricks;
   String get loginRequiredWarning;
   String get guest;
+  String get delete;
   
   // New strings for full app localization
   String get tricksCompleted;
@@ -241,6 +242,7 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get allTricks => 'Alle Tricks';
   @override String get loginRequiredWarning => 'Bitte melde dich an, um diese Funktion zu nutzen.';
   @override String get guest => 'Gast';
+  @override String get delete => 'Löschen';
   @override String get tricksCompleted => 'Tricks abgeschlossen';
   @override String get tricks => 'Tricks';
   @override String get complete => 'Abschließen';
@@ -395,6 +397,7 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get allTricks => 'All Tricks';
   @override String get loginRequiredWarning => 'Please log in to use this function.';
   @override String get guest => 'Guest';
+  @override String get delete => 'Delete';
   @override String get tricksCompleted => 'Tricks Completed';
   @override String get tricks => 'Tricks';
   @override String get complete => 'Complete';
@@ -549,6 +552,7 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get allTricks => 'Todos';
   @override String get loginRequiredWarning => 'Por favor, inicia sesión para usar esta función.';
   @override String get guest => 'Invitado';
+  @override String get delete => 'Eliminar';
   @override String get tricksCompleted => 'Completado';
   @override String get tricks => 'Trucos';
   @override String get complete => 'Completar';
@@ -703,6 +707,7 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get allTricks => 'Tutti';
   @override String get loginRequiredWarning => 'Per favore, accedi per utilizzare questa funzione.';
   @override String get guest => 'Ospite';
+  @override String get delete => 'Cancella';
   @override String get tricksCompleted => 'Fatto';
   @override String get tricks => 'Trick';
   @override String get complete => 'Completa';
@@ -857,6 +862,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get allTricks => 'Tous';
   @override String get loginRequiredWarning => 'S\'il vous plaît, connectez-vous pour utilizzare questa funzione.';
   @override String get guest => 'Invité';
+  @override String get delete => 'Supprimer';
   @override String get tricksCompleted => 'Fait';
   @override String get tricks => 'Tricks';
   @override String get complete => 'Compléter';
@@ -916,7 +922,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get personalization => 'Perso'; @override String get darkMode => 'Sombre';
   @override String get changeLanguage => 'Langue'; @override String get skatedToday => 'Skate aujourd\'hui';
   @override String get endSession => 'Fin'; @override String get skatingNow => 'Skate';
-  @override String get activityHeatmap => 'Activité'; @override String get streakCount => 'Racha';
+  @override String get activityHeatmap => 'Activität'; @override String get streakCount => 'Racha';
   @override String get sessionMood => 'Comment?'; @override String get stance => 'Position';
   @override String get visibilityUpdated => 'Mis à jour';
   @override String get noTricksFound => 'Rien';
@@ -971,5 +977,5 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get unfriend => 'Supprimer Ami';
   @override String get friend => 'Ami';
   
-  @override String get reportReason => 'Contenu inapproprié';
+  @override String get reportReason => 'Contenu inappropriat';
 }
