@@ -34,7 +34,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   final ApiService _apiService = ApiService();
   List<dynamic> _leaderboard = [];
   List<dynamic> _categories = [];
-  List<int> _followedUserIds = [];
+  List<int> _friendIds = [];
   List<int> _blockedUserIds = [];
   bool _isLoading = true;
   int? _selectedCategoryId;
@@ -73,12 +73,12 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
       if (mounted) {
         setState(() {
-          _leaderboard = results[0];
-          _categories = results[1];
+          _leaderboard = results[0] as List<dynamic>;
+          _categories = results[1] as List<dynamic>;
           
           final user = results[2] as Map<String, dynamic>?;
           if (user != null) {
-            _followedUserIds = List<int>.from(user['followingIds'] ?? user['following_ids'] ?? []);
+            _friendIds = List<int>.from(user['friendIds'] ?? user['friend_ids'] ?? []);
             _blockedUserIds = List<int>.from(user['blockedIds'] ?? user['blocked_ids'] ?? []);
           }
           
@@ -101,98 +101,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       case 'FAKIE': return widget.localizations.fakie;
       default: return stance;
     }
-  }
-
-  void _showUserOptions(int userId, String username) {
-    final bool isFollowing = _followedUserIds.contains(userId);
-    
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(isFollowing ? Icons.person_remove_outlined : Icons.person_add_outlined),
-                title: Text(isFollowing ? widget.localizations.unfollow : widget.localizations.follow),
-                onTap: () async {
-                  Navigator.pop(context);
-                  try {
-                    if (isFollowing) {
-                      await _apiService.unfollowUser(userId);
-                    } else {
-                      await _apiService.followUser(userId);
-                    }
-                    _loadData(); // Refresh to update "Following" tags
-                  } catch (e) {
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-                  }
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
-                title: Text(widget.localizations.reportUser),
-                onTap: () {
-                  Navigator.pop(context);
-                  _confirmAction(
-                    widget.localizations.reportUser,
-                    widget.localizations.reportConfirm,
-                    () async {
-                      await _apiService.reportUser(userId, "Inappropriate content");
-                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
-                    }
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.block, color: Colors.red),
-                title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
-                onTap: () {
-                  Navigator.pop(context);
-                  _confirmAction(
-                    widget.localizations.blockUser,
-                    widget.localizations.blockConfirm,
-                    () async {
-                      await _apiService.blockUser(userId);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
-                        _loadData();
-                      }
-                    }
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _confirmAction(String title, String message, Future<void> Function() action) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await action();
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-              }
-            },
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -375,7 +283,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                 ? (rawId is int ? rawId : int.tryParse(rawId.toString()))
                                 : null;
                             
-                            final bool isFollowing = userId != null && _followedUserIds.contains(userId);
+                            final bool isFriend = userId != null && _friendIds.contains(userId);
 
                             return Card(
                               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -391,7 +299,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                         username: username,
                                       ),
                                     ),
-                                  );
+                                  ).then((_) => _loadData()); // Refresh if user returns from profile
                                 },
                                 child: ListTile(
                                   leading: Row(
@@ -423,46 +331,36 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                   title: Row(
                                     children: [
                                       Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                                      if (isFollowing)
+                                      if (isFriend)
                                         Container(
                                           margin: const EdgeInsets.only(left: 8),
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.green.withValues(alpha: 0.1),
+                                            color: Colors.blue.withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                                           ),
                                           child: Text(
-                                            widget.localizations.following.toUpperCase(),
-                                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.green),
+                                            widget.localizations.friend.toUpperCase(),
+                                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
                                           ),
                                         ),
                                     ],
                                   ),
                                   subtitle: Text('@$username'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          '$completedCount ${widget.localizations.tricks}',
-                                          style: TextStyle(
-                                            color: isDark ? AppColors.secondary : AppColors.primary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                  trailing: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      '$completedCount ${widget.localizations.tricks}',
+                                      style: TextStyle(
+                                        color: isDark ? AppColors.secondary : AppColors.primary,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      if (userId != null && userId != widget.userData?['id'])
-                                        IconButton(
-                                          icon: const Icon(Icons.more_vert),
-                                          onPressed: () => _showUserOptions(userId, username),
-                                        ),
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),

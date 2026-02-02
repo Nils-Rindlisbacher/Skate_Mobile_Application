@@ -10,6 +10,7 @@ import 'package:skaterz/pages/settings_page.dart';
 import 'package:skaterz/pages/trick_category_page.dart';
 import 'package:skaterz/pages/session_goals_page.dart';
 import 'package:skaterz/pages/equipment_page.dart';
+import 'package:skaterz/pages/friends_page.dart';
 import 'package:skaterz/widgets/side_menu.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/core/app_theme.dart';
@@ -42,7 +43,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _locale = 'de';
   bool _isLoggedIn = false;
-  ThemeMode _themeMode = ThemeMode.light;
+  ThemeMode _themeMode = ThemeMode.dark; // Default to Dark Mode
   Map<String, dynamic>? _userData;
   final ApiService _apiService = ApiService();
 
@@ -67,7 +68,7 @@ class _MyAppState extends State<MyApp> {
     final mode = await _apiService.getCachedData('theme_mode');
     if (mode != null && mounted) {
       setState(() {
-        _themeMode = mode == 'dark' ? ThemeMode.dark : ThemeMode.light;
+        _themeMode = mode == 'light' ? ThemeMode.light : ThemeMode.dark;
       });
     }
   }
@@ -187,7 +188,6 @@ class _MainShellState extends State<MainShell> {
   bool _isMenuExpanded = false;
 
   void _onItemTapped(int index) {
-    // If we are on a pushed page, pop to root first
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
@@ -243,9 +243,10 @@ class _MainShellState extends State<MainShell> {
             onTrickListTap: () => _onItemTapped(2),
             onProgressTap: () => _onItemTapped(3),
             onLeaderboardTap: () => _onItemTapped(4),
-            onSessionGoalsTap: () => _onItemTapped(5),
-            onEquipmentTap: () => _onItemTapped(6),
-            onSettingsTap: () => _onItemTapped(7),
+            onFriendsTap: () => _onItemTapped(5),
+            onSessionGoalsTap: () => _onItemTapped(6),
+            onEquipmentTap: () => _onItemTapped(7),
+            onSettingsTap: () => _onItemTapped(8),
             isDarkMode: widget.isDarkMode,
             onThemeToggle: widget.onThemeToggle,
           );
@@ -298,9 +299,13 @@ class _MainShellState extends State<MainShell> {
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
-                            onNavigateToSettings: () => _onItemTapped(7),
+                            onNavigateToSettings: () => _onItemTapped(8),
                             userData: widget.userData,
                             isActive: _selectedIndex == 4,
+                            onMenuTap: _openDrawer,
+                          ),
+                          FriendsPage(
+                            localizations: widget.localizations,
                             onMenuTap: _openDrawer,
                           ),
                           SessionGoalsPage(
@@ -356,18 +361,20 @@ class _HomeView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color textColor = isDarkMode ? AppColors.primary : AppColors.primaryOld;
+    
     final content = Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.skateboarding, size: 100, color: AppColors.primary),
+          Icon(Icons.skateboarding, size: 100, color: textColor),
           const SizedBox(height: 20),
           Text(
             localizations.welcomeMessage,
             style: TextStyle(
               fontSize: 24, 
               fontWeight: FontWeight.bold, 
-              color: isDarkMode ? Colors.greenAccent : AppColors.primary
+              color: textColor,
             ),
           ),
         ],
@@ -377,7 +384,11 @@ class _HomeView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: isDarkMode ? AppColors.primaryGradient : AppColors.oldGradient
+          ),
+        ),
         title: Text(
           localizations.homePageTitle,
           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

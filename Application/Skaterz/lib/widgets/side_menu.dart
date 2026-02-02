@@ -12,6 +12,7 @@ class SideMenu extends StatelessWidget {
     required this.onProgressTap,
     required this.onLeaderboardTap,
     required this.onTrickListTap,
+    required this.onFriendsTap,
     required this.onSessionGoalsTap,
     required this.onEquipmentTap,
     required this.onSettingsTap,
@@ -31,6 +32,7 @@ class SideMenu extends StatelessWidget {
   final VoidCallback onProgressTap;
   final VoidCallback onLeaderboardTap;
   final VoidCallback onTrickListTap;
+  final VoidCallback onFriendsTap;
   final VoidCallback onSessionGoalsTap;
   final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
@@ -50,44 +52,63 @@ class SideMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double headerHeight = isDesktop && !isExpanded ? kToolbarHeight : 200.0;
+    final double headerHeight = isDesktop && !isExpanded ? kToolbarHeight : 240.0;
 
     return Drawer(
       elevation: 0,
-      width: isDesktop ? (isExpanded ? 250 : 80) : null,
+      width: isDesktop ? (isExpanded ? 280 : 80) : null,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      child: ListView(
-        padding: EdgeInsets.zero,
-        children: <Widget>[
+      child: Column(
+        children: [
           _buildHeader(context, headerHeight),
-          const SizedBox(height: 8),
-          _buildMenuItem(context, Icons.person, localizations.profileMenuItem, onProfileTap),
-          _buildMenuItem(context, Icons.list_alt, localizations.trickListMenuItem, onTrickListTap),
-          _buildMenuItem(context, Icons.trending_up, localizations.progressTrackerMenuItem, onProgressTap),
-          _buildMenuItem(context, Icons.emoji_events, localizations.leaderboardMenuItem, onLeaderboardTap),
-          _buildMenuItem(context, Icons.track_changes, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
-          _buildMenuItem(context, Icons.handyman, localizations.equipmentMenuItem, onEquipmentTap),
-          _buildMenuItem(context, Icons.settings, localizations.settingsMenuItem, onSettingsTap),
-          
-          const Divider(height: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              children: <Widget>[
+                _buildMenuItem(context, Icons.person_outline_rounded, localizations.profileMenuItem, onProfileTap),
+                _buildMenuItem(context, Icons.analytics_outlined, localizations.progressTrackerMenuItem, onProgressTap),
+                _buildMenuItem(context, Icons.emoji_events_outlined, localizations.leaderboardMenuItem, onLeaderboardTap),
+                _buildMenuItem(context, Icons.people_outline_rounded, localizations.friends, onFriendsTap),
+                _buildMenuItem(context, Icons.format_list_bulleted_rounded, localizations.trickListMenuItem, onTrickListTap),
+                _buildMenuItem(context, Icons.ads_click_rounded, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
+                _buildMenuItem(context, Icons.construction_outlined, localizations.equipmentMenuItem, onEquipmentTap),
+                _buildMenuItem(context, Icons.settings_outlined, localizations.settingsMenuItem, onSettingsTap),
+                
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: Divider(height: 1, thickness: 0.5),
+                ),
 
-          // Dark Mode Switch in Side Menu (Moved down to be over language selection)
-          if (isExpanded || !isDesktop)
-            SwitchListTile(
-              secondary: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode, color: AppColors.primary),
-              title: Text(localizations.darkMode),
-              value: isDarkMode,
-              onChanged: onThemeToggle,
-              activeColor: AppColors.primary,
-            )
-          else
-            IconButton(
-              icon: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode, color: AppColors.primary),
-              onPressed: () => onThemeToggle(!isDarkMode),
+                if (isExpanded || !isDesktop)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: SwitchListTile(
+                      secondary: Icon(isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: isDarkMode ? AppColors.primary : AppColors.primaryOld),
+                      title: Text(localizations.darkMode, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      value: isDarkMode,
+                      onChanged: onThemeToggle,
+                      activeColor: isDarkMode ? AppColors.primary : AppColors.primaryOld,
+                    ),
+                  )
+                else
+                  IconButton(
+                    icon: Icon(isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded, color: isDarkMode ? AppColors.primary : AppColors.primaryOld),
+                    onPressed: () => onThemeToggle(!isDarkMode),
+                  ),
+
+                _buildLanguageExpansion(),
+              ],
             ),
-
-          _buildLanguageExpansion(),
+          ),
+          if (isExpanded || !isDesktop)
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                "© 2024 SKATERZ",
+                style: TextStyle(color: Colors.grey.withValues(alpha: 0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
+              ),
+            ),
         ],
       ),
     );
@@ -102,85 +123,84 @@ class SideMenu extends StatelessWidget {
           Navigator.pop(context);
         }
       },
-      splashColor: Colors.transparent,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 300),
         height: height,
-        padding: EdgeInsets.symmetric(
-          vertical: isDesktop && !isExpanded ? 0 : 20,
-          horizontal: isExpanded ? 16 : 0,
-        ).copyWith(top: isDesktop && !isExpanded ? 0 : 40),
+        width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: (isDesktop && isExpanded)
-              ? const BorderRadius.only(bottomRight: Radius.circular(40))
-              : BorderRadius.zero,
-          gradient: AppColors.reverseGradient,
+          // SWITCHED ORIENTATION: bottomCenter to topCenter instead of topLeft to bottomRight
+          gradient: LinearGradient(
+            colors: isDarkMode ? [Color(0xFFFFB74D), Color(0xFFF57C00)] : [Color(0xFF00FF88), Color(0xFF002211)],
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
+          ),
+          borderRadius: BorderRadius.zero,
         ),
-        child: ClipRect(
-          child: OverflowBox(
-            minHeight: 0,
-            maxHeight: 200,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isExpanded || !isDesktop) _buildUserAvatar(),
-                if (isExpanded || !isDesktop) ...[
-                  const SizedBox(height: 16),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isExpanded || !isDesktop) ...[
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                  child: _buildUserAvatar(size: 40),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  isLoggedIn ? (userData?['name'] ?? '') : localizations.guest,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
+                ),
+                if (isLoggedIn)
                   Text(
-                    isLoggedIn ? (userData?['name'] ?? '') : localizations.guest,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    '@${userData?['username'] ?? ''}',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
                   ),
-                  if (isLoggedIn)
-                    Text(
-                      '@${userData?['username'] ?? ''}',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-                    ),
-                ],
-                if (isDesktop && !isExpanded) const Icon(Icons.menu, color: Colors.white),
-              ],
-            ),
+              ] else 
+                const Icon(Icons.menu_rounded, color: Colors.white, size: 30),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildUserAvatar() {
+  Widget _buildUserAvatar({double size = 30}) {
     if (isLoggedIn) {
       final img = userData?['profile_image'] ?? userData?['profileImage'];
       if (img != null) {
         return CircleAvatar(
-          radius: 30,
+          radius: size,
           backgroundImage: MemoryImage(base64Decode(img)),
         );
       }
     }
-    return const CircleAvatar(
-      radius: 30,
-      backgroundColor: Colors.white24,
-      child: Icon(Icons.person, size: 35, color: Colors.white),
+    return CircleAvatar(
+      radius: size,
+      backgroundColor: Colors.white12,
+      child: Icon(Icons.person_rounded, size: size * 1.2, color: Colors.white),
     );
   }
 
   Widget _buildMenuItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+    final Color iconColor = isDarkMode ? AppColors.primary : AppColors.primaryOld;
     return ListTile(
-      leading: Padding(
-        padding: isExpanded ? EdgeInsets.zero : const EdgeInsets.only(left: 12),
-        child: Icon(icon, color: AppColors.primary),
-      ),
-      title: (isExpanded || !isDesktop) ? Text(title) : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      leading: Icon(icon, color: iconColor, size: 24),
+      title: (isExpanded || !isDesktop) ? Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)) : null,
       onTap: () => _onTileTap(context, onTap),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
   Widget _buildLanguageExpansion() {
+    final Color iconColor = isDarkMode ? AppColors.primary : AppColors.primaryOld;
     if (isExpanded || !isDesktop) {
       return ExpansionTile(
-        leading: const Icon(Icons.language, color: AppColors.primary),
-        title: Text(localizations.language),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 24),
+        leading: Icon(Icons.language_rounded, color: iconColor),
+        title: Text(localizations.language, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
         children: <Widget>[
           _buildLanguageOption('🇩🇪', localizations.german, 'de'),
           _buildLanguageOption('🇬🇧', localizations.english, 'en'),
@@ -191,10 +211,8 @@ class SideMenu extends StatelessWidget {
       );
     } else {
       return ListTile(
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 12),
-          child: Icon(Icons.language, color: AppColors.primary),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+        leading: Icon(Icons.language_rounded, color: iconColor),
         onTap: onToggleMenu,
       );
     }
@@ -202,7 +220,8 @@ class SideMenu extends StatelessWidget {
 
   Widget _buildLanguageOption(String flag, String name, String locale) {
     return ListTile(
-      title: Text('$flag  $name'),
+      contentPadding: const EdgeInsets.only(left: 48, right: 24),
+      title: Text('$flag  $name', style: const TextStyle(fontSize: 14)),
       onTap: () => onLanguageChange(locale),
     );
   }

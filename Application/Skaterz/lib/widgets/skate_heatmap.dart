@@ -25,8 +25,8 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
   final ScrollController _scrollController = ScrollController();
   
   final int _totalWeeks = 52; 
-  static const double _blockSize = 32.0;
-  static const double _spacing = 4.0;
+  static const double _blockSize = 34.0;
+  static const double _spacing = 6.0;
 
   bool _canScrollLeft = true;
   bool _canScrollRight = false;
@@ -34,7 +34,6 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
   @override
   void initState() {
     super.initState();
-    // Use a small delay to allow the scroll controller to attach and find its bounds
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.addListener(_updateScrollButtons);
@@ -44,39 +43,16 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
   }
 
   @override
-  void didUpdateWidget(SkateHeatmap oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // If a new session was added (count increased), scroll to the right (current week)
-    if (widget.sessions.length > oldWidget.sessions.length) {
-      _scrollToCurrent();
-    }
-  }
-
-  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _scrollToCurrent() {
-    if (!_scrollController.hasClients) return;
-    _scrollController.animateTo(
-      0.0, // Scroll to far right (current week in reverse mode)
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
   void _updateScrollButtons() {
     if (!_scrollController.hasClients) return;
-    
     final max = _scrollController.position.maxScrollExtent;
     final offset = _scrollController.offset;
-
     setState(() {
-      // SingleChildScrollView(reverse: true)
-      // Offset 0 is far RIGHT (current week)
-      // Offset max is far LEFT (oldest week)
       _canScrollRight = offset > 10; 
       _canScrollLeft = offset < (max - 10);
     });
@@ -84,34 +60,20 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
 
   void _scrollLeft() {
     if (!_scrollController.hasClients) return;
-    final target = (_scrollController.offset + (_blockSize + _spacing) * 4)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
     _scrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      (_scrollController.offset + (_blockSize + _spacing) * 4).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutQuint,
     );
   }
 
   void _scrollRight() {
     if (!_scrollController.hasClients) return;
-    final target = (_scrollController.offset - (_blockSize + _spacing) * 4)
-        .clamp(0.0, _scrollController.position.maxScrollExtent);
     _scrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      (_scrollController.offset - (_blockSize + _spacing) * 4).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutQuint,
     );
-  }
-
-  String _getDayLabel(int weekday) {
-    switch (weekday) {
-      case 1: return widget.localizations.mon.substring(0, 1);
-      case 3: return widget.localizations.wed.substring(0, 1);
-      case 5: return widget.localizations.fri.substring(0, 1);
-      case 7: return widget.localizations.sun.substring(0, 1);
-      default: return '';
-    }
   }
 
   @override
@@ -119,166 +81,89 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     final currentWeekMonday = today.subtract(Duration(days: today.weekday - 1));
     final startDate = currentWeekMonday.subtract(Duration(days: (_totalWeeks - 1) * 7));
-    
-    final sessionMap = {
-      for (var s in widget.sessions) 
-        DateUtils.dateOnly(s.sessionDate): s
-    };
+    final sessionMap = {for (var s in widget.sessions) DateUtils.dateOnly(s.sessionDate): s};
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            IconButton(
-              icon: Icon(
-                Icons.chevron_left, 
-                size: 28, 
-                color: _canScrollLeft 
-                    ? (isDark ? AppColors.secondary : AppColors.primary) 
-                    : Colors.grey.withOpacity(0.3)
+            Text(
+              widget.localizations.activityHeatmap.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12, 
+                fontWeight: FontWeight.w900, 
+                letterSpacing: 1.5,
+                color: isDark ? Colors.white54 : Colors.black54
               ),
-              onPressed: _canScrollLeft ? _scrollLeft : null,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
-            const SizedBox(width: 16),
+            const Spacer(),
             IconButton(
-              icon: Icon(
-                Icons.chevron_right, 
-                size: 28, 
-                color: _canScrollRight 
-                    ? (isDark ? AppColors.secondary : AppColors.primary) 
-                    : Colors.grey.withOpacity(0.3)
-              ),
+              icon: Icon(Icons.west_rounded, size: 20, color: _canScrollLeft ? AppColors.primary : Colors.grey.withValues(alpha: 0.2)),
+              onPressed: _canScrollLeft ? _scrollLeft : null,
+            ),
+            IconButton(
+              icon: Icon(Icons.east_rounded, size: 20, color: _canScrollRight ? AppColors.primary : Colors.grey.withValues(alpha: 0.2)),
               onPressed: _canScrollRight ? _scrollRight : null,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            const double labelWidth = 20.0;
-
-            return SizedBox(
-              height: (_blockSize * 7) + (_spacing * 6) + 35, 
+        SizedBox(
+          height: (_blockSize * 7) + (_spacing * 6) + 30, 
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (_) { _updateScrollButtons(); return false; },
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              scrollDirection: Axis.horizontal,
+              reverse: true,
               child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 25.0),
-                    child: SizedBox(
-                      width: labelWidth,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: List.generate(7, (index) {
-                          final label = _getDayLabel(index + 1);
-                          return SizedBox(
-                            height: _blockSize,
-                            child: Center(
-                              child: Text(
-                                label,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white38 : Colors.grey[400],
-                                ),
-                              ),
+                children: List.generate(_totalWeeks, (weekIdx) {
+                  final weekMonday = startDate.add(Duration(days: weekIdx * 7));
+                  bool showMonth = false;
+                  String monthName = "";
+                  for (int i = 0; i < 7; i++) {
+                    final d = weekMonday.add(Duration(days: i));
+                    if (d.day == 1 || (weekIdx == 0 && i == 0)) {
+                      showMonth = true;
+                      monthName = _getMonthName(d);
+                      break;
+                    }
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: _spacing),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: 20,
+                          child: showMonth ? Text(monthName.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.primary.withValues(alpha: 0.6))) : null,
+                        ),
+                        ...List.generate(7, (dayIdx) {
+                          final date = DateUtils.dateOnly(weekMonday.add(Duration(days: dayIdx)));
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: _spacing),
+                            child: _HeatmapBlock(
+                              date: date,
+                              session: sessionMap[date],
+                              isToday: DateUtils.isSameDay(date, today),
+                              isFuture: date.isAfter(today),
+                              onDelete: widget.onDeleteSession != null ? () => widget.onDeleteSession!(date) : null,
+                              localizations: widget.localizations,
                             ),
                           );
                         }),
-                      ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (notification) {
-                        if (notification is ScrollUpdateNotification) {
-                          _updateScrollButtons();
-                        }
-                        return false;
-                      },
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        scrollDirection: Axis.horizontal,
-                        reverse: true,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: List.generate(_totalWeeks, (weekIdx) {
-                            final weekMonday = startDate.add(Duration(days: weekIdx * 7));
-                            
-                            bool showMonth = false;
-                            String monthName = "";
-                            
-                            for (int i = 0; i < 7; i++) {
-                              final d = weekMonday.add(Duration(days: i));
-                              if (d.day == 1 || (weekIdx == 0 && i == 0)) {
-                                showMonth = true;
-                                monthName = "${_getMonthName(d)} '${d.year.toString().substring(2)}";
-                                break;
-                              }
-                            }
-
-                            return Padding(
-                              padding: const EdgeInsets.only(right: _spacing),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    height: 20,
-                                    child: showMonth 
-                                      ? Text(
-                                          monthName.toUpperCase(),
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w900,
-                                            color: isDark ? AppColors.secondary : AppColors.primary,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        )
-                                      : null,
-                                  ),
-                                  const SizedBox(height: 5),
-                                  ...List.generate(7, (dayIdx) {
-                                    final date = DateUtils.dateOnly(weekMonday.add(Duration(days: dayIdx)));
-                                    final session = sessionMap[date];
-                                    final isFuture = date.isAfter(today);
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: _spacing),
-                                      child: SizedBox(
-                                        width: _blockSize,
-                                        height: _blockSize,
-                                        child: _HeatmapBlock(
-                                          date: date,
-                                          session: session,
-                                          isFuture: isFuture,
-                                          index: weekIdx * 7 + dayIdx,
-                                          onDelete: widget.onDeleteSession != null ? () => widget.onDeleteSession!(date) : null,
-                                          localizations: widget.localizations,
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                ],
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                }),
               ),
-            );
-          },
+            ),
+          ),
         ),
       ],
     );
@@ -286,28 +171,22 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
 
   String _getMonthName(DateTime date) {
     switch (date.month) {
-      case 1: return widget.localizations.jan;
-      case 2: return widget.localizations.feb;
-      case 3: return widget.localizations.mar;
-      case 4: return widget.localizations.apr;
-      case 5: return widget.localizations.may;
-      case 6: return widget.localizations.jun;
-      case 7: return widget.localizations.jul;
-      case 8: return widget.localizations.aug;
-      case 9: return widget.localizations.sep;
-      case 10: return widget.localizations.oct;
-      case 11: return widget.localizations.nov;
-      case 12: return widget.localizations.dec;
+      case 1: return widget.localizations.jan; case 2: return widget.localizations.feb;
+      case 3: return widget.localizations.mar; case 4: return widget.localizations.apr;
+      case 5: return widget.localizations.may; case 6: return widget.localizations.jun;
+      case 7: return widget.localizations.jul; case 8: return widget.localizations.aug;
+      case 9: return widget.localizations.sep; case 10: return widget.localizations.oct;
+      case 11: return widget.localizations.nov; case 12: return widget.localizations.dec;
       default: return "";
     }
   }
 }
 
-class _HeatmapBlock extends StatefulWidget {
+class _HeatmapBlock extends StatelessWidget {
   final DateTime date;
   final SkatingSession? session;
   final bool isFuture;
-  final int index;
+  final bool isToday;
   final VoidCallback? onDelete;
   final AppLocalizations localizations;
 
@@ -315,132 +194,51 @@ class _HeatmapBlock extends StatefulWidget {
     required this.date,
     this.session,
     required this.isFuture,
-    required this.index,
+    required this.isToday,
     this.onDelete,
     required this.localizations,
   });
 
   @override
-  State<_HeatmapBlock> createState() => _HeatmapBlockState();
-}
-
-class _HeatmapBlockState extends State<_HeatmapBlock> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-
-    _scaleAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    );
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _showDeleteConfirmation(BuildContext context) {
-    final bool isToday = DateUtils.isSameDay(widget.date, DateTime.now());
-    if (widget.session == null || widget.isFuture || !isToday) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(widget.localizations.undo),
-        content: Text(widget.localizations.deleteSessionConfirm),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(widget.localizations.cancel),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              widget.onDelete?.call();
-            },
-            child: Text(widget.localizations.undo, style: const TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isToday = DateUtils.isSameDay(widget.date, DateTime.now());
     
-    Color color = isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.12);
-    IconData? moodIcon;
-    Color? moodColor;
+    Color color = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05);
+    Widget? content;
 
-    if (widget.isFuture) {
-      color = isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.withValues(alpha: 0.05);
-    } else if (widget.session != null) {
-      switch (widget.session!.mood) {
-        case 'GREAT':
-          moodColor = const Color(0xFFA5D6A7); 
-          moodIcon = Icons.sentiment_very_satisfied_rounded;
-          break;
-        case 'OK':
-          moodColor = const Color(0xFF90CAF9);
-          moodIcon = Icons.sentiment_satisfied_rounded;
-          break;
-        case 'BAD':
-          moodColor = const Color(0xFFFFCC80);
-          moodIcon = Icons.sentiment_dissatisfied_rounded;
-          break;
-        case 'INJURED':
-          moodColor = const Color(0xFFEF9A9A);
-          moodIcon = Icons.medical_services_rounded;
-          break;
-      }
-      color = moodColor!.withValues(alpha: 0.4);
+    if (session != null) {
+      color = AppColors.primary;
+      content = Icon(Icons.bolt_rounded, size: 14, color: isDark ? Colors.black : Colors.white);
+    } else if (isToday) {
+      color = AppColors.primary.withValues(alpha: 0.2);
     }
 
     return GestureDetector(
-      onLongPress: () => _showDeleteConfirmation(context),
-      onTap: isToday && widget.session != null ? () => _showDeleteConfirmation(context) : null,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(6),
-            border: isToday 
-              ? Border.all(
-                  color: isDark ? AppColors.secondary : AppColors.primary, 
-                  width: 1.5
-                ) 
-              : null,
-          ),
-          child: widget.session != null 
-            ? Icon(
-                moodIcon, 
-                size: 16, 
-                color: isDark ? Colors.black87 : Colors.black54,
-              ) 
-            : Text(
-                '${widget.date.day}',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white24 : Colors.black12,
-                ),
-              ),
+      onLongPress: () {
+        if (session != null && isToday) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(localizations.undo),
+              content: Text(localizations.deleteSessionConfirm),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
+                TextButton(onPressed: () { Navigator.pop(context); onDelete?.call(); }, child: Text(localizations.undo, style: const TextStyle(color: Colors.red))),
+              ],
+            ),
+          );
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: 34, height: 34,
+        decoration: BoxDecoration(
+          color: isFuture ? color.withValues(alpha: 0.02) : color,
+          borderRadius: BorderRadius.circular(10),
+          border: isToday ? Border.all(color: AppColors.primary, width: 2) : null,
+          boxShadow: session != null ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
         ),
+        child: Center(child: content),
       ),
     );
   }

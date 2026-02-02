@@ -34,12 +34,11 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   bool _isLoading = true;
   TrackerView _currentView = TrackerView.category;
 
-  // Stance colors remain distinct
   final Map<String, Color> stanceColors = {
-    'REGULAR': const Color(0xFF4FC3F7), // Light Blue
-    'NOLLIE': const Color(0xFFFF8A65),  // Deep Orange
-    'SWITCH': const Color(0xFF9575CD),  // Deep Purple
-    'FAKIE': const Color(0xFF4DB6AC),   // Teal/Mint
+    'REGULAR': const Color(0xFFF57C00), 
+    'NOLLIE': const Color(0xFFEF6C00),  
+    'SWITCH': const Color(0xFFFF9800),  
+    'FAKIE': const Color(0xFFFFB74D),   
   };
 
   @override
@@ -56,7 +55,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   void didUpdateWidget(ProgressTrackerPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isLoggedIn && widget.isActive && !oldWidget.isActive) {
-      _loadData(); // Refresh data when page becomes active
+      _loadData(); 
     }
   }
 
@@ -122,7 +121,6 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         final screenWidth = constraints.maxWidth;
         final isLargeScreen = screenWidth > 900;
         final columns = isLargeScreen ? 4 : (screenWidth > 600 ? 2 : 1);
-        final stanceColumns = isLargeScreen ? 4 : 2;
 
         int totalBaseTricks = 0;
         for (var cat in _stats) {
@@ -137,12 +135,12 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
         return Scaffold(
           appBar: AppBar(
-            flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
-            title: Text(widget.localizations.progressTrackerMenuItem, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            title: Text(widget.localizations.progressTrackerMenuItem.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
             elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.white),
+            iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
             leading: !isDesktop ? IconButton(
-              icon: const Icon(Icons.menu),
+              icon: const Icon(Icons.menu_rounded),
               onPressed: widget.onMenuTap,
             ) : null,
           ),
@@ -152,7 +150,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                   onRefresh: _loadData,
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(24.0),
                     child: Column(
                       children: [
                         _buildAnimatedHeader(
@@ -185,7 +183,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                           duration: const Duration(milliseconds: 400),
                           child: _currentView == TrackerView.category 
                             ? _buildCategoryView(columns) 
-                            : _buildStanceView(totalBaseTricks, stanceColumns),
+                            : _buildStanceView(totalBaseTricks),
                         ),
                       ],
                     ),
@@ -199,9 +197,9 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   Widget _buildAnimatedHeader(int current, int total, String label, {bool showCount = true}) {
     if (!showCount) {
       return Text(
-        label,
+        label.toUpperCase(),
         key: ValueKey('header_no_count_${_currentView.name}'),
-        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2),
       );
     }
 
@@ -214,8 +212,8 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           tween: Tween<double>(begin: 0, end: current.toDouble()),
           builder: (context, double value, child) {
             return Text(
-              '${value.toInt()} / $total $label',
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1),
+              '${value.toInt()} / $total ${label.toUpperCase()}',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5),
             );
           },
         ),
@@ -227,7 +225,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           builder: (context, double value, child) {
             return Text(
               '(${(value * 100).toStringAsFixed(1)}% ${widget.localizations.completed})',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.w500, letterSpacing: 0.5),
+              style: TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w900, letterSpacing: 1),
             );
           },
         ),
@@ -273,145 +271,142 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   Widget _buildMasteryBarCard({required String title, required int count, required int total, required Color color, required VoidCallback onTap}) {
     final double progress = total > 0 ? count / total : 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         onTap();
       },
-      child: Card(
-        elevation: 0,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: color.withValues(alpha: 0.1), width: 1),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        color: color.withValues(alpha: 0.03),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title, 
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    title.toUpperCase(), 
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(fontWeight: FontWeight.w900, color: color, fontSize: 16),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 8,
-                  backgroundColor: color.withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
                 ),
+                Text(
+                  '${(progress * 100).toStringAsFixed(0)}%',
+                  style: TextStyle(fontWeight: FontWeight.w900, color: color, fontSize: 14),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: color.withValues(alpha: 0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
-              const SizedBox(height: 8),
-              Text(
-                '$count / $total ${widget.localizations.tricks}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$count / $total ${widget.localizations.tricks.toUpperCase()}',
+              style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w900, letterSpacing: 0.5),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStanceView(int totalPerStance, int columns) {
+  Widget _buildStanceView(int totalPerStance) {
     Map<String, int> stanceCounts = {'REGULAR': 0, 'NOLLIE': 0, 'SWITCH': 0, 'FAKIE': 0};
     for (var item in _completed) {
       final stance = item['stance'] ?? 'REGULAR';
       stanceCounts[stance] = (stanceCounts[stance] ?? 0) + 1;
     }
 
+    // Always 4 columns for stance cards to make them small and fit on one screen
     return GridView.builder(
       key: const ValueKey('stanceView'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.85,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4, 
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.65, 
       ),
       itemCount: 4,
       itemBuilder: (context, index) {
         final stance = stanceColors.keys.elementAt(index);
         final count = stanceCounts[stance] ?? 0;
         final color = stanceColors[stance]!;
-        return _buildStanceCard(stance, count, totalPerStance, color);
+        return _buildSmallStanceCard(stance, count, totalPerStance, color);
       },
     );
   }
 
-  Widget _buildStanceCard(String stance, int count, int total, Color color) {
+  Widget _buildSmallStanceCard(String stance, int count, int total, Color color) {
     final double progress = total > 0 ? count / total : 0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         _showStanceTricks(context, stance);
       },
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: color.withValues(alpha: 0.1), width: 1),
+      child: Container(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.1)),
         ),
-        color: color.withValues(alpha: 0.03),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _formatStance(stance),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 80,
-                      height: 80,
-                      child: CircularProgressIndicator(
-                        value: progress,
-                        strokeWidth: 8,
-                        backgroundColor: color.withValues(alpha: 0.1),
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
-                        strokeCap: StrokeCap.round,
-                      ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              stance.substring(0, 3).toUpperCase(), // Shortened name
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: color, letterSpacing: 0.5),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 45,
+                    height: 45,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 4,
+                      backgroundColor: color.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                      strokeCap: StrokeCap.round,
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('$count', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                        Text('/$total', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}%', 
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text('${(progress * 100).toStringAsFixed(0)}%', style: TextStyle(fontWeight: FontWeight.bold, color: color.withValues(alpha: 0.8))),
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$count/$total', 
+              style: TextStyle(fontSize: 9, color: isDark ? Colors.white54 : Colors.black54, fontWeight: FontWeight.w900),
+            ),
+          ],
         ),
       ),
     );
@@ -434,7 +429,6 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   void _showTricksSheet(BuildContext context, String title, List<dynamic> tricks, {String? filteredStance}) {
     HapticFeedback.mediumImpact();
     
-    // Group tricks by name to show stances as icons
     final Map<String, List<String>> groupedTricks = {};
     for (var t in tricks) {
       final name = t['name'] ?? widget.localizations.tricks;
@@ -459,7 +453,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
             const SizedBox(height: 12),
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            Text(title.toUpperCase(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
             const Divider(),
             Expanded(
               child: tricks.isEmpty
@@ -476,7 +470,6 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                           title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Row(
                             children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
-                              // If filteredStance is provided, we only show icons for that stance
                               if (filteredStance != null && s != filteredStance) {
                                 return const SizedBox.shrink();
                               }
@@ -489,7 +482,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                                      isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                                       size: 16,
                                       color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
                                     ),

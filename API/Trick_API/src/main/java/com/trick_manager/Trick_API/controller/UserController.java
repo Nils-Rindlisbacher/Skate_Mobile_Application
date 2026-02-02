@@ -115,17 +115,22 @@ public class UserController {
         return ResponseEntity.ok(userService.getLeaderboardData(categoryId, filterStance));
     }
 
-    // --- Following ---
-    @PostMapping("/follow")
-    public ResponseEntity<?> followUser(@RequestBody Map<String, Long> request, Principal principal) {
-        userService.followUser(principal.getName(), request.get("user_id"));
+    // --- Friends ---
+    @PostMapping("/friends/add")
+    public ResponseEntity<?> addFriend(@RequestBody Map<String, Long> request, Principal principal) {
+        userService.addFriend(principal.getName(), request.get("user_id"));
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/unfollow")
-    public ResponseEntity<?> unfollowUser(@RequestBody Map<String, Long> request, Principal principal) {
-        userService.unfollowUser(principal.getName(), request.get("user_id"));
+    @PostMapping("/friends/remove")
+    public ResponseEntity<?> removeFriend(@RequestBody Map<String, Long> request, Principal principal) {
+        userService.unfriendUser(principal.getName(), request.get("user_id"));
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/friends")
+    public ResponseEntity<?> getFriends(Principal principal) {
+        return ResponseEntity.ok(userService.getFriends(principal.getName()));
     }
 
     // --- Blocking ---

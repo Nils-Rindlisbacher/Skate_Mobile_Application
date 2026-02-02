@@ -126,13 +126,13 @@ class ApiService {
     try {
       // ignore: unawaited_futures
       Future.wait([
-        http.get(Uri.parse('$baseUrl/categories')).timeout(const Duration(seconds: 5)),
-        http.get(Uri.parse('$baseUrl/tricks/count')).timeout(const Duration(seconds: 5)),
+        http.get(Uri.parse('$baseUrl/categories')).timeout(const Duration(seconds: 10)),
+        http.get(Uri.parse('$baseUrl/tricks/count')).timeout(const Duration(seconds: 10)),
       ]).then((_) => null).catchError((_) => null);
     } catch (_) {}
   }
 
-  Future<http.Response> _get(String path, {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<http.Response> _get(String path, {Duration timeout = const Duration(seconds: 60)}) async {
     // Add a cache-busting timestamp to the URL for web
     final Uri uri = Uri.parse('$baseUrl$path');
     final Map<String, String> queryParams = Map.from(uri.queryParameters);
@@ -140,10 +140,16 @@ class ApiService {
     
     final finalUri = uri.replace(queryParameters: queryParams);
 
-    return await http.get(
-      finalUri,
-      headers: await _getHeaders(),
-    ).timeout(timeout);
+    try {
+      return await http.get(
+        finalUri,
+        headers: await _getHeaders(),
+      ).timeout(timeout);
+    } on TimeoutException {
+      throw Exception('The server is taking too long to respond. It might be waking up. Please try again in a few seconds.');
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // --- Auth Services ---
@@ -157,7 +163,7 @@ class ApiService {
         'email': email,
         'name': name,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
   }
 
@@ -169,7 +175,7 @@ class ApiService {
         'username': username,
         'password': password,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
 
     final data = _handleResponse(response);
     if (data != null && data is Map && data['token'] != null) {
@@ -201,7 +207,7 @@ class ApiService {
       Uri.parse('$baseUrl/users/me/image'),
       headers: await _getHeaders(),
       body: jsonEncode({'image': base64Image}),
-    ).timeout(const Duration(seconds: 30));
+    ).timeout(const Duration(seconds: 60));
     _handleResponse(response);
     await clearCache('user_me');
   }
@@ -211,7 +217,7 @@ class ApiService {
       Uri.parse('$baseUrl/users/me/privacy'),
       headers: await _getHeaders(),
       body: jsonEncode({'is_public': isPublic}),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
     await clearCache('user_me');
   }
@@ -220,7 +226,7 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/users/me'),
       headers: await _getHeaders(),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
   }
 
@@ -239,7 +245,7 @@ class ApiService {
         'user_id': userId,
         'reason': reason,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
   }
 
@@ -248,9 +254,9 @@ class ApiService {
       Uri.parse('$baseUrl/users/block'),
       headers: await _getHeaders(),
       body: jsonEncode({'user_id': userId}),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
-    await clearCache('leaderboard'); // Invalidate cache
+    await clearCache('leaderboard'); 
   }
 
   Future<void> unblockUser(int userId) async {
@@ -258,7 +264,7 @@ class ApiService {
       Uri.parse('$baseUrl/users/unblock'),
       headers: await _getHeaders(),
       body: jsonEncode({'user_id': userId}),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
   }
 
@@ -268,23 +274,43 @@ class ApiService {
     return (data != null && data is List) ? data : [];
   }
 
-  // --- Social Features ---
-  Future<void> followUser(int userId) async {
+  // --- Friends System ---
+  Future<void> addFriend(int userId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/users/follow'),
+      Uri.parse('$baseUrl/users/friends/add'),
       headers: await _getHeaders(),
       body: jsonEncode({'user_id': userId}),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
+    await clearCache('user_me');
+    await clearCache('friends_list');
   }
 
-  Future<void> unfollowUser(int userId) async {
+  Future<void> removeFriend(int userId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/users/unfollow'),
+      Uri.parse('$baseUrl/users/friends/remove'),
       headers: await _getHeaders(),
       body: jsonEncode({'user_id': userId}),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
+    await clearCache('user_me');
+    await clearCache('friends_list');
+  }
+
+  Future<List<dynamic>> getFriends() async {
+    try {
+      final response = await _get('/users/friends');
+      final data = _handleResponse(response);
+      if (data != null && data is List) {
+        await _cacheData('friends_list', data);
+        return data;
+      }
+      return [];
+    } catch (e) {
+      final cached = await getCachedData('friends_list');
+      if (cached != null && cached is List) return cached;
+      rethrow;
+    }
   }
 
   // --- Data Services ---
@@ -311,7 +337,7 @@ class ApiService {
     if (userId != null) path += '&user_id=$userId';
     
     try {
-      final response = await _get(path, timeout: const Duration(seconds: 20));
+      final response = await _get(path, timeout: const Duration(seconds: 30));
       final data = _handleResponse(response);
       if (data != null && data is List) {
         return data;
@@ -380,7 +406,7 @@ class ApiService {
         'trick_id': trickId,
         'stance': stance,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
     await clearCache('wishlist_tricks');
   }
@@ -394,7 +420,7 @@ class ApiService {
         'trick_id': trickId,
         'stance': stance,
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
     await clearCache('completed_tricks');
     await clearCache('category_stats_me');
@@ -467,7 +493,7 @@ class ApiService {
       Uri.parse('$baseUrl/goals'),
       headers: await _getHeaders(),
       body: jsonEncode(goalData),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     final data = _handleResponse(response);
     await clearCache('session_goals');
     return data != null ? Map<String, dynamic>.from(data) : null;
@@ -478,7 +504,7 @@ class ApiService {
       Uri.parse('$baseUrl/goals/$id'),
       headers: await _getHeaders(),
       body: jsonEncode(goalData),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     final data = _handleResponse(response);
     await clearCache('session_goals');
     return data != null ? Map<String, dynamic>.from(data) : null;
@@ -488,7 +514,7 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/goals/$id'),
       headers: await _getHeaders(),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
     await clearCache('session_goals');
   }
@@ -521,7 +547,7 @@ class ApiService {
         'mood': mood,
         'sessionDate': (date ?? DateTime.now()).toIso8601String().split('T')[0],
       }),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     final data = _handleResponse(response);
     await clearCache('skating_sessions');
     return data != null ? Map<String, dynamic>.from(data) : null;
@@ -531,7 +557,7 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/sessions/$date'),
       headers: await _getHeaders(),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
     await clearCache('skating_sessions');
   }
@@ -558,7 +584,7 @@ class ApiService {
       Uri.parse('$baseUrl/equipment'),
       headers: await _getHeaders(),
       body: jsonEncode(data),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     final result = _handleResponse(response);
     await clearCache('equipment_list');
     return result != null ? Map<String, dynamic>.from(result) : null;
@@ -569,7 +595,7 @@ class ApiService {
       Uri.parse('$baseUrl/equipment/$id'),
       headers: await _getHeaders(),
       body: jsonEncode(data),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     final result = _handleResponse(response);
     await clearCache('equipment_list');
     return result != null ? Map<String, dynamic>.from(result) : null;
@@ -579,7 +605,7 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl/equipment/$id'),
       headers: await _getHeaders(),
-    ).timeout(const Duration(seconds: 15));
+    ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
     await clearCache('equipment_list');
   }

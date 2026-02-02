@@ -3,53 +3,66 @@ import 'package:skaterz/core/constants.dart';
 
 class AppTheme {
   static ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      primary: AppColors.primary,
-      secondary: AppColors.secondary,
-      onSurface: Colors.black87,
+      seedColor: AppColors.primaryOld,
+      primary: AppColors.primaryOld,
+      secondary: AppColors.secondaryOld,
+      surface: Colors.white,
+      onSurface: AppColors.textDark,
       brightness: Brightness.light,
     ),
-    useMaterial3: true,
-    scaffoldBackgroundColor: Colors.white,
+    scaffoldBackgroundColor: AppColors.backgroundLight,
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryOld,
       elevation: 0,
+      centerTitle: true,
       iconTheme: IconThemeData(color: Colors.white),
-      titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+      titleTextStyle: TextStyle(
+        color: Colors.white,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
     ),
     cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+        borderRadius: BorderRadius.circular(16),
       ),
     ),
   );
 
   static ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,
       secondary: AppColors.secondary,
-      onSurface: Colors.white,
-      brightness: Brightness.dark,
       surface: AppColors.surfaceDark,
+      onSurface: AppColors.textLight,
+      brightness: Brightness.dark,
     ),
-    useMaterial3: true,
     scaffoldBackgroundColor: AppColors.backgroundDark,
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       elevation: 0,
-      iconTheme: IconThemeData(color: Colors.white),
-      titleTextStyle: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+      centerTitle: true,
+      iconTheme: IconThemeData(color: AppColors.textLight),
+      titleTextStyle: TextStyle(
+        color: AppColors.textLight,
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.5,
+      ),
     ),
     cardTheme: CardThemeData(
       color: AppColors.surfaceDark,
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+      ),
     ),
-    dividerColor: Colors.white10,
   );
 }

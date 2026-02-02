@@ -31,8 +31,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   TrackerView _currentView = TrackerView.category;
   int? _touchedIndex;
   
-  bool _isFollowing = false;
-  int _followerCount = 0;
+  bool _isFriend = false;
+  int _friendCount = 0;
   bool _isInitialized = false;
 
   final Map<int, Color> categoryColors = {
@@ -41,10 +41,10 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   };
 
   final Map<String, Color> stanceColors = {
-    'REGULAR': const Color(0xFF4FC3F7), 
-    'NOLLIE': const Color(0xFFFF8A65),  
-    'SWITCH': const Color(0xFF9575CD),  
-    'FAKIE': const Color(0xFF4DB6AC),   
+    'REGULAR': const Color(0xFFF57C00), 
+    'NOLLIE': const Color(0xFFEF6C00),  
+    'SWITCH': const Color(0xFFFF9800),  
+    'FAKIE': const Color(0xFFFFB74D),   
   };
 
   String _formatStance(String stance) {
@@ -63,7 +63,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       _apiService.getUserProfile(widget.userId),
       _apiService.getCompletedTricks(userId: widget.userId),
       _apiService.getSkatingSessions(userId: widget.userId),
-      _apiService.getCurrentUser(), // To check if following
+      _apiService.getCurrentUser(), 
     ];
     
     final results = await Future.wait(requests);
@@ -71,13 +71,13 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     if (!_isInitialized) {
       final currentUser = results[4] as Map<String, dynamic>?;
       if (currentUser != null) {
-        final following = (currentUser['followingIds'] ?? currentUser['following_ids'] ?? []) as List;
-        _isFollowing = following.contains(widget.userId);
+        final friends = (currentUser['friendIds'] ?? currentUser['friend_ids'] ?? []) as List;
+        _isFriend = friends.contains(widget.userId);
       }
       
       final profile = results[1] as Map<String, dynamic>?;
       if (profile != null) {
-        _followerCount = (profile['followerCount'] ?? profile['follower_count'] ?? 0) as int;
+        _friendCount = (profile['friendCount'] ?? profile['friend_count'] ?? 0) as int;
       }
       _isInitialized = true;
     }
@@ -90,19 +90,19 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     };
   }
 
-  void _handleFollowToggle() async {
+  void _handleFriendToggle() async {
     try {
-      if (_isFollowing) {
-        await _apiService.unfollowUser(widget.userId);
+      if (_isFriend) {
+        await _apiService.removeFriend(widget.userId);
         setState(() {
-          _isFollowing = false;
-          _followerCount--;
+          _isFriend = false;
+          _friendCount--;
         });
       } else {
-        await _apiService.followUser(widget.userId);
+        await _apiService.addFriend(widget.userId);
         setState(() {
-          _isFollowing = true;
-          _followerCount++;
+          _isFriend = true;
+          _friendCount++;
         });
       }
     } catch (e) {
@@ -119,11 +119,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(_isFollowing ? Icons.person_remove_outlined : Icons.person_add_outlined),
-              title: Text(_isFollowing ? widget.localizations.unfollow : widget.localizations.follow),
+              leading: Icon(_isFriend ? Icons.person_remove_outlined : Icons.person_add_outlined),
+              title: Text(_isFriend ? widget.localizations.unfriend : widget.localizations.addFriend),
               onTap: () {
                 Navigator.pop(context);
-                _handleFollowToggle();
+                _handleFriendToggle();
               },
             ),
             ListTile(
@@ -189,112 +189,16 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     );
   }
 
-  Future<void> _showTricksSheet(BuildContext context, String title, int? categoryId, List<dynamic> allCompleted, {String? filteredStance}) async {
-    HapticFeedback.mediumImpact();
-    
-    final Map<String, List<String>> groupedTricks = {};
-    
-    final filteredList = allCompleted.where((item) {
-      if (categoryId != null) {
-        final trickCatId = (item['category_id'] ?? item['categoryId'] ?? 
-                           (item['category'] != null ? item['category']['id'] : null))?.toString();
-        if (trickCatId != categoryId.toString()) return false;
-      }
-      if (filteredStance != null) {
-        if ((item['stance'] ?? 'REGULAR').toString().toUpperCase() != filteredStance.toUpperCase()) return false;
-      }
-      return true;
-    }).toList();
-
-    for (var t in filteredList) {
-      final name = t['name'] ?? widget.localizations.tricks;
-      if (!groupedTricks.containsKey(name)) {
-        groupedTricks[name] = [];
-      }
-      groupedTricks[name]!.add(t['stance'] ?? 'REGULAR');
-    }
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-            const SizedBox(height: 20),
-            Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const Divider(),
-            Expanded(
-              child: groupedTricks.isEmpty
-                  ? Center(child: Text(widget.localizations.noTricksYet))
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: groupedTricks.length,
-                      itemBuilder: (context, index) {
-                        final name = groupedTricks.keys.elementAt(index);
-                        final stances = groupedTricks[name]!;
-                        
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Row(
-                            children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
-                              if (filteredStance != null && s != filteredStance) return const SizedBox.shrink();
-                              
-                              final isDone = stances.contains(s);
-                              final label = s == 'REGULAR' ? 'R' : (s == 'NOLLIE' ? 'N' : (s == 'SWITCH' ? 'S' : 'F'));
-                              return Container(
-                                margin: const EdgeInsets.only(right: 12, top: 4),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-                                      size: 16,
-                                      color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      label,
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.4),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
-        flexibleSpace: Container(decoration: const BoxDecoration(gradient: AppColors.primaryGradient)),
-        title: Text(widget.username, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.transparent,
+        title: Text(widget.username.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert_rounded),
             onPressed: _showOptions,
           ),
         ],
@@ -317,13 +221,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
 
           int totalBaseTricks = 0;
-          int totalCompletedVariations = completedTricks.length;
-
           for (var cat in stats) {
             totalBaseTricks += (cat['totalTricks'] as num).toInt();
           }
-
-          int totalPossible = totalBaseTricks * 4;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -347,18 +247,18 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 Text('@${widget.username}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
                 const SizedBox(height: 8),
                 Text(
-                  '$_followerCount ${widget.localizations.followers}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                  '$_friendCount ${widget.localizations.friends.toUpperCase()}',
+                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
                 ),
                 const SizedBox(height: 24),
                 
                 ElevatedButton.icon(
-                  onPressed: _handleFollowToggle,
-                  icon: Icon(_isFollowing ? Icons.check : Icons.person_add),
-                  label: Text(_isFollowing ? widget.localizations.following : widget.localizations.follow),
+                  onPressed: _handleFriendToggle,
+                  icon: Icon(_isFriend ? Icons.check : Icons.person_add),
+                  label: Text(_isFriend ? widget.localizations.friend.toUpperCase() : widget.localizations.addFriend.toUpperCase()),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isFollowing ? Colors.grey[200] : AppColors.primary,
-                    foregroundColor: _isFollowing ? Colors.black87 : Colors.white,
+                    backgroundColor: _isFriend ? Colors.grey[200] : AppColors.primary,
+                    foregroundColor: _isFriend ? Colors.black87 : Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -371,15 +271,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
                   ),
                   child: SkateHeatmap(
                     sessions: sessions,
@@ -391,8 +284,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
                 SegmentedButton<TrackerView>(
                   segments: [
-                    ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category)),
-                    ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run)),
+                    ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category_outlined)),
+                    ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run_rounded)),
                   ],
                   selected: {_currentView},
                   onSelectionChanged: (val) => setState(() => _currentView = val.first),
@@ -401,11 +294,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 const SizedBox(height: 32),
                 
                 if (_currentView == TrackerView.category) ...[
-                  Text(
-                    '$totalCompletedVariations / $totalPossible ${widget.localizations.tricksCompleted}',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
-                  ),
-                  const SizedBox(height: 24),
                   _buildCategoryChart(stats, completedTricks),
                   const SizedBox(height: 32),
                   _buildCategoryList(stats, completedTricks),
@@ -431,10 +319,10 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 0.85,
+        crossAxisCount: 4,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.65,
       ),
       itemCount: 4,
       itemBuilder: (context, index) {
@@ -443,58 +331,38 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         final count = stanceCounts[stance] ?? 0;
         final double progress = totalPerStance > 0 ? count / totalPerStance : 0;
 
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            _showTricksSheet(context, _formatStance(stance), null, completedTricks, filteredStance: stance);
-          },
-          child: Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: color.withValues(alpha: 0.1), width: 1),
-            ),
-            color: color.withValues(alpha: 0.03),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _formatStance(stance),
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: color),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: CircularProgressIndicator(
-                            value: progress,
-                            strokeWidth: 8,
-                            backgroundColor: color.withValues(alpha: 0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                            strokeCap: StrokeCap.round,
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('$count', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                            Text('/$totalPerStance', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                          ],
-                        ),
-                      ],
+        return Container(
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.1)),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(stance.substring(0, 3).toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: color, letterSpacing: 0.5)),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 45, height: 45,
+                      child: CircularProgressIndicator(
+                        value: progress, strokeWidth: 4,
+                        backgroundColor: color.withValues(alpha: 0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        strokeCap: StrokeCap.round,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('${(progress * 100).toStringAsFixed(0)}%', style: TextStyle(fontWeight: FontWeight.bold, color: color.withValues(alpha: 0.8))),
-                ],
+                    Text('${(progress * 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color)),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text('$count/$totalPerStance', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.grey)),
+            ],
           ),
         );
       },
@@ -509,30 +377,13 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       height: 200,
       child: PieChart(
         PieChartData(
-          pieTouchData: PieTouchData(
-            touchCallback: (FlTouchEvent event, pieTouchResponse) {
-              setState(() {
-                if (!event.isInterestedForInteractions || pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
-                  _touchedIndex = -1;
-                  return;
-                }
-                _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                if (event is FlTapUpEvent) {
-                  final cat = activeStats[_touchedIndex!];
-                  _showTricksSheet(context, cat['name'] ?? widget.localizations.category, cat['id'], allCompleted); 
-                }
-              });
-            },
-          ),
           sections: activeStats.asMap().entries.map((entry) {
-            final idx = entry.key;
             final cat = entry.value;
-            final isTouched = idx == _touchedIndex;
             return PieChartSectionData(
               color: categoryColors[cat['id']] ?? Colors.grey,
               value: (cat['completedTricks'] as num).toDouble(),
               title: '${cat['completedTricks']}',
-              radius: isTouched ? 60 : 50,
+              radius: 50,
               titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             );
           }).toList(),
@@ -548,13 +399,31 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       itemCount: stats.length,
       itemBuilder: (context, index) {
         final cat = stats[index];
-        return ListTile(
-          onTap: () => _showTricksSheet(context, cat['name'] ?? widget.localizations.category, cat['id'], allCompleted),
-          leading: CircleAvatar(radius: 8, backgroundColor: categoryColors[cat['id']] ?? Colors.grey),
-          title: Text(cat['name'] ?? widget.localizations.category),
-          trailing: Text(
-            '${cat['completedTricks']}/${(cat['totalTricks'] as num) * 4}',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+        final id = cat['id'];
+        final total = (cat['totalTricks'] as num) * 4;
+        final count = cat['completedTricks'] as num;
+        final progress = count / total;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.05)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(cat['name'].toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+                  Text('${(progress * 100).toInt()}%', style: TextStyle(fontWeight: FontWeight.w900, color: categoryColors[id] ?? AppColors.primary)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              LinearProgressIndicator(value: progress, backgroundColor: Colors.grey.withValues(alpha: 0.1), valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? AppColors.primary), minHeight: 4),
+            ],
           ),
         );
       },

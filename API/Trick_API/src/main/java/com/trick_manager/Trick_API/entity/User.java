@@ -35,9 +35,9 @@ public class User {
     private boolean isPublic = true;
 
     @ElementCollection
-    @CollectionTable(name = "user_following", joinColumns = @JoinColumn(name = "user_id"))
-    @Column(name = "followed_user_id")
-    private Set<Long> followingIds = new HashSet<>();
+    @CollectionTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "friend_user_id")
+    private Set<Long> friendIds = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(name = "user_blocked", joinColumns = @JoinColumn(name = "user_id"))

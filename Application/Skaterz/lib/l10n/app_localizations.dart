@@ -201,9 +201,14 @@ abstract class AppLocalizations {
   String get blockedUsers;
   String get noBlockedUsers;
   String get termsOfUse;
-  String get following;
-  String get follow;
-  String get unfollow;
+  
+  // Friends Rebranding
+  String get friends;
+  String get addFriend;
+  String get unfriend;
+  String get friend;
+  
+  String get reportReason;
 }
 
 // German translations
@@ -351,9 +356,13 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get blockedUsers => 'Blockierte Benutzer';
   @override String get noBlockedUsers => 'Keine blockierten Benutzer.';
   @override String get termsOfUse => 'Nutzungsbedingungen';
-  @override String get following => 'Folge ich';
-  @override String get follow => 'Folgen';
-  @override String get unfollow => 'Entfolgen';
+  
+  @override String get friends => 'Freunde';
+  @override String get addFriend => 'Freund hinzufügen';
+  @override String get unfriend => 'Entfreunden';
+  @override String get friend => 'Befreundet';
+  
+  @override String get reportReason => 'Unangemessener Inhalt';
 }
 
 // English translations
@@ -501,9 +510,13 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get blockedUsers => 'Blocked Users';
   @override String get noBlockedUsers => 'No blocked users.';
   @override String get termsOfUse => 'Terms of Use';
-  @override String get following => 'Following';
-  @override String get follow => 'Follow';
-  @override String get unfollow => 'Unfollow';
+  
+  @override String get friends => 'Friends';
+  @override String get addFriend => 'Add Friend';
+  @override String get unfriend => 'Unfriend';
+  @override String get friend => 'Friend';
+  
+  @override String get reportReason => 'Inappropriate content';
 }
 
 // Spanish translations (minimal for store compliance)
@@ -520,7 +533,7 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get english => 'Inglés';
   @override String get german => 'Alemán';
   @override String get italian => 'Italiano';
-  @override String get french => 'Francés';
+  @override String get french => 'Französisch';
   @override String get spanish => 'Español';
   @override String get username => 'Usuario';
   @override String get name => 'Nombre';
@@ -564,7 +577,7 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get publicProfile => 'Público';
   @override String get publicProfileSubtitle => 'Ver progreso de otros.';
   @override String get privateProfile => 'Privado';
-  @override String get profileIsPrivate => 'Este perfil es privado.';
+  @override String get profileIsPrivate => 'Este perfil es privat.';
   @override String get profileVisibility => 'Ver';
   @override String get recentlyCompleted => 'Reciente';
   @override String get noTricksYet => 'Nada';
@@ -651,9 +664,13 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get blockedUsers => 'Usuarios Bloqueados';
   @override String get noBlockedUsers => 'No hay usuarios bloqueados.';
   @override String get termsOfUse => 'Términos de Uso';
-  @override String get following => 'Siguiendo';
-  @override String get follow => 'Seguir';
-  @override String get unfollow => 'Dejar de seguir';
+  
+  @override String get friends => 'Amigos';
+  @override String get addFriend => 'Añadir Amigo';
+  @override String get unfriend => 'Eliminar Amigo';
+  @override String get friend => 'Amigo';
+  
+  @override String get reportReason => 'Contenido inapropiado';
 }
 
 // Italian translations (minimal for store compliance)
@@ -670,7 +687,7 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get english => 'Inglese';
   @override String get german => 'Tedesco';
   @override String get italian => 'Italiano';
-  @override String get french => 'Francese';
+  @override String get french => 'Französisch';
   @override String get spanish => 'Spagnolo';
   @override String get username => 'Utente';
   @override String get name => 'Nome';
@@ -801,9 +818,13 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get blockedUsers => 'Utenti Bloccati';
   @override String get noBlockedUsers => 'Nessun utente bloccato.';
   @override String get termsOfUse => 'Termini di Servizio';
-  @override String get following => 'Segui';
-  @override String get follow => 'Segui';
-  @override String get unfollow => 'Non seguire più';
+  
+  @override String get friends => 'Amici';
+  @override String get addFriend => 'Aggiungi Amico';
+  @override String get unfriend => 'Rimuovi Amico';
+  @override String get friend => 'Amico';
+  
+  @override String get reportReason => 'Contenuto inappropriato';
 }
 
 // French translations (minimal for store compliance)
@@ -820,14 +841,14 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get english => 'Anglais';
   @override String get german => 'Allemand';
   @override String get italian => 'Italien';
-  @override String get french => 'Français';
-  @override String get spanish => 'Espagnol';
+  @override String get french => 'Französisch';
+  @override String get spanish => 'Español';
   @override String get username => 'Utilisateur';
   @override String get name => 'Nom';
   @override String get password => 'Mot de passe';
   @override String get email => 'Email';
   @override String get loginPageTitle => 'Login';
-  @override String get loginButton => 'Entrer';
+  @override String get loginButton => 'Entrar';
   @override String get registerButton => 'Inscrire';
   @override String get registerPageTitle => 'Créer un Compte';
   @override String get logoutButton => 'Sortir';
@@ -851,7 +872,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get enterUsername => 'User';
   @override String get enterEmail => 'Email';
   @override String get passwordTooShort => 'Court';
-  @override String get recentActivity => 'Activité';
+  @override String get recentActivity => 'Activität';
   @override String get noActivity => 'Rien';
   @override String get loginNow => 'Entrer';
   @override String get emailAlreadyExists => 'Existe';
@@ -944,7 +965,11 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get blockedUsers => 'Utilisateurs Bloqués';
   @override String get noBlockedUsers => 'Aucun utilisateur bloqué.';
   @override String get termsOfUse => 'Conditions d\'Utilisation';
-  @override String get following => 'Suivi';
-  @override String get follow => 'Suivre';
-  @override String get unfollow => 'Ne plus suivre';
+  
+  @override String get friends => 'Amis';
+  @override String get addFriend => 'Ajouter Ami';
+  @override String get unfriend => 'Supprimer Ami';
+  @override String get friend => 'Ami';
+  
+  @override String get reportReason => 'Contenu inapproprié';
 }
