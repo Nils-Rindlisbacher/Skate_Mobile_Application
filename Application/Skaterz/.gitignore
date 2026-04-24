@@ -43,7 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
+Application/Skaterz/.dart_tool/chrome-device/
 .packages
 build/
 android/.gradle/
