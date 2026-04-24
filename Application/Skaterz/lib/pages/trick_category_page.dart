@@ -67,11 +67,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: widget.localizations.trickListMenuItem,
-        isDarkMode: isDark,
-        onMenuTap: widget.onMenuTap,
-      ),
+      appBar: null,
       body: _isLoading && _allCategories.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
