@@ -1,9 +1,11 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/widgets/login_required_view.dart';
 import 'package:skaterz/core/constants.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
 
 enum TrackerView { category, stance }
 
@@ -104,17 +106,17 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
-
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
         onLogin: widget.onLogin,
         featureName: widget.localizations.progressTrackerMenuItem,
         icon: Icons.analytics_outlined,
-        onMenuTap: widget.onMenuTap,
+        onMenuTap: () { }
       );
     }
+    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -134,16 +136,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         final int completedVariationsCount = _completed.length;
 
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            title: Text(widget.localizations.progressTrackerMenuItem.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
-            elevation: 0,
-            iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
-            leading: !isDesktop ? IconButton(
-              icon: const Icon(Icons.menu_rounded),
-              onPressed: widget.onMenuTap,
-            ) : null,
-          ),
+          appBar: null,
           body: _isLoading && _stats.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(
@@ -162,7 +155,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                         const SizedBox(height: 30),
                         SegmentedButton<TrackerView>(
                           style: SegmentedButton.styleFrom(
-                            backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                            backgroundColor: Colors.grey.withOpacity(0.1),
                             selectedBackgroundColor: AppColors.primary,
                             selectedForegroundColor: Colors.white,
                             side: BorderSide.none,
@@ -282,8 +275,8 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         decoration: BoxDecoration(
           color: isDark ? AppColors.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -312,7 +305,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 6,
-                backgroundColor: color.withValues(alpha: 0.1),
+                backgroundColor: color.withOpacity(0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(color),
               ),
             ),
@@ -366,9 +359,9 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
       },
       child: Container(
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.05),
+          color: color.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.1)),
+          border: Border.all(color: color.withOpacity(0.1)),
         ),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         child: Column(
@@ -389,7 +382,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                     child: CircularProgressIndicator(
                       value: progress,
                       strokeWidth: 4,
-                      backgroundColor: color.withValues(alpha: 0.1),
+                      backgroundColor: color.withOpacity(0.1),
                       valueColor: AlwaysStoppedAnimation<Color>(color),
                       strokeCap: StrokeCap.round,
                     ),
@@ -484,7 +477,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                     Icon(
                                       isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                                       size: 16,
-                                      color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.2),
+                                      color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.2),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -492,7 +485,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: isDone ? stanceColors[s] : Colors.grey.withValues(alpha: 0.4),
+                                        color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.4),
                                       ),
                                     ),
                                   ],

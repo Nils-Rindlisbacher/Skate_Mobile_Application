@@ -79,6 +79,8 @@ abstract class AppLocalizations {
   String get failedToUpload;
   String get loadingData;
   String get noUsersFound;
+  String get profilePicture;
+  String get chooseGif;
 
   // Account management
   String get deleteAccount;
@@ -279,6 +281,8 @@ class AppLocalizationsDe implements AppLocalizations {
   @override String get failedToUpload => 'Bild-Upload fehlgeschlagen';
   @override String get loadingData => 'Daten werden geladen...';
   @override String get noUsersFound => 'Keine Nutzer gefunden.';
+  @override String get profilePicture => 'Profilbild';
+  @override String get chooseGif => 'GIF auswählen';
   @override String get deleteAccount => 'Konto löschen';
   @override String get deleteAccountConfirm => 'Konto endgültig löschen?';
   @override String get deleteAccountWarning => 'Diese Aktion kann nicht rückgängig gemacht werden. Alle deine Daten werden gelöscht.';
@@ -434,6 +438,8 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get failedToUpload => 'Failed to upload image';
   @override String get loadingData => 'Loading data...';
   @override String get noUsersFound => 'No users found.';
+  @override String get profilePicture => 'Profile Picture';
+  @override String get chooseGif => 'Choose a GIF';
   @override String get deleteAccount => 'Delete Account';
   @override String get deleteAccountConfirm => 'Delete account?';
   @override String get deleteAccountWarning => 'This action cannot be undone. All your data will be permanently deleted.';
@@ -589,6 +595,8 @@ class AppLocalizationsEs implements AppLocalizations {
   @override String get failedToUpload => 'Error';
   @override String get loadingData => 'Cargando';
   @override String get noUsersFound => 'Nada';
+  @override String get profilePicture => 'Foto de perfil';
+  @override String get chooseGif => 'Elegir un GIF';
   @override String get deleteAccount => 'Eliminar cuenta';
   @override String get deleteAccountConfirm => '¿Borrar?';
   @override String get deleteAccountWarning => 'Cuidado';
@@ -738,12 +746,14 @@ class AppLocalizationsIt implements AppLocalizations {
   @override String get privateProfile => 'Privato';
   @override String get profileIsPrivate => 'Questo profilo è privato.';
   @override String get profileVisibility => 'Vedi';
-  @override String get recentlyCompleted => 'Recente';
+  @override String get recentlyCompleted => 'Reciente';
   @override String get noTricksYet => 'Nulla';
   @override String get profilePictureUpdated => 'Aggiornato';
   @override String get failedToUpload => 'Errore';
   @override String get loadingData => 'Caricando';
   @override String get noUsersFound => 'Nulla';
+  @override String get profilePicture => 'Foto profilo';
+  @override String get chooseGif => 'Scegli una GIF';
   @override String get deleteAccount => 'Elimina account';
   @override String get deleteAccountConfirm => 'Cancella?';
   @override String get deleteAccountWarning => 'Attenzione';
@@ -878,7 +888,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get enterUsername => 'User';
   @override String get enterEmail => 'Email';
   @override String get passwordTooShort => 'Court';
-  @override String get recentActivity => 'Activität';
+  @override String get recentActivity => 'Activité';
   @override String get noActivity => 'Rien';
   @override String get loginNow => 'Entrer';
   @override String get emailAlreadyExists => 'Existe';
@@ -899,6 +909,8 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get failedToUpload => 'Erreur';
   @override String get loadingData => 'Chargement';
   @override String get noUsersFound => 'Rien';
+  @override String get profilePicture => 'Photo de profil';
+  @override String get chooseGif => 'Choisir un GIF';
   @override String get deleteAccount => 'Supprimer le compte';
   @override String get deleteAccountConfirm => 'Supprimer?';
   @override String get deleteAccountWarning => 'Attention';
@@ -922,7 +934,7 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get personalization => 'Perso'; @override String get darkMode => 'Sombre';
   @override String get changeLanguage => 'Langue'; @override String get skatedToday => 'Skate aujourd\'hui';
   @override String get endSession => 'Fin'; @override String get skatingNow => 'Skate';
-  @override String get activityHeatmap => 'Activität'; @override String get streakCount => 'Racha';
+  @override String get activityHeatmap => 'Activité'; @override String get streakCount => 'Racha';
   @override String get sessionMood => 'Comment?'; @override String get stance => 'Position';
   @override String get visibilityUpdated => 'Mis à jour';
   @override String get noTricksFound => 'Rien';
@@ -977,5 +989,5 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get unfriend => 'Supprimer Ami';
   @override String get friend => 'Ami';
   
-  @override String get reportReason => 'Contenu inappropriat';
+  @override String get reportReason => 'Contenu inapproprié';
 }

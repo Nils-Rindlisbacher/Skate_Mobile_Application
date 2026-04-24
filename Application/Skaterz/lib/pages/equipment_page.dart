@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -12,13 +13,11 @@ class EquipmentPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
-    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
-  final VoidCallback onMenuTap;
 
   @override
   State<EquipmentPage> createState() => _EquipmentPageState();
@@ -147,15 +146,13 @@ class _EquipmentPageState extends State<EquipmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 800;
-
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
         onLogin: widget.onLogin,
         featureName: widget.localizations.equipmentMenuItem,
         icon: Icons.handyman_outlined,
-        onMenuTap: widget.onMenuTap,
+        onMenuTap: () {  },
       );
     }
 
@@ -164,17 +161,6 @@ class _EquipmentPageState extends State<EquipmentPage> {
     final inactiveItems = _equipment.where((e) => e['isActive'] != true && e['active'] != true).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
-        ),
-        title: Text(widget.localizations.equipmentMenuItem.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: !isDesktop ? IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Colors.white),
-          onPressed: widget.onMenuTap,
-        ) : null,
-      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'equipment_fab_main',
         onPressed: () => _showAddEditSheet(),

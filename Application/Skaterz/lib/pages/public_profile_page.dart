@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -195,17 +196,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        title: Text(widget.username.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded),
-            onPressed: _showOptions,
-          ),
-        ],
-      ),
+      appBar: null,
       body: FutureBuilder<Map<String, dynamic>>(
         future: _loadProfileData(),
         builder: (context, snapshot) {
@@ -245,18 +236,18 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                       ? const Icon(Icons.person, size: 60, color: Colors.grey)
                       : null,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   profile['name'] ?? widget.username,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                Text('@${widget.username}', style: const TextStyle(fontSize: 16, color: Colors.grey)),
-                const SizedBox(height: 8),
+                Text('@${widget.username}', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                SizedBox(height: 8),
                 Text(
                   '$_friendCount ${widget.localizations.friends.toUpperCase()}',
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
+                  style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
                 
                 ElevatedButton.icon(
                   onPressed: _handleFriendToggle,
@@ -284,7 +275,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.1)),
                   ),
                   child: SkateHeatmap(
                     sessions: sessions,
@@ -343,7 +334,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -392,9 +383,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
         return Container(
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.05),
+            color: color.withOpacity(0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.1)),
+            border: Border.all(color: color.withOpacity(0.1)),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           child: Column(
@@ -410,7 +401,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                       width: 45, height: 45,
                       child: CircularProgressIndicator(
                         value: progress, strokeWidth: 4,
-                        backgroundColor: color.withValues(alpha: 0.1),
+                        backgroundColor: color.withOpacity(0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(color),
                         strokeCap: StrokeCap.round,
                       ),
@@ -469,7 +460,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.05)),
+            border: Border.all(color: AppColors.primary.withOpacity(0.05)),
           ),
           child: Column(
             children: [
@@ -481,7 +472,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 ],
               ),
               const SizedBox(height: 8),
-              LinearProgressIndicator(value: progress, backgroundColor: Colors.grey.withValues(alpha: 0.1), valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? AppColors.primary), minHeight: 4),
+              LinearProgressIndicator(value: progress, backgroundColor: Colors.grey.withOpacity(0.1), valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? AppColors.primary), minHeight: 4),
             ],
           ),
         );

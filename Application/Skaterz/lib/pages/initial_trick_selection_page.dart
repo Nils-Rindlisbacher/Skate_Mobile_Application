@@ -140,14 +140,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
     ).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
-        title: Text(
-          widget.localizations.selectInitialTricksTitle,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        automaticallyImplyLeading: false,
-      ),
+      appBar: null,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -196,12 +189,12 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              color: Colors.grey.withValues(alpha: 0.1),
+                              color: Colors.grey.withOpacity(0.1),
                               child: Text(
                                 categoryName,
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.primary.withValues(alpha: 0.8),
+                                  color: AppColors.primary.withOpacity(0.8),
                                   fontSize: 14,
                                   letterSpacing: 1.1,
                                 ),
@@ -231,7 +224,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                                       ),
                                       selected: isSelected,
                                       selectedColor: AppColors.primary,
-                                      backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                                      backgroundColor: Colors.grey.withOpacity(0.1),
                                       showCheckmark: false,
                                       onSelected: (_) => _toggleStance(id, stance),
                                       padding: const EdgeInsets.symmetric(horizontal: 8),

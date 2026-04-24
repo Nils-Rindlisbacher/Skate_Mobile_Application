@@ -13,7 +13,6 @@ class SettingsPage extends StatefulWidget {
     required this.onLogout,
     required this.isDarkMode,
     required this.onThemeToggle,
-    required this.onMenuTap,
     required this.onLanguageChange,
     this.userData,
     this.onPrivacyChanged,
@@ -25,7 +24,6 @@ class SettingsPage extends StatefulWidget {
   final VoidCallback onLogout;
   final bool isDarkMode;
   final Function(bool) onThemeToggle;
-  final VoidCallback onMenuTap;
   final Function(String) onLanguageChange;
   final Map<String, dynamic>? userData;
   final VoidCallback? onPrivacyChanged;
@@ -98,7 +96,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildColorTile(String title, Color color, VoidCallback onTap) {
     return ListTile(
       title: Text(title),
-      trailing: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.grey.withValues(alpha: 0.2)))),
+      trailing: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.grey.withOpacity(0.2)))),
       onTap: onTap,
     );
   }
@@ -109,11 +107,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final primaryIconColor = isDark ? AppColors.secondary : AppColors.primary;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        title: Text(widget.localizations.settingsMenuItem.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: widget.onMenuTap),
-      ),
       body: ListView(
         children: [
           _buildSectionHeader(widget.localizations.personalization),
@@ -131,15 +124,22 @@ class _SettingsPageState extends State<SettingsPage> {
             activeColor: AppColors.primary,
           ),
 
-          _buildSectionHeader('App Branding'),
-          _buildColorTile('Dark Mode Primary', AppColors.primary, () => _pickColor('primary', AppColors.primary)),
-          _buildColorTile('Dark Mode Secondary', AppColors.secondary, () => _pickColor('secondary', AppColors.secondary)),
-          _buildColorTile('Light Mode Primary', AppColors.primaryOld, () => _pickColor('primaryOld', AppColors.primaryOld)),
-          _buildColorTile('Light Mode Secondary', AppColors.secondaryOld, () => _pickColor('secondaryOld', AppColors.secondaryOld)),
-          _buildColorTile('Sidebar Top', AppColors.sidebarTop, () => _pickColor('sidebarTop', AppColors.sidebarTop)),
-          _buildColorTile('Sidebar Bottom', AppColors.sidebarBottom, () => _pickColor('sidebarBottom', AppColors.sidebarBottom)),
+//          _buildSectionHeader('App Branding'),
+//          _buildColorTile('Dark Mode Primary', AppColors.primary, () => _pickColor('primary', AppColors.primary)),
+//          _buildColorTile('Dark Mode Secondary', AppColors.secondary, () => _pickColor('secondary', AppColors.secondary)),
+//          _buildColorTile('Light Mode Primary', AppColors.primaryOld, () => _pickColor('primaryOld', AppColors.primaryOld)),
+//          _buildColorTile('Light Mode Secondary', AppColors.secondaryOld, () => _pickColor('secondaryOld', AppColors.secondaryOld)),
+//          _buildColorTile('Sidebar Top', AppColors.sidebarTop, () => _pickColor('sidebarTop', AppColors.sidebarTop)),
+//          _buildColorTile('Sidebar Bottom', AppColors.sidebarBottom, () => _pickColor('sidebarBottom', AppColors.sidebarBottom)),
 
           if (widget.isLoggedIn) ...[
+            _buildSectionHeader(widget.localizations.profilePicture),
+            ListTile(
+              leading: Icon(Icons.gif, color: primaryIconColor),
+              title: Text(widget.localizations.chooseGif),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () {},
+            ),
             _buildSectionHeader(widget.localizations.profileVisibility),
             SwitchListTile(
               secondary: Icon(Icons.public_rounded, color: primaryIconColor),
@@ -160,7 +160,7 @@ class _SettingsPageState extends State<SettingsPage> {
             _buildSectionHeader(widget.localizations.deleteAccount),
             ListTile(
               leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-              title: Text(widget.localizations.deleteAccount, style: const TextStyle(color: Colors.red)),
+              title: const Text("Delete Account", style: TextStyle(color: Colors.red)),
               onTap: () => _showDeleteConfirmation(),
             ),
           ],

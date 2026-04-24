@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/pages/trick_list_page.dart';
 import 'package:skaterz/core/constants.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
 
 class TrickCategoryPage extends StatefulWidget {
   const TrickCategoryPage({
@@ -62,23 +64,13 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
-        ),
-        title: Text(
-          widget.localizations.trickListMenuItem,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: !isDesktop ? IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.onMenuTap,
-        ) : null,
+      appBar: CustomAppBar(
+        title: widget.localizations.trickListMenuItem,
+        isDarkMode: isDark,
+        onMenuTap: widget.onMenuTap,
       ),
       body: _isLoading && _allCategories.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -146,7 +138,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: color.withValues(alpha: 0.15), width: 1),
+          side: BorderSide(color: color.withOpacity(0.15), width: 1),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -156,7 +148,7 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, size: 40, color: color),

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +12,7 @@ import 'package:skaterz/pages/trick_category_page.dart';
 import 'package:skaterz/pages/session_goals_page.dart';
 import 'package:skaterz/pages/equipment_page.dart';
 import 'package:skaterz/pages/friends_page.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
 import 'package:skaterz/widgets/side_menu.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/core/app_theme.dart';
@@ -18,11 +20,11 @@ import 'package:skaterz/core/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   if (kIsWeb) {
     SystemChannels.skia.invokeMethod<void>('setContextMenusEnabled', false).catchError((_) {});
   }
-  
+
   if (!kIsWeb) {
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
@@ -50,7 +52,10 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    _initializeApp();
+
+    Future.delayed(Duration.zero, () {
+      _initializeApp(); // ✅ runs AFTER first frame
+    });
   }
 
   Future<void> _initializeApp() async {
@@ -60,7 +65,7 @@ class _MyAppState extends State<MyApp> {
       _checkLoginStatus(),
       _apiService.warmUp(),
     ]);
-    
+
     _apiService.onUnauthorized = _handleLogout;
   }
 
@@ -93,7 +98,7 @@ class _MyAppState extends State<MyApp> {
     final token = await _apiService.getToken();
     if (token != null) {
       if (mounted) setState(() => _isLoggedIn = true);
-      
+
       final cachedUser = await _apiService.getCachedData('user_me');
       if (cachedUser != null && mounted) {
         setState(() => _userData = cachedUser);
@@ -132,7 +137,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(_locale);
-    
+
     return MaterialApp(
       title: localizations.homePageTitle,
       debugShowCheckedModeBanner: false,
@@ -191,7 +196,7 @@ class _MainShellState extends State<MainShell> {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
-    
+
     if (_selectedIndex != index) {
       setState(() {
         _navigationHistory.add(index);
@@ -211,12 +216,23 @@ class _MainShellState extends State<MainShell> {
     return true;
   }
 
-  void _toggleMenu() {
-    setState(() => _isMenuExpanded = !_isMenuExpanded);
-  }
-
   void _openDrawer() {
     _scaffoldKey.currentState?.openDrawer();
+  }
+
+  String _getTitleForIndex(int index) {
+    switch (index) {
+      case 0: return widget.localizations.homePageTitle;
+      case 1: return widget.localizations.profileMenuItem;
+      case 2: return widget.localizations.trickListMenuItem;
+      case 3: return widget.localizations.progressTrackerMenuItem;
+      case 4: return widget.localizations.leaderboardMenuItem;
+      case 5: return widget.localizations.friends;
+      case 6: return widget.localizations.sessionGoalsMenuItem;
+      case 7: return widget.localizations.equipmentMenuItem;
+      case 8: return widget.localizations.settingsMenuItem;
+      default: return widget.localizations.homePageTitle;
+    }
   }
 
   @override
@@ -230,14 +246,14 @@ class _MainShellState extends State<MainShell> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isDesktop = constraints.maxWidth > 800;
-          
+
           final sideMenu = SideMenu(
             localizations: widget.localizations,
             isLoggedIn: widget.isLoggedIn,
             userData: widget.userData,
             isExpanded: _isMenuExpanded,
             isDesktop: isDesktop,
-            onToggleMenu: _toggleMenu,
+            onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
             onLanguageChange: widget.onLanguageChange,
             onProfileTap: () => _onItemTapped(1),
             onTrickListTap: () => _onItemTapped(2),
@@ -250,9 +266,14 @@ class _MainShellState extends State<MainShell> {
             isDarkMode: widget.isDarkMode,
             onThemeToggle: widget.onThemeToggle,
           );
-  
+
           return Scaffold(
             key: _scaffoldKey,
+            appBar: CustomAppBar(
+              title: _getTitleForIndex(_selectedIndex),
+              isDarkMode: widget.isDarkMode,
+              onMenuTap: isDesktop ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) : _openDrawer,
+            ),
             drawer: isDesktop ? null : sideMenu,
             body: Row(
               children: [
@@ -264,36 +285,34 @@ class _MainShellState extends State<MainShell> {
                         index: _selectedIndex,
                         children: [
                           _HomeView(
-                            localizations: widget.localizations, 
-                            isDarkMode: widget.isDarkMode, 
-                            isDesktop: isDesktop,
-                            onMenuTap: _openDrawer,
+                            localizations: widget.localizations,
+                            isDarkMode: widget.isDarkMode,
                           ),
                           widget.isLoggedIn
                               ? ProfilePage(
-                                  localizations: widget.localizations, 
+                                  localizations: widget.localizations,
                                   onLogout: widget.onLogout,
                                   onUserDataChanged: widget.onRefreshUser,
                                   isLoggedIn: widget.isLoggedIn,
                                   isActive: _selectedIndex == 1,
-                                  onMenuTap: _openDrawer,
+                                  onMenuTap: () {  },
                                 )
                               : LogInPage(
-                                  localizations: widget.localizations, 
+                                  localizations: widget.localizations,
                                   onLogin: widget.onLogin,
-                                  onMenuTap: _openDrawer,
+                                  onMenuTap: () {  },
                                 ),
                           TrickCategoryPage(
-                            localizations: widget.localizations, 
+                            localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
-                            onMenuTap: _openDrawer,
+                            onMenuTap: () {  },
                           ),
                           ProgressTrackerPage(
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
                             isActive: _selectedIndex == 3,
-                            onMenuTap: _openDrawer,
+                            onMenuTap: () {  },
                           ),
                           LeaderboardPage(
                             localizations: widget.localizations,
@@ -302,23 +321,21 @@ class _MainShellState extends State<MainShell> {
                             onNavigateToSettings: () => _onItemTapped(8),
                             userData: widget.userData,
                             isActive: _selectedIndex == 4,
-                            onMenuTap: _openDrawer,
                           ),
                           FriendsPage(
                             localizations: widget.localizations,
-                            onMenuTap: _openDrawer,
+                            isLoggedIn: widget.isLoggedIn,
+                            onLogin: widget.onLogin,
                           ),
                           SessionGoalsPage(
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
-                            onMenuTap: _openDrawer,
                           ),
                           EquipmentPage(
                             localizations: widget.localizations,
                             isLoggedIn: widget.isLoggedIn,
                             onLogin: widget.onLogin,
-                            onMenuTap: _openDrawer,
                           ),
                           SettingsPage(
                             localizations: widget.localizations,
@@ -329,7 +346,6 @@ class _MainShellState extends State<MainShell> {
                             onThemeToggle: widget.onThemeToggle,
                             userData: widget.userData,
                             onPrivacyChanged: widget.onRefreshUser,
-                            onMenuTap: _openDrawer,
                             onLanguageChange: widget.onLanguageChange,
                           ),
                         ],
@@ -348,21 +364,17 @@ class _MainShellState extends State<MainShell> {
 
 class _HomeView extends StatelessWidget {
   const _HomeView({
-    required this.localizations, 
-    required this.isDarkMode, 
-    required this.isDesktop,
-    required this.onMenuTap,
+    required this.localizations,
+    required this.isDarkMode,
   });
-  
+
   final AppLocalizations localizations;
   final bool isDarkMode;
-  final bool isDesktop;
-  final VoidCallback onMenuTap;
 
   @override
   Widget build(BuildContext context) {
     final Color textColor = isDarkMode ? AppColors.primary : AppColors.primaryOld;
-    
+
     final content = Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -372,8 +384,8 @@ class _HomeView extends StatelessWidget {
           Text(
             localizations.welcomeMessage,
             style: TextStyle(
-              fontSize: 24, 
-              fontWeight: FontWeight.bold, 
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
               color: textColor,
             ),
           ),
@@ -382,23 +394,6 @@ class _HomeView extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: isDarkMode ? AppColors.primaryGradient : AppColors.oldGradient
-          ),
-        ),
-        title: Text(
-          localizations.homePageTitle,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: !isDesktop ? IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: onMenuTap,
-        ) : null,
-      ),
       body: content,
     );
   }

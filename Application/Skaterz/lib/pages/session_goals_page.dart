@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,13 +14,11 @@ class SessionGoalsPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
-    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
-  final VoidCallback onMenuTap;
 
   @override
   State<SessionGoalsPage> createState() => _SessionGoalsPageState();
@@ -164,15 +163,13 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
-
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
         onLogin: widget.onLogin,
         featureName: widget.localizations.sessionGoalsTitle,
         icon: Icons.track_changes,
-        onMenuTap: widget.onMenuTap,
+        onMenuTap: () { },
       );
     }
 
@@ -180,22 +177,6 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
     final completedGoals = _goals.where((g) => g.isCompleted).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-          ),
-        ),
-        title: Text(
-          widget.localizations.sessionGoalsTitle,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: !isDesktop ? IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.onMenuTap,
-        ) : null,
-      ),
       body: _isLoading && _goals.isEmpty 
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -228,7 +209,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
                         ),
                         subtitle: Text(
                           widget.localizations.goalHint,
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                          style: TextStyle(color: Colors.white.withOpacity(0.8)),
                         ),
                         onTap: _addNewGoal,
                       ),
@@ -449,13 +430,13 @@ class _GoalTile extends StatelessWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: Icon(Icons.remove_circle_outline, color: isAddDisabled ? Colors.grey.withValues(alpha: 0.5) : accentColor),
+                    icon: Icon(Icons.remove_circle_outline, color: isAddDisabled ? Colors.grey.withOpacity(0.5) : accentColor),
                     onPressed: isAddDisabled ? null : onDecrement,
                   ),
                   IconButton(
                     icon: Icon(
                       goal.isCompleted ? Icons.check_circle : Icons.add_circle, 
-                      color: goal.isCompleted ? Colors.green : (isAddDisabled ? Colors.grey.withValues(alpha: 0.5) : accentColor),
+                      color: goal.isCompleted ? Colors.green : (isAddDisabled ? Colors.grey.withOpacity(0.5) : accentColor),
                     ),
                     onPressed: isAddDisabled ? null : onIncrement,
                   ),
@@ -464,7 +445,7 @@ class _GoalTile extends StatelessWidget {
               const SizedBox(height: 4),
               LinearProgressIndicator(
                 value: (goal.targetCount != null && goal.targetCount! > 0) ? goal.currentCount / goal.targetCount! : 0,
-                backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                backgroundColor: Colors.grey.withOpacity(0.2),
                 color: accentColor,
               ),
             ],
@@ -480,7 +461,7 @@ class _GoalTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.1),
+                      color: Colors.grey.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(

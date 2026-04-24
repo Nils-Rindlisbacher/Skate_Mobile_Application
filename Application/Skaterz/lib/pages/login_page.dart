@@ -8,13 +8,11 @@ class LogInPage extends StatefulWidget {
   const LogInPage({
     super.key,
     required this.localizations,
-    required this.onLogin,
-    required this.onMenuTap,
+    required this.onLogin, required VoidCallback onMenuTap,
   });
 
   final AppLocalizations localizations;
   final VoidCallback onLogin;
-  final VoidCallback onMenuTap;
 
   @override
   State<LogInPage> createState() => _LogInPageState();
@@ -70,20 +68,6 @@ class _LogInPageState extends State<LogInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
-        ),
-        title: Text(
-          widget.localizations.loginPageTitle,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.onMenuTap,
-        ),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -118,7 +102,7 @@ class _LogInPageState extends State<LogInPage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: _isLoading 
-                ? const SizedBox(
+                ? SizedBox(
                     height: 20, 
                     width: 20, 
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)

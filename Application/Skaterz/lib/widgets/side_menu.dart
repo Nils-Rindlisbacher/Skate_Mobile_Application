@@ -52,8 +52,6 @@ class SideMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double headerHeight = isDesktop && !isExpanded ? kToolbarHeight : 240.0;
-
     return Drawer(
       elevation: 0,
       width: isDesktop ? (isExpanded ? 280 : 80) : null,
@@ -61,7 +59,7 @@ class SideMenu extends StatelessWidget {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       child: Column(
         children: [
-          _buildHeader(context, headerHeight),
+          _buildHeader(context),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -106,7 +104,7 @@ class SideMenu extends StatelessWidget {
               padding: const EdgeInsets.all(24.0),
               child: Text(
                 "© 2024 SKATERZ",
-                style: TextStyle(color: Colors.grey.withValues(alpha: 0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
+                style: TextStyle(color: Colors.grey.withOpacity(0.5), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
               ),
             ),
         ],
@@ -114,72 +112,42 @@ class SideMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, double height) {
-    return InkWell(
-      onTap: () {
-        if (isDesktop) {
-          onToggleMenu?.call();
-        } else {
-          Navigator.pop(context);
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        height: height,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          // SWITCHED ORIENTATION: bottomCenter to topCenter instead of topLeft to bottomRight
-          gradient: LinearGradient(
-            colors: isDarkMode ? [Color(0xFFFFB74D), Color(0xFFF57C00)] : [Color(0xFF00FF88), Color(0xFF002211)],
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-          ),
-          borderRadius: BorderRadius.zero,
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (isExpanded || !isDesktop) ...[
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                  child: _buildUserAvatar(size: 40),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  isLoggedIn ? (userData?['name'] ?? '') : localizations.guest,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20),
-                ),
-                if (isLoggedIn)
-                  Text(
-                    '@${userData?['username'] ?? ''}',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13),
-                  ),
-              ] else 
-                const Icon(Icons.menu_rounded, color: Colors.white, size: 30),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildHeader(BuildContext context) {
+    final String? base64String = userData?['profile_image'] ?? userData?['profileImage'];
+    final bool hasImage = base64String != null && base64String.isNotEmpty;
 
-  Widget _buildUserAvatar({double size = 30}) {
-    if (isLoggedIn) {
-      final img = userData?['profile_image'] ?? userData?['profileImage'];
-      if (img != null) {
-        return CircleAvatar(
-          radius: size,
-          backgroundImage: MemoryImage(base64Decode(img)),
-        );
-      }
-    }
-    return CircleAvatar(
-      radius: size,
-      backgroundColor: Colors.white12,
-      child: Icon(Icons.person_rounded, size: size * 1.2, color: Colors.white),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+      decoration: BoxDecoration(
+        gradient: isDarkMode ? AppColors.primaryGradient : AppColors.oldGradient,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isExpanded || !isDesktop) ...[
+            CircleAvatar(
+              radius: 35,
+              backgroundColor: Colors.white24,
+              backgroundImage: hasImage ? MemoryImage(const Base64Decoder().convert(base64String)) : null,
+              child: !hasImage ? const Icon(Icons.person_rounded, size: 40, color: Colors.white) : null,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isLoggedIn ? (userData?['name'] ?? localizations.guest) : localizations.guest,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            if (isLoggedIn && userData?['username'] != null)
+              Text(
+                '@${userData?['username']}',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+          ] else
+            const Center(
+              child: Icon(Icons.skateboarding, color: Colors.white, size: 32),
+            ),
+        ],
+      ),
     );
   }
 

@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -13,7 +14,6 @@ class LeaderboardPage extends StatefulWidget {
     required this.isLoggedIn,
     required this.onLogin,
     required this.onNavigateToSettings,
-    required this.onMenuTap,
     this.userData,
     this.isActive = true,
   });
@@ -22,7 +22,6 @@ class LeaderboardPage extends StatefulWidget {
   final bool isLoggedIn;
   final VoidCallback onLogin;
   final VoidCallback onNavigateToSettings;
-  final VoidCallback onMenuTap;
   final Map<String, dynamic>? userData;
   final bool isActive;
 
@@ -106,7 +105,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
 
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
@@ -114,20 +112,12 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         onLogin: widget.onLogin,
         featureName: widget.localizations.leaderboardMenuItem,
         icon: Icons.emoji_events_outlined,
-        onMenuTap: widget.onMenuTap,
+        onMenuTap: () { },
       );
     }
 
     if (!_isUserPublic) {
       return Scaffold(
-        appBar: AppBar(
-          flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
-          title: Text(widget.localizations.leaderboardMenuItem, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          leading: !isDesktop ? IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: widget.onMenuTap,
-          ) : null,
-        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -182,19 +172,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
-        title: Text(
-          widget.localizations.leaderboardMenuItem,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        leading: !isDesktop ? IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: widget.onMenuTap,
-        ) : null,
-      ),
       body: Column(
         children: [
           Padding(
@@ -202,7 +179,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             child: Column(
               children: [
                 DropdownButtonFormField<int?>(
-                  initialValue: _selectedCategoryId,
+                  value: _selectedCategoryId,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: widget.localizations.trickListMenuItem,
@@ -231,7 +208,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedStance,
+                  value: _selectedStance,
                   isExpanded: true,
                   decoration: InputDecoration(
                     labelText: widget.localizations.stance,
@@ -318,7 +295,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       ),
                                       const SizedBox(width: 8),
                                       CircleAvatar(
-                                        backgroundColor: Colors.grey.withValues(alpha: 0.2),
+                                        backgroundColor: Colors.grey.withOpacity(0.2),
                                         backgroundImage: (base64Image != null && base64Image.isNotEmpty)
                                             ? MemoryImage(const Base64Decoder().convert(base64Image))
                                             : null,
@@ -336,9 +313,9 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                           margin: const EdgeInsets.only(left: 8),
                                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: Colors.blue.withValues(alpha: 0.1),
+                                            color: Colors.blue.withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
                                           ),
                                           child: Text(
                                             widget.localizations.friend.toUpperCase(),
@@ -351,7 +328,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                   trailing: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.15),
+                                      color: AppColors.primary.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(

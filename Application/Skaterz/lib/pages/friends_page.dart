@@ -1,19 +1,23 @@
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/pages/public_profile_page.dart';
 import 'package:skaterz/core/constants.dart';
+import 'package:skaterz/widgets/login_required_view.dart';
 
 class FriendsPage extends StatefulWidget {
   const FriendsPage({
     super.key,
     required this.localizations,
-    required this.onMenuTap,
+    required this.isLoggedIn,
+    required this.onLogin,
   });
 
   final AppLocalizations localizations;
-  final VoidCallback onMenuTap;
+  final bool isLoggedIn;
+  final VoidCallback onLogin;
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -27,7 +31,11 @@ class _FriendsPageState extends State<FriendsPage> {
   @override
   void initState() {
     super.initState();
-    _loadFriends();
+    if (widget.isLoggedIn) {
+      _loadFriends();
+    } else {
+      _isLoading = false;
+    }
   }
 
   Future<void> _loadFriends() async {
@@ -52,19 +60,17 @@ class _FriendsPageState extends State<FriendsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width > 800;
+
+    if (!widget.isLoggedIn) {
+      return LoginRequiredView(
+        localizations: widget.localizations,
+        onLogin: widget.onLogin,
+        featureName: widget.localizations.friends,
+        icon: Icons.people_outline_rounded, onMenuTap: () {  },
+      );
+    }
 
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
-        ),
-        title: Text(widget.localizations.friends.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
-        leading: !isDesktop ? IconButton(
-          icon: const Icon(Icons.menu_rounded, color: Colors.white),
-          onPressed: widget.onMenuTap,
-        ) : null,
-      ),
       body: RefreshIndicator(
         onRefresh: _loadFriends,
         child: _isLoading 
@@ -77,7 +83,7 @@ class _FriendsPageState extends State<FriendsPage> {
                         child: Center(
                           child: Column(
                             children: [
-                              Icon(Icons.people_outline_rounded, size: 80, color: Colors.grey.withValues(alpha: 0.3)),
+                              Icon(Icons.people_outline_rounded, size: 80, color: Colors.grey.withOpacity(0.3)),
                               const SizedBox(height: 16),
                               Text(widget.localizations.noUsersFound, style: const TextStyle(color: Colors.grey)),
                             ],
@@ -98,7 +104,7 @@ class _FriendsPageState extends State<FriendsPage> {
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                            backgroundColor: Colors.grey.withOpacity(0.1),
                             backgroundImage: avatarData != null && avatarData.isNotEmpty
                                 ? (isUrl ? NetworkImage(avatarData) : MemoryImage(base64Decode(avatarData)) as ImageProvider)
                                 : null,

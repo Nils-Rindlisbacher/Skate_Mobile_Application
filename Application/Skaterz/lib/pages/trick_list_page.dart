@@ -301,7 +301,7 @@ class _TrickListPageState extends State<TrickListPage> {
                       IconButton(
                         icon: const Icon(Icons.close_rounded),
                         onPressed: () => Navigator.pop(context),
-                        style: IconButton.styleFrom(backgroundColor: Colors.grey.withValues(alpha: 0.1)),
+                        style: IconButton.styleFrom(backgroundColor: Colors.grey.withOpacity(0.1)),
                       ),
                     ],
                   ),
@@ -319,7 +319,7 @@ class _TrickListPageState extends State<TrickListPage> {
                         label: Text(_formatStance(stance)),
                         selected: isSelected,
                         showCheckmark: false, 
-                        selectedColor: sColor.withValues(alpha: 0.2),
+                        selectedColor: sColor.withOpacity(0.2),
                         labelStyle: TextStyle(
                           color: isSelected ? sColor : null,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -349,7 +349,7 @@ class _TrickListPageState extends State<TrickListPage> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: isCompleted ? Colors.grey : Colors.red,
                             side: BorderSide(
-                              color: isCompleted ? Colors.grey.withValues(alpha: 0.2) : Colors.red, 
+                              color: isCompleted ? Colors.grey.withOpacity(0.2) : Colors.red, 
                               width: 1.5
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -404,7 +404,7 @@ class _TrickListPageState extends State<TrickListPage> {
               margin: const EdgeInsets.only(left: 4),
               child: Icon(
                 isDone ? Icons.favorite : (isWishlisted ? Icons.favorite : Icons.favorite_border),
-                color: isDone ? Colors.green : (isWishlisted ? stanceColors[stance] : Colors.grey.withValues(alpha: 0.2)),
+                color: isDone ? Colors.green : (isWishlisted ? stanceColors[stance] : Colors.grey.withOpacity(0.2)),
                 size: 14,
               ),
             );
@@ -416,7 +416,7 @@ class _TrickListPageState extends State<TrickListPage> {
           height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDone ? stanceColors[stance] : Colors.grey.withValues(alpha: 0.2),
+            color: isDone ? stanceColors[stance] : Colors.grey.withOpacity(0.2),
           ),
         );
       }).toList(),
@@ -439,12 +439,7 @@ class _TrickListPageState extends State<TrickListPage> {
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(decoration: BoxDecoration(gradient: AppColors.primaryGradient)),
-        title: Text(widget.categoryName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-      ),
+      appBar: null,
       body: Column(
         children: [
           Container(
@@ -453,7 +448,7 @@ class _TrickListPageState extends State<TrickListPage> {
               color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
+                  color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -476,7 +471,7 @@ class _TrickListPageState extends State<TrickListPage> {
                         )
                       : null,
                     filled: true,
-                    fillColor: Colors.grey.withValues(alpha: 0.1),
+                    fillColor: Colors.grey.withOpacity(0.1),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -508,7 +503,7 @@ class _TrickListPageState extends State<TrickListPage> {
                         height: 36,
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.1),
+                          color: Colors.grey.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -551,7 +546,7 @@ class _TrickListPageState extends State<TrickListPage> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withValues(alpha: 0.5)),
+                              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
                               const SizedBox(height: 16),
                               Text(widget.localizations.noTricksFound, style: const TextStyle(color: Colors.grey, fontSize: 16)),
                             ],
@@ -577,7 +572,7 @@ class _TrickListPageState extends State<TrickListPage> {
                               margin: const EdgeInsets.only(bottom: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+                                side: BorderSide(color: Colors.grey.withOpacity(0.1)),
                               ),
                               child: ListTile(
                                 onTap: () => _showTrickDetails(trick, index),
@@ -621,7 +616,7 @@ class _TrickListPageState extends State<TrickListPage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.grey.withValues(alpha: 0.1),
+          color: isSelected ? AppColors.primary : Colors.grey.withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(

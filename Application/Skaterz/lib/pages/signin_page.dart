@@ -86,16 +86,7 @@ class _SignInPageState extends State<SignInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        flexibleSpace: Container(
-          decoration: BoxDecoration(gradient: AppColors.getDynamicGradient(context)),
-        ),
-        title: Text(
-          widget.localizations.registerPageTitle,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
+      appBar: null,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
