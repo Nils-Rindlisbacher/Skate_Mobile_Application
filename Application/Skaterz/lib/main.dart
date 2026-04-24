@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -45,16 +44,15 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _locale = 'de';
   bool _isLoggedIn = false;
-  ThemeMode _themeMode = ThemeMode.dark; // Default to Dark Mode
+  ThemeMode _themeMode = ThemeMode.dark; 
   Map<String, dynamic>? _userData;
   final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
-
     Future.delayed(Duration.zero, () {
-      _initializeApp(); // ✅ runs AFTER first frame
+      _initializeApp();
     });
   }
 
@@ -65,7 +63,6 @@ class _MyAppState extends State<MyApp> {
       _checkLoginStatus(),
       _apiService.warmUp(),
     ]);
-
     _apiService.onUnauthorized = _handleLogout;
   }
 
@@ -98,7 +95,6 @@ class _MyAppState extends State<MyApp> {
     final token = await _apiService.getToken();
     if (token != null) {
       if (mounted) setState(() => _isLoggedIn = true);
-
       final cachedUser = await _apiService.getCachedData('user_me');
       if (cachedUser != null && mounted) {
         setState(() => _userData = cachedUser);
@@ -196,7 +192,6 @@ class _MainShellState extends State<MainShell> {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
-
     if (_selectedIndex != index) {
       setState(() {
         _navigationHistory.add(index);
@@ -269,88 +264,92 @@ class _MainShellState extends State<MainShell> {
 
           return Scaffold(
             key: _scaffoldKey,
+            // AppBar always on top
             appBar: CustomAppBar(
               title: _getTitleForIndex(_selectedIndex),
               isDarkMode: widget.isDarkMode,
-              onMenuTap: isDesktop ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) : _openDrawer,
+              onMenuTap: isDesktop 
+                  ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
+                  : _openDrawer,
+              showMenuButton: true,
             ),
             drawer: isDesktop ? null : sideMenu,
             body: Row(
               children: [
-                if (isDesktop) SizedBox(width: _isMenuExpanded ? 250 : 80, child: sideMenu),
+                if (isDesktop) 
+                  SizedBox(
+                    width: _isMenuExpanded ? 250 : 80, 
+                    child: sideMenu // SideMenu now naturally starts below AppBar
+                  ),
                 Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      return IndexedStack(
-                        index: _selectedIndex,
-                        children: [
-                          _HomeView(
-                            localizations: widget.localizations,
-                            isDarkMode: widget.isDarkMode,
-                          ),
-                          widget.isLoggedIn
-                              ? ProfilePage(
-                                  localizations: widget.localizations,
-                                  onLogout: widget.onLogout,
-                                  onUserDataChanged: widget.onRefreshUser,
-                                  isLoggedIn: widget.isLoggedIn,
-                                  isActive: _selectedIndex == 1,
-                                  onMenuTap: () {  },
-                                )
-                              : LogInPage(
-                                  localizations: widget.localizations,
-                                  onLogin: widget.onLogin,
-                                  onMenuTap: () {  },
-                                ),
-                          TrickCategoryPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onMenuTap: () {  },
-                          ),
-                          ProgressTrackerPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onLogin: widget.onLogin,
-                            isActive: _selectedIndex == 3,
-                            onMenuTap: () {  },
-                          ),
-                          LeaderboardPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onLogin: widget.onLogin,
-                            onNavigateToSettings: () => _onItemTapped(8),
-                            userData: widget.userData,
-                            isActive: _selectedIndex == 4,
-                          ),
-                          FriendsPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onLogin: widget.onLogin,
-                          ),
-                          SessionGoalsPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onLogin: widget.onLogin,
-                          ),
-                          EquipmentPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onLogin: widget.onLogin,
-                          ),
-                          SettingsPage(
-                            localizations: widget.localizations,
-                            isLoggedIn: widget.isLoggedIn,
-                            onLogin: widget.onLogin,
-                            onLogout: widget.onLogout,
-                            isDarkMode: widget.isDarkMode,
-                            onThemeToggle: widget.onThemeToggle,
-                            userData: widget.userData,
-                            onPrivacyChanged: widget.onRefreshUser,
-                            onLanguageChange: widget.onLanguageChange,
-                          ),
-                        ],
-                      );
-                    }
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: [
+                      _HomeView(
+                        localizations: widget.localizations,
+                        isDarkMode: widget.isDarkMode,
+                      ),
+                      widget.isLoggedIn
+                          ? ProfilePage(
+                              localizations: widget.localizations,
+                              onLogout: widget.onLogout,
+                              onUserDataChanged: widget.onRefreshUser,
+                              isLoggedIn: widget.isLoggedIn,
+                              isActive: _selectedIndex == 1,
+                              onMenuTap: () {  },
+                            )
+                          : LogInPage(
+                              localizations: widget.localizations,
+                              onLogin: widget.onLogin,
+                              onMenuTap: () {  },
+                            ),
+                      TrickCategoryPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onMenuTap: () {  },
+                      ),
+                      ProgressTrackerPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                        isActive: _selectedIndex == 3,
+                        onMenuTap: () {  },
+                      ),
+                      LeaderboardPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                        onNavigateToSettings: () => _onItemTapped(8),
+                        userData: widget.userData,
+                        isActive: _selectedIndex == 4,
+                      ),
+                      FriendsPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                      ),
+                      SessionGoalsPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                      ),
+                      EquipmentPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                      ),
+                      SettingsPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                        onLogout: widget.onLogout,
+                        isDarkMode: widget.isDarkMode,
+                        onThemeToggle: widget.onThemeToggle,
+                        userData: widget.userData,
+                        onPrivacyChanged: widget.onRefreshUser,
+                        onLanguageChange: widget.onLanguageChange,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -374,8 +373,7 @@ class _HomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color textColor = isDarkMode ? AppColors.primary : AppColors.primaryOld;
-
-    final content = Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -391,10 +389,6 @@ class _HomeView extends StatelessWidget {
           ),
         ],
       ),
-    );
-
-    return Scaffold(
-      body: content,
     );
   }
 }

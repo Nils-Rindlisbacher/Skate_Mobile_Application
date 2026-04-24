@@ -9,7 +9,8 @@ class LoginRequiredView extends StatelessWidget {
     required this.localizations,
     required this.onLogin,
     required this.featureName,
-    required this.icon, required Null Function() onMenuTap,
+    required this.icon, 
+    required Null Function() onMenuTap,
   });
 
   final AppLocalizations localizations;
@@ -60,7 +61,7 @@ class LoginRequiredView extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.getDynamicPrimary(context),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
