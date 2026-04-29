@@ -116,7 +116,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
       );
     }
     
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -155,9 +155,9 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                         const SizedBox(height: 30),
                         SegmentedButton<TrackerView>(
                           style: SegmentedButton.styleFrom(
-                            backgroundColor: Colors.grey.withOpacity(0.1),
-                            selectedBackgroundColor: AppColors.primary,
-                            selectedForegroundColor: Colors.white,
+                            backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+                            selectedBackgroundColor: colorScheme.primary,
+                            selectedForegroundColor: colorScheme.onPrimary,
                             side: BorderSide.none,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
@@ -188,11 +188,13 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   }
 
   Widget _buildAnimatedHeader(int current, int total, String label, {bool showCount = true}) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (!showCount) {
       return Text(
         label.toUpperCase(),
         key: ValueKey('header_no_count_${_currentView.name}'),
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2),
+        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2, color: colorScheme.onSurface),
       );
     }
 
@@ -206,7 +208,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           builder: (context, double value, child) {
             return Text(
               '${value.toInt()} / $total ${label.toUpperCase()}',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: colorScheme.onSurface),
             );
           },
         ),
@@ -218,7 +220,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           builder: (context, double value, child) {
             return Text(
               '(${(value * 100).toStringAsFixed(1)}% ${widget.localizations.completed})',
-              style: TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w900, letterSpacing: 1),
+              style: TextStyle(fontSize: 14, color: colorScheme.primary, fontWeight: FontWeight.w900, letterSpacing: 1),
             );
           },
         ),
@@ -227,6 +229,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   }
 
   Widget _buildCategoryView(int columns) {
+    final colorScheme = Theme.of(context).colorScheme;
     Map<String, int> counts = {};
     for (var item in _completed) {
       final catId = (item['category_id'] ?? item['categoryId'] ?? 
@@ -255,7 +258,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           title: cat['name'] ?? widget.localizations.category,
           count: count,
           total: total.toInt(),
-          color: AppColors.primary, 
+          color: colorScheme.primary, 
           onTap: () => _showCategoryTricks(context, id, cat['name'] ?? widget.localizations.category),
         );
       },
@@ -264,7 +267,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   Widget _buildMasteryBarCard({required String title, required int count, required int total, required Color color, required VoidCallback onTap}) {
     final double progress = total > 0 ? count / total : 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: () {
@@ -273,10 +276,16 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+          border: Border.all(color: color.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withOpacity(0.03), 
+              blurRadius: 10, 
+              offset: const Offset(0, 4)
+            )
+          ],
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -289,7 +298,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                 Expanded(
                   child: Text(
                     title.toUpperCase(), 
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1, color: colorScheme.onSurface),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -312,7 +321,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
             const SizedBox(height: 8),
             Text(
               '$count / $total ${widget.localizations.tricks.toUpperCase()}',
-              style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w900, letterSpacing: 0.5),
+              style: TextStyle(fontSize: 10, color: colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.w900, letterSpacing: 0.5),
             ),
           ],
         ),
@@ -327,7 +336,6 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
       stanceCounts[stance] = (stanceCounts[stance] ?? 0) + 1;
     }
 
-    // Always 4 columns for stance cards to make them small and fit on one screen
     return GridView.builder(
       key: const ValueKey('stanceView'),
       shrinkWrap: true,
@@ -350,7 +358,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   Widget _buildSmallStanceCard(String stance, int count, int total, Color color) {
     final double progress = total > 0 ? count / total : 0;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: () {
@@ -368,7 +376,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              stance.substring(0, 3).toUpperCase(), // Shortened name
+              stance.substring(0, 3).toUpperCase(),
               style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: color, letterSpacing: 0.5),
             ),
             const SizedBox(height: 12),
@@ -397,7 +405,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
             const SizedBox(height: 8),
             Text(
               '$count/$total', 
-              style: TextStyle(fontSize: 9, color: isDark ? Colors.white54 : Colors.black54, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: 9, color: colorScheme.onSurface.withOpacity(0.5), fontWeight: FontWeight.w900),
             ),
           ],
         ),
@@ -421,6 +429,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   void _showTricksSheet(BuildContext context, String title, List<dynamic> tricks, {String? filteredStance}) {
     HapticFeedback.mediumImpact();
+    final colorScheme = Theme.of(context).colorScheme;
     
     final Map<String, List<String>> groupedTricks = {};
     for (var t in tricks) {
@@ -444,13 +453,13 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.1), borderRadius: BorderRadius.circular(2)),),
             const SizedBox(height: 20),
-            Text(title.toUpperCase(), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2)),
+            Text(title.toUpperCase(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, color: colorScheme.onSurface)),
             const Divider(),
             Expanded(
               child: tricks.isEmpty
-                  ? Center(child: Text(widget.localizations.noTricksYet))
+                  ? Center(child: Text(widget.localizations.noTricksYet, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))))
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: groupedTricks.length,
@@ -460,7 +469,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                         
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                           subtitle: Row(
                             children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
                               if (filteredStance != null && s != filteredStance) {
@@ -477,7 +486,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                     Icon(
                                       isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                                       size: 16,
-                                      color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.2),
+                                      color: isDone ? stanceColors[s] : colorScheme.onSurface.withOpacity(0.1),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -485,7 +494,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.4),
+                                        color: isDone ? stanceColors[s] : colorScheme.onSurface.withOpacity(0.2),
                                       ),
                                     ),
                                   ],

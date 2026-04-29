@@ -1,16 +1,12 @@
 package com.trick_manager.Trick_API.service;
 
 import com.trick_manager.Trick_API.entity.User;
-import com.trick_manager.Trick_API.repository.CompletedTrickRepository;
-import com.trick_manager.Trick_API.repository.LeaderboardProjection;
-import com.trick_manager.Trick_API.repository.UserRepository;
-import com.trick_manager.Trick_API.repository.WishlistTrickRepository;
+import com.trick_manager.Trick_API.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +22,18 @@ public class UserService {
 
     @Autowired
     private WishlistTrickRepository wishlistTrickRepository;
+
+    @Autowired
+    private EquipmentRepository equipmentRepository;
+
+    @Autowired
+    private MediaRepository mediaRepository;
+
+    @Autowired
+    private SessionGoalRepository sessionGoalRepository;
+
+    @Autowired
+    private SkatingSessionRepository skatingSessionRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -70,8 +78,17 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        completedTrickRepository.deleteByUserId(user.getId());
-        wishlistTrickRepository.deleteByUserId(user.getId());
+        Long userId = user.getId();
+        
+        // Lösche alle verknüpften Daten
+        completedTrickRepository.deleteByUserId(userId);
+        wishlistTrickRepository.deleteByUserId(userId);
+        equipmentRepository.deleteByUserId(userId);
+        mediaRepository.deleteByUserId(userId);
+        sessionGoalRepository.deleteByUserId(userId);
+        skatingSessionRepository.deleteByUserId(userId);
+        
+        // Lösche den Benutzer selbst
         userRepository.delete(user);
     }
 

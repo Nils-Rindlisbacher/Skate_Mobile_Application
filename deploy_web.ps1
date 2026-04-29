@@ -9,7 +9,7 @@ git push origin main
 # 2. Build erstellen
 Write-Host "Erstelle neuen Web-Build..." -ForegroundColor Cyan
 cd Application/Skaterz
-flutter build web --release --base-href "/Skate_Mobile_Application/"
+flutter build web --release --base-href "/"
 cd ../..
 
 # 3. Den build-Ordner kurzzeitig zum Git-Index hinzufügen

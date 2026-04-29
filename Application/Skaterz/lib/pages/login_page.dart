@@ -68,68 +68,64 @@ class _LogInPageState extends State<LogInPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextFormField(
-              controller: _usernameController,
-              decoration: InputDecoration(
-                labelText: widget.localizations.username,
-                prefixIcon: Icon(Icons.person, color: AppColors.getDynamicPrimary(context)),
-              ),
-              onFieldSubmitted: (_) => _handleLogin(),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: widget.localizations.password,
-                prefixIcon: Icon(Icons.lock, color: AppColors.getDynamicPrimary(context)),
-              ),
-              onFieldSubmitted: (_) => _handleLogin(),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _handleLogin,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.getDynamicPrimary(context),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: _isLoading 
-                ? SizedBox(
-                    height: 20, 
-                    width: 20, 
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                  ) 
-                : Text(widget.localizations.loginButton, style: const TextStyle(fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SignInPage(
-                      localizations: widget.localizations,
-                      onLogin: widget.onLogin
-                    ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 400),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(Icons.skateboarding, size: 80, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(height: 32),
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: widget.localizations.username,
+                    prefixIcon: const Icon(Icons.person),
                   ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                side: BorderSide(color: AppColors.getDynamicPrimary(context)),
-              ),
-              child: Text(widget.localizations.registerButton, style: TextStyle(color: AppColors.getDynamicPrimary(context))),
+                  onFieldSubmitted: (_) => _handleLogin(),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: widget.localizations.password,
+                    prefixIcon: const Icon(Icons.lock),
+                  ),
+                  onFieldSubmitted: (_) => _handleLogin(),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _isLoading ? null : _handleLogin,
+                  child: _isLoading 
+                    ? const SizedBox(
+                        height: 20, 
+                        width: 20, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      ) 
+                    : Text(widget.localizations.loginButton, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SignInPage(
+                          localizations: widget.localizations,
+                          onLogin: widget.onLogin
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text(widget.localizations.registerButton),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

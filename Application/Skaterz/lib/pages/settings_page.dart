@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/core/constants.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({
@@ -63,48 +62,10 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  void _pickColor(String key, Color currentColor) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Pick a Color'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: currentColor,
-            onColorChanged: (color) async {
-              await _apiService.saveCustomColor(key, color);
-              setState(() {
-                switch (key) {
-                  case 'primary': AppColors.primary = color; break;
-                  case 'secondary': AppColors.secondary = color; break;
-                  case 'primaryOld': AppColors.primaryOld = color; break;
-                  case 'secondaryOld': AppColors.secondaryOld = color; break;
-                  case 'sidebarTop': AppColors.sidebarTop = color; break;
-                  case 'sidebarBottom': AppColors.sidebarBottom = color; break;
-                }
-              });
-            },
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Close')),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildColorTile(String title, Color color, VoidCallback onTap) {
-    return ListTile(
-      title: Text(title),
-      trailing: Container(width: 30, height: 30, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.grey.withOpacity(0.2)))),
-      onTap: onTap,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryIconColor = isDark ? AppColors.secondary : AppColors.primary;
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryIconColor = colorScheme.primary;
 
     return Scaffold(
       body: ListView(
@@ -121,25 +82,10 @@ class _SettingsPageState extends State<SettingsPage> {
             title: Text(widget.localizations.darkMode),
             value: widget.isDarkMode,
             onChanged: widget.onThemeToggle,
-            activeColor: AppColors.primary,
+            activeColor: colorScheme.primary,
           ),
 
-//          _buildSectionHeader('App Branding'),
-//          _buildColorTile('Dark Mode Primary', AppColors.primary, () => _pickColor('primary', AppColors.primary)),
-//          _buildColorTile('Dark Mode Secondary', AppColors.secondary, () => _pickColor('secondary', AppColors.secondary)),
-//          _buildColorTile('Light Mode Primary', AppColors.primaryOld, () => _pickColor('primaryOld', AppColors.primaryOld)),
-//          _buildColorTile('Light Mode Secondary', AppColors.secondaryOld, () => _pickColor('secondaryOld', AppColors.secondaryOld)),
-//          _buildColorTile('Sidebar Top', AppColors.sidebarTop, () => _pickColor('sidebarTop', AppColors.sidebarTop)),
-//          _buildColorTile('Sidebar Bottom', AppColors.sidebarBottom, () => _pickColor('sidebarBottom', AppColors.sidebarBottom)),
-
           if (widget.isLoggedIn) ...[
-            _buildSectionHeader(widget.localizations.profilePicture),
-            ListTile(
-              leading: Icon(Icons.gif, color: primaryIconColor),
-              title: Text(widget.localizations.chooseGif),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {},
-            ),
             _buildSectionHeader(widget.localizations.profileVisibility),
             SwitchListTile(
               secondary: Icon(Icons.public_rounded, color: primaryIconColor),
@@ -147,7 +93,7 @@ class _SettingsPageState extends State<SettingsPage> {
               subtitle: Text(widget.localizations.publicProfileSubtitle),
               value: _isPublic,
               onChanged: _isUpdatingPrivacy ? null : _togglePrivacy,
-              activeColor: AppColors.primary,
+              activeColor: colorScheme.primary,
             ),
             
             _buildSectionHeader(widget.localizations.blockedUsers),
@@ -159,8 +105,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
             _buildSectionHeader(widget.localizations.deleteAccount),
             ListTile(
-              leading: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-              title: const Text("Delete Account", style: TextStyle(color: Colors.red)),
+              leading: Icon(Icons.delete_forever_rounded, color: colorScheme.error),
+              title: Text(widget.localizations.deleteAccount, style: TextStyle(color: colorScheme.error)),
               onTap: () => _showDeleteConfirmation(),
             ),
           ],
@@ -177,15 +123,130 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showLanguageDialog() { /* ... unchanged ... */ }
-  void _showBlockedUsers() { /* ... unchanged ... */ }
-  void _showDeleteConfirmation() { /* ... unchanged ... */ }
-  void _showTermsDialog() { /* ... unchanged ... */ }
+  void _showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(widget.localizations.language),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLanguageOption('🇩🇪', widget.localizations.german, 'de'),
+            _buildLanguageOption('🇬🇧', widget.localizations.english, 'en'),
+            _buildLanguageOption('🇪🇸', widget.localizations.spanish, 'es'),
+            _buildLanguageOption('🇮🇹', widget.localizations.italian, 'it'),
+            _buildLanguageOption('🇫🇷', widget.localizations.french, 'fr'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageOption(String flag, String name, String locale) {
+    return ListTile(
+      title: Text('$flag  $name'),
+      onTap: () {
+        widget.onLanguageChange(locale);
+        Navigator.pop(context);
+      },
+    );
+  }
+
+  void _showBlockedUsers() async {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Text(widget.localizations.blockedUsers.toUpperCase(), 
+              style: TextStyle(fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.5))),
+            const SizedBox(height: 20),
+            Expanded(child: Center(child: Text(widget.localizations.noUsersFound))),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation() {
+    final colorScheme = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(widget.localizations.deleteAccount),
+        content: Text(widget.localizations.deleteAccountWarning),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
+          TextButton(
+            onPressed: () async {
+              await _apiService.deleteAccount();
+              widget.onLogout();
+              if (mounted) Navigator.pop(context);
+            },
+            child: Text(widget.localizations.delete, style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(widget.localizations.termsOfUse),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Nutzungsbedingungen für Skaterz",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "1. Akzeptanz der Bedingungen\n"
+                "Durch die Nutzung der Skaterz-App erklären Sie sich mit diesen Nutzungsbedingungen einverstanden.\n\n"
+                "2. Beschreibung des Dienstes\n"
+                "Skaterz ist eine Anwendung zum Verfolgen von Skateboard-Fortschritten, zum Setzen von Zielen und zum Austausch mit der Community.\n\n"
+                "3. Benutzerpflichten\n"
+                "Benutzer sind für die Sicherheit ihres Kontos und für alle Aktivitäten unter ihrem Konto verantwortlich. Es dürfen keine unangemessenen Inhalte hochgeladen werden.\n\n"
+                "4. Datenschutz\n"
+                "Ihre Daten werden gemäß unserer Datenschutzrichtlinie verarbeitet.\n\n"
+                "5. Haftungsausschluss\n"
+                "Die Nutzung der App erfolgt auf eigene Gefahr. Skateboarden ist ein Sport mit Verletzungsrisiko. Die Entwickler haften nicht für Unfälle oder Verletzungen.\n\n"
+                "6. Änderungen der Bedingungen\n"
+                "Wir behalten uns das Recht vor, diese Bedingungen jederzeit zu ändern.",
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Schließen"),
+          )
+        ],
+      ),
+    );
+  }
 
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(title.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Colors.grey)),
+      child: Text(title.toUpperCase(), 
+        style: TextStyle(
+          fontSize: 12, 
+          fontWeight: FontWeight.w900, 
+          letterSpacing: 1.5, 
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+        )
+      ),
     );
   }
 }

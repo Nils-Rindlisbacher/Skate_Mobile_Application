@@ -214,6 +214,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           final equipment = snapshot.data!['equipment'] as List<dynamic>;
           final List<SkatingSession> sessions = sessionsData.map((s) => SkatingSession.fromJson(s)).toList();
           final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
+          final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
 
           final activeEquipment = equipment.where((e) => e['isActive'] == true || e['active'] == true).toList();
 
@@ -229,12 +230,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: (base64Image != null && base64Image.isNotEmpty)
+                  backgroundImage: hasCustomImage
                       ? MemoryImage(const Base64Decoder().convert(base64Image))
-                      : null,
-                  child: (base64Image == null || base64Image.isEmpty)
-                      ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                      : null,
+                      : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
                 ),
                 SizedBox(height: 16),
                 Text(

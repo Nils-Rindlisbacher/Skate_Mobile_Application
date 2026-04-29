@@ -98,19 +98,17 @@ class _FriendsPageState extends State<FriendsPage> {
                     itemBuilder: (context, index) {
                       final friend = _friends[index];
                       final String? avatarData = friend['profile_image'] ?? friend['profileImage'];
-                      final bool isUrl = avatarData != null && avatarData.startsWith('http');
+                      final bool hasCustomImage = avatarData != null && avatarData.isNotEmpty;
+                      final bool isUrl = hasCustomImage && avatarData.startsWith('http');
                       
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: Colors.grey.withOpacity(0.1),
-                            backgroundImage: avatarData != null && avatarData.isNotEmpty
+                            backgroundImage: hasCustomImage
                                 ? (isUrl ? NetworkImage(avatarData) : MemoryImage(base64Decode(avatarData)) as ImageProvider)
-                                : null,
-                            child: (avatarData == null || avatarData.isEmpty) 
-                                ? const Icon(Icons.person_rounded, color: Colors.grey) 
-                                : null,
+                                : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
                           ),
                           title: Text(friend['name'] ?? friend['username'], style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text('@${friend['username']}'),

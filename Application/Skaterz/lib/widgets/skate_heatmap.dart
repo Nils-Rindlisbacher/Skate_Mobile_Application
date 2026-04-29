@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:skaterz/models/skating_session.dart';
-import 'package:skaterz/core/constants.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 
 class SkateHeatmap extends StatefulWidget {
@@ -80,7 +79,10 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    
     final currentWeekMonday = today.subtract(Duration(days: today.weekday - 1));
     final startDate = currentWeekMonday.subtract(Duration(days: (_totalWeeks - 1) * 7));
     final sessionMap = {for (var s in widget.sessions) DateUtils.dateOnly(s.sessionDate): s};
@@ -97,16 +99,16 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
                 fontSize: 12, 
                 fontWeight: FontWeight.w900, 
                 letterSpacing: 1.5,
-                color: isDark ? Colors.white54 : Colors.black54
+                color: colorScheme.onSurface.withOpacity(0.5)
               ),
             ),
             const Spacer(),
             IconButton(
-              icon: Icon(Icons.west_rounded, size: 20, color: _canScrollLeft ? AppColors.primary : Colors.grey.withValues(alpha: 0.2)),
+              icon: Icon(Icons.west_rounded, size: 20, color: _canScrollLeft ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.1)),
               onPressed: _canScrollLeft ? _scrollLeft : null,
             ),
             IconButton(
-              icon: Icon(Icons.east_rounded, size: 20, color: _canScrollRight ? AppColors.primary : Colors.grey.withValues(alpha: 0.2)),
+              icon: Icon(Icons.east_rounded, size: 20, color: _canScrollRight ? colorScheme.primary : colorScheme.onSurface.withOpacity(0.1)),
               onPressed: _canScrollRight ? _scrollRight : null,
             ),
           ],
@@ -141,7 +143,7 @@ class _SkateHeatmapState extends State<SkateHeatmap> {
                       children: [
                         SizedBox(
                           height: 20,
-                          child: showMonth ? Text(monthName.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: AppColors.primary.withValues(alpha: 0.6))) : null,
+                          child: showMonth ? Text(monthName.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: colorScheme.primary.withOpacity(0.6))) : null,
                         ),
                         ...List.generate(7, (dayIdx) {
                           final date = DateUtils.dateOnly(weekMonday.add(Duration(days: dayIdx)));
@@ -201,16 +203,18 @@ class _HeatmapBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     
-    Color color = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05);
+    Color color = colorScheme.onSurface.withOpacity(0.05);
     Widget? content;
 
     if (session != null) {
-      color = AppColors.primary;
-      content = Icon(Icons.bolt_rounded, size: 14, color: isDark ? Colors.black : Colors.white);
+      color = colorScheme.primary;
+      content = Icon(Icons.bolt_rounded, size: 14, color: colorScheme.onPrimary);
     } else if (isToday) {
-      color = AppColors.primary.withValues(alpha: 0.2);
+      color = colorScheme.primary.withOpacity(0.2);
     }
 
     return GestureDetector(
@@ -223,7 +227,7 @@ class _HeatmapBlock extends StatelessWidget {
               content: Text(localizations.deleteSessionConfirm),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(context), child: Text(localizations.cancel)),
-                TextButton(onPressed: () { Navigator.pop(context); onDelete?.call(); }, child: Text(localizations.undo, style: const TextStyle(color: Colors.red))),
+                TextButton(onPressed: () { Navigator.pop(context); onDelete?.call(); }, child: Text(localizations.undo, style: TextStyle(color: colorScheme.error))),
               ],
             ),
           );
@@ -233,10 +237,10 @@ class _HeatmapBlock extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         width: 34, height: 34,
         decoration: BoxDecoration(
-          color: isFuture ? color.withValues(alpha: 0.02) : color,
+          color: isFuture ? color.withOpacity(0.02) : color,
           borderRadius: BorderRadius.circular(10),
-          border: isToday ? Border.all(color: AppColors.primary, width: 2) : null,
-          boxShadow: session != null ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
+          border: isToday ? Border.all(color: colorScheme.primary, width: 2) : null,
+          boxShadow: session != null ? [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))] : null,
         ),
         child: Center(child: content),
       ),

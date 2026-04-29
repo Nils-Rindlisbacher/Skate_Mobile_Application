@@ -231,8 +231,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isDesktop = MediaQuery.of(context).size.width > 800;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: null,
@@ -242,9 +241,9 @@ class _ProfilePageState extends State<ProfilePage> {
           : FloatingActionButton.extended(
               heroTag: 'profile_fab',
               onPressed: () => _showMoodPicker(),
-              icon: const Icon(Icons.skateboarding_rounded, color: Colors.white),
-              label: Text(widget.localizations.skatedToday.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1)),
-              backgroundColor: AppColors.primary,
+              icon: Icon(Icons.skateboarding_rounded, color: colorScheme.onPrimary),
+              label: Text(widget.localizations.skatedToday.toUpperCase(), style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.w900, letterSpacing: 1)),
+              backgroundColor: colorScheme.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
       body: _isLoading && _userData == null
@@ -293,27 +292,28 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildHeroHeader(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 24, bottom: 40),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary.withOpacity(0.1), Colors.transparent],
+          colors: [colorScheme.primary.withOpacity(0.1), Colors.transparent],
           begin: Alignment.topCenter, end: Alignment.bottomCenter,
         ),
       ),
       child: Column(
         children: [
           _buildAvatar(),
-          SizedBox(height: 20),
-          Text(_userData?['name'] ?? widget.localizations.guest, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-          Text('@${_userData?['username'] ?? ''}', style: TextStyle(color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.w600)),
-          SizedBox(height: 12),
+          const SizedBox(height: 20),
+          Text(_userData?['name'] ?? widget.localizations.guest, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: colorScheme.onSurface)),
+          Text('@${_userData?['username'] ?? ''}', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-            child: Text('$_friendCount ${widget.localizations.friends.toUpperCase()}', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
+            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+            child: Text('$_friendCount ${widget.localizations.friends.toUpperCase()}', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
           ),
         ],
       ),
@@ -321,22 +321,23 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildSectionContainer({required Widget child, String? title}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (title != null) ...[
-          Text(title.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: Colors.grey)),
+          Text(title.toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, letterSpacing: 1.5, color: colorScheme.onSurface.withOpacity(0.5))),
           const SizedBox(height: 12),
         ],
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.05)),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10))],
+            border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
+            boxShadow: [BoxShadow(color: colorScheme.shadow.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 10))],
           ),
           child: child,
         ),
@@ -345,10 +346,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildRecentlyCompletedSection() {
+    final colorScheme = Theme.of(context).colorScheme;
     return _buildSectionContainer(
       title: widget.localizations.recentlyCompleted,
       child: _recentlyCompleted.isEmpty
-          ? Text(widget.localizations.noTricksYet, style: const TextStyle(color: Colors.grey))
+          ? Text(widget.localizations.noTricksYet, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)))
           : Column(
               children: _recentlyCompleted.map((trick) => ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -357,8 +359,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   decoration: BoxDecoration(color: stanceColors[trick['stance']]?.withOpacity(0.1), shape: BoxShape.circle),
                   child: Icon(Icons.check_rounded, color: stanceColors[trick['stance']], size: 18),
                 ),
-                title: Text(trick['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700)),
-                subtitle: Text(_formatStance(trick['stance'] ?? 'REGULAR'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                title: Text(trick['name'] ?? '', style: TextStyle(fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
+                subtitle: Text(_formatStance(trick['stance'] ?? 'REGULAR'), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: colorScheme.onSurface.withOpacity(0.6))),
               )).toList(),
             ),
     );
@@ -405,19 +407,27 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildAvatar() {
+    final colorScheme = Theme.of(context).colorScheme;
     final String? base64String = _userData?['profile_image'] ?? _userData?['profileImage'];
+    final bool hasCustomImage = base64String != null && base64String.isNotEmpty;
+
     return Center(
       child: Stack(
         children: [
           Container(
-            padding: EdgeInsets.all(6),
-            decoration: BoxDecoration(gradient: AppColors.primaryGradient, shape: BoxShape.circle),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [colorScheme.primary, colorScheme.secondary]),
+              shape: BoxShape.circle,
+            ),
             child: CircleAvatar(
-              radius: 60, backgroundColor: Colors.white,
+              radius: 60, backgroundColor: colorScheme.surface,
               child: CircleAvatar(
-                radius: 56, backgroundColor: Colors.grey[100],
-                backgroundImage: (base64String != null && base64String.isNotEmpty) ? MemoryImage(const Base64Decoder().convert(base64String)) : null,
-                child: (base64String == null || base64String.isEmpty) ? (_isUploadingImage ? const CircularProgressIndicator() : const Icon(Icons.person_rounded, size: 50, color: Colors.grey)) : (_isUploadingImage ? const CircularProgressIndicator() : null),
+                radius: 56, backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+                backgroundImage: hasCustomImage 
+                    ? MemoryImage(const Base64Decoder().convert(base64String)) 
+                    : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+                child: _isUploadingImage ? const CircularProgressIndicator() : null,
               ),
             ),
           ),
@@ -427,8 +437,10 @@ class _ProfilePageState extends State<ProfilePage> {
               onTap: _isUploadingImage ? null : _pickAndUploadImage,
               child: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
-                child: _isUploadingImage ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.white),
+                decoration: BoxDecoration(color: colorScheme.onSurface, shape: BoxShape.circle),
+                child: _isUploadingImage 
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.surface)) 
+                  : Icon(Icons.camera_alt_rounded, size: 18, color: colorScheme.surface),
               ),
             ),
           ),
@@ -438,6 +450,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showMoodPicker() {
+    final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent,
       builder: (context) => Container(
@@ -446,12 +459,12 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(widget.localizations.sessionMood.toUpperCase(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 2)),
+            Text(widget.localizations.sessionMood.toUpperCase(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 2, color: colorScheme.onSurface)),
             const SizedBox(height: 32),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _moodIcon('GREAT', '🔥', AppColors.primary, widget.localizations.moodGreat),
+                _moodIcon('GREAT', '🔥', colorScheme.primary, widget.localizations.moodGreat),
                 _moodIcon('OK', '🛹', Colors.blueGrey, widget.localizations.moodOk),
                 _moodIcon('BAD', '🤕', Colors.orange, widget.localizations.moodBad),
                 _moodIcon('INJURED', '🚑', Colors.redAccent, widget.localizations.moodInjured),

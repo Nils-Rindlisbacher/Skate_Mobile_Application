@@ -278,7 +278,7 @@ class _MainShellState extends State<MainShell> {
               children: [
                 if (isDesktop) 
                   SizedBox(
-                    width: _isMenuExpanded ? 250 : 80, 
+                    width: _isMenuExpanded ? 320 : 100, 
                     child: sideMenu // SideMenu now naturally starts below AppBar
                   ),
                 Expanded(

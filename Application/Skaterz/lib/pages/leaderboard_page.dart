@@ -253,7 +253,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                             final int completedCount = entry['completedCount'] ?? 0;
                             final String name = entry['name'] ?? widget.localizations.guest;
                             final String username = entry['username'] ?? 'User';
-                            final String? base64Image = entry['profile_image'];
+                            final String? base64Image = entry['profile_image'] ?? entry['profileImage'];
+                            final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
                             
                             final dynamic rawId = entry['id'];
                             final int? userId = rawId != null 
@@ -296,12 +297,9 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       const SizedBox(width: 8),
                                       CircleAvatar(
                                         backgroundColor: Colors.grey.withOpacity(0.2),
-                                        backgroundImage: (base64Image != null && base64Image.isNotEmpty)
+                                        backgroundImage: hasCustomImage
                                             ? MemoryImage(const Base64Decoder().convert(base64Image))
-                                            : null,
-                                        child: (base64Image == null || base64Image.isEmpty) 
-                                            ? Icon(Icons.person, color: isDark ? Colors.white70 : Colors.grey) 
-                                            : null,
+                                            : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
                                       ),
                                     ],
                                   ),

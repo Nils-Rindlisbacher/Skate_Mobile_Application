@@ -133,7 +133,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).cardColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetContext) => _AddGoalSheet(
         localizations: widget.localizations,
@@ -163,6 +163,8 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
@@ -191,25 +193,25 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
                     clipBehavior: Clip.antiAlias,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
+                        gradient: AppColors.getDynamicGradient(context),
                       ),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        leading: const CircleAvatar(
-                          backgroundColor: Colors.white24,
-                          child: Icon(Icons.add, color: Colors.white),
+                        leading: CircleAvatar(
+                          backgroundColor: colorScheme.onPrimary.withOpacity(0.2),
+                          child: Icon(Icons.add, color: colorScheme.onPrimary),
                         ),
                         title: Text(
                           widget.localizations.addGoal,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold, 
                             fontSize: 18,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                           ),
                         ),
                         subtitle: Text(
                           widget.localizations.goalHint,
-                          style: TextStyle(color: Colors.white.withOpacity(0.8)),
+                          style: TextStyle(color: colorScheme.onPrimary.withOpacity(0.8)),
                         ),
                         onTap: _addNewGoal,
                       ),
@@ -222,7 +224,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
                       child: Center(
                         child: Text(
                           widget.localizations.noGoals,
-                          style: const TextStyle(color: Colors.grey, fontSize: 16),
+                          style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 16),
                         ),
                       ),
                     )
@@ -320,7 +322,7 @@ class _SectionHeader extends StatelessWidget {
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).primaryColor,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
@@ -365,14 +367,14 @@ class _GoalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final bool isTimerDisabled = goal.remainingTime != null && goal.isPaused;
     final bool isAddDisabled = goal.isCompleted || isTimerDisabled;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     
     final bool canManuallyComplete = goal.targetCount == null || 
                                      goal.currentCount >= goal.targetCount!;
 
-    final accentColor = isDark ? const Color(0xFF00FF88) : Theme.of(context).primaryColor;
+    final accentColor = colorScheme.primary;
 
     return Card(
       elevation: 2,
@@ -399,6 +401,7 @@ class _GoalTile extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           decoration: goal.isCompleted ? TextDecoration.lineThrough : null,
+                          color: colorScheme.onSurface,
                         ),
                       ),
                       if (goal.type == GoalType.trick && goal.stance != null)
@@ -406,7 +409,7 @@ class _GoalTile extends StatelessWidget {
                           _formatStance(goal.stance!),
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurface.withOpacity(0.6),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -426,17 +429,17 @@ class _GoalTile extends StatelessWidget {
                 children: [
                   Text(
                     "${goal.currentCount} / ${goal.targetCount}",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: Icon(Icons.remove_circle_outline, color: isAddDisabled ? Colors.grey.withOpacity(0.5) : accentColor),
+                    icon: Icon(Icons.remove_circle_outline, color: isAddDisabled ? colorScheme.onSurface.withOpacity(0.2) : accentColor),
                     onPressed: isAddDisabled ? null : onDecrement,
                   ),
                   IconButton(
                     icon: Icon(
                       goal.isCompleted ? Icons.check_circle : Icons.add_circle, 
-                      color: goal.isCompleted ? Colors.green : (isAddDisabled ? Colors.grey.withOpacity(0.5) : accentColor),
+                      color: goal.isCompleted ? Colors.green : (isAddDisabled ? colorScheme.onSurface.withOpacity(0.2) : accentColor),
                     ),
                     onPressed: isAddDisabled ? null : onIncrement,
                   ),
@@ -445,7 +448,7 @@ class _GoalTile extends StatelessWidget {
               const SizedBox(height: 4),
               LinearProgressIndicator(
                 value: (goal.targetCount != null && goal.targetCount! > 0) ? goal.currentCount / goal.targetCount! : 0,
-                backgroundColor: Colors.grey.withOpacity(0.2),
+                backgroundColor: colorScheme.onSurface.withOpacity(0.1),
                 color: accentColor,
               ),
             ],
@@ -461,19 +464,19 @@ class _GoalTile extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: colorScheme.onSurface.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.timer, size: 16, color: Colors.grey),
+                        Icon(Icons.timer, size: 16, color: colorScheme.onSurface.withOpacity(0.5)),
                         const SizedBox(width: 4),
                         Text(
                           _formatDuration(goal.remainingTime!),
                           style: TextStyle(
                             fontSize: 14,
-                            color: goal.remainingTime == Duration.zero ? Colors.red : (isDark ? Colors.white70 : Colors.black87),
+                            color: goal.remainingTime == Duration.zero ? Colors.red : colorScheme.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -494,7 +497,7 @@ class _GoalTile extends StatelessWidget {
                     icon: Icon(goal.isCompleted ? Icons.undo : Icons.check),
                     label: Text(goal.isCompleted ? localizations.undo : localizations.complete),
                     style: TextButton.styleFrom(
-                      foregroundColor: goal.isCompleted ? Colors.grey : accentColor,
+                      foregroundColor: goal.isCompleted ? colorScheme.onSurface.withOpacity(0.5) : accentColor,
                     ),
                   ),
               ],
@@ -601,6 +604,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
     if (!availableStances.contains(_selectedStance)) {
       _selectedStance = 'REGULAR';
     }
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: EdgeInsets.only(
@@ -749,8 +753,8 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
               const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: () {
