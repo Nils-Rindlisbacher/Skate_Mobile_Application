@@ -1,41 +1,31 @@
-# Datum und Uhrzeit für die Commit-Nachricht generieren
+# Timestamp für Commit
 $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
 $commitMessage = "build: deploy production web version $timestamp"
 
-# 1. Änderungen am Main-Zweig pushen
-Write-Host "Pushe Main zu Origin..." -ForegroundColor Cyan
+Write-Host "Starte Deployment..." -ForegroundColor Cyan
+
+# 1. Sicherstellen, dass main aktuell ist
+Write-Host "Pushe Main..." -ForegroundColor Cyan
 git push origin main
 
-# 2. Build erstellen
-Write-Host "Erstelle neuen Web-Build..." -ForegroundColor Cyan
+# 2. Web-Build erstellen
+Write-Host "Erstelle Web-Build..." -ForegroundColor Cyan
 cd Application/Skaterz
 flutter build web --release --base-href "/"
 cd ../..
 
-# 3. Den build-Ordner kurzzeitig zum Git-Index hinzufügen
-Write-Host "Bereite Build-Ordner für Subtree vor..." -ForegroundColor Cyan
-git add -f Application/Skaterz/build/web
-git commit -m $commitMessage
+# 3. Alten gh-pages Branch löschen (lokal + remote)
+Write-Host "Bereinige alten gh-pages Branch..." -ForegroundColor Cyan
+git branch -D gh-pages -ErrorAction SilentlyContinue
+git push origin --delete gh-pages -ErrorAction SilentlyContinue
 
-# 4. Alten gh-pages Branch lokal und remote löschen
-Write-Host "Lösche alten gh-pages Branch..." -ForegroundColor Cyan
-if (git branch -list "gh-pages") {
-    git branch -D gh-pages
-}
-git push origin --delete gh-pages --error-handling=silent
-
-# 5. Subtree split ausführen und neuen Branch erstellen
-Write-Host "Führe Subtree Split aus..." -ForegroundColor Cyan
+# 4. Subtree erzeugen
+Write-Host "Erzeuge neuen gh-pages Branch via Subtree..." -ForegroundColor Cyan
 git subtree split --prefix Application/Skaterz/build/web -b gh-pages
 
-# 6. Zu gh-pages pushen
-Write-Host "Pushe zu gh-pages..." -ForegroundColor Cyan
-git push origin gh-pages:gh-pages --force
-
-# 7. Aufräumen: Den temporären Build-Commit auf Main rückgängig machen
-Write-Host "Bereine Main-Branch..." -ForegroundColor Cyan
-git reset --soft HEAD~1
-git restore --staged .
+# 5. Deployment pushen
+Write-Host "Pushe neuen gh-pages Branch..." -ForegroundColor Cyan
+git push -f origin gh-pages
 
 Write-Host "-------------------------------------------" -ForegroundColor Green
 Write-Host "Deployment erfolgreich: $timestamp" -ForegroundColor Green
