@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
@@ -154,19 +155,60 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _showBlockedUsers() async {
     final colorScheme = Theme.of(context).colorScheme;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Text(widget.localizations.blockedUsers.toUpperCase(), 
-              style: TextStyle(fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.5))),
-            const SizedBox(height: 20),
-            Expanded(child: Center(child: Text(widget.localizations.noUsersFound))),
-          ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              Text(widget.localizations.blockedUsers.toUpperCase(), 
+                style: TextStyle(fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.5))),
+              const SizedBox(height: 20),
+              Expanded(
+                child: FutureBuilder<List<dynamic>>(
+                  future: _apiService.getBlockedUsers(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(child: Text(widget.localizations.noUsersFound));
+                    }
+                    
+                    final users = snapshot.data!;
+                    return ListView.builder(
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final user = users[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: (user['profile_image'] != null && user['profile_image'].isNotEmpty)
+                                ? MemoryImage(base64Decode(user['profile_image']))
+                                : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+                          ),
+                          title: Text(user['name'] ?? user['username']),
+                          subtitle: Text('@${user['username']}'),
+                          trailing: TextButton(
+                            onPressed: () async {
+                              await _apiService.unblockUser(user['id']);
+                              setModalState(() {});
+                            },
+                            child: Text(widget.localizations.unblock),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
