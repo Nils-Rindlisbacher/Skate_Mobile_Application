@@ -25,7 +25,7 @@ jobs:
         working-directory: Application/Skaterz
 
       - name: Build Web
-        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
+        run: flutter build web --release --base-href "/"
         working-directory: Application/Skaterz
 
       - name: Deploy to GitHub Pages
@@ -35,3 +35,4 @@ jobs:
           branch: gh-pages
           single-commit: true
           clean: true
+          cname: skaterz.ch
