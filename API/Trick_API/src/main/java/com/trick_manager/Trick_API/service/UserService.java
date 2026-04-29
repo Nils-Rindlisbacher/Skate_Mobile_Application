@@ -81,12 +81,17 @@ public class UserService {
         Long userId = user.getId();
         
         // Lösche alle verknüpften Daten
-        completedTrickRepository.deleteByUserId(userId);
-        wishlistTrickRepository.deleteByUserId(userId);
-        equipmentRepository.deleteByUserId(userId);
-        mediaRepository.deleteByUserId(userId);
-        sessionGoalRepository.deleteByUserId(userId);
-        skatingSessionRepository.deleteByUserId(userId);
+        try {
+            completedTrickRepository.deleteByUserId(userId);
+            wishlistTrickRepository.deleteByUserId(userId);
+            equipmentRepository.deleteByUserId(userId);
+            mediaRepository.deleteByUserId(userId);
+            sessionGoalRepository.deleteByUserId(userId);
+            skatingSessionRepository.deleteByUserId(userId);
+        } catch (Exception e) {
+            // Log error but continue or handle as needed
+            System.err.println("Error deleting linked data for user " + userId + ": " + e.getMessage());
+        }
         
         // Lösche den Benutzer selbst
         userRepository.delete(user);
