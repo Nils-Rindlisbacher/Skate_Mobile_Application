@@ -40,13 +40,20 @@ public class User {
     @Column(name = "skate_losses")
     private int skateLosses = 0;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_friends", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "friend_user_id")
+    @JsonProperty("friend_ids")
     private Set<Long> friendIds = new HashSet<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_blocked", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "blocked_user_id")
+    @JsonProperty("blocked_ids")
     private Set<Long> blockedIds = new HashSet<>();
+
+    @JsonProperty("friendCount")
+    public int getFriendCount() {
+        return friendIds != null ? friendIds.size() : 0;
+    }
 }

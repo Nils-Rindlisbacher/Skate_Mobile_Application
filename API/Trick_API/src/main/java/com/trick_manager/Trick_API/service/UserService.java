@@ -1,5 +1,6 @@
 package com.trick_manager.Trick_API.service;
 
+import com.trick_manager.Trick_API.entity.FriendRequest;
 import com.trick_manager.Trick_API.entity.User;
 import com.trick_manager.Trick_API.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class UserService {
 
     @Autowired
     private SkatingSessionRepository skatingSessionRepository;
+
+    @Autowired
+    private FriendRequestRepository friendRequestRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -80,7 +84,6 @@ public class UserService {
         
         Long userId = user.getId();
         
-        // Lösche alle verknüpften Daten
         try {
             completedTrickRepository.deleteByUserId(userId);
             wishlistTrickRepository.deleteByUserId(userId);
@@ -89,29 +92,87 @@ public class UserService {
             sessionGoalRepository.deleteByUserId(userId);
             skatingSessionRepository.deleteByUserId(userId);
         } catch (Exception e) {
-            // Log error but continue or handle as needed
             System.err.println("Error deleting linked data for user " + userId + ": " + e.getMessage());
         }
         
-        // Lösche den Benutzer selbst
         userRepository.delete(user);
     }
 
-    // --- Friends ---
-    public void addFriend(String username, Long targetUserId) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        user.getFriendIds().add(targetUserId);
-        userRepository.save(user);
+    // --- Friend Request System (Expert Level) ---
+
+    @Transactional
+    public void sendFriendRequest(String senderUsername, Long receiverId) {
+        User sender = userRepository.findByUsername(senderUsername)
+                .orElseThrow(() -> new RuntimeException("Sender not found"));
+        User receiver = userRepository.findById(receiverId)
+                .orElseThrow(() -> new RuntimeException("Receiver not found"));
+
+        if (sender.getId().equals(receiverId)) {
+            throw new RuntimeException("You cannot add yourself as a friend");
+        }
+
+        if (sender.getFriendIds().contains(receiverId)) {
+            throw new RuntimeException("Already friends");
+        }
+
+        Optional<FriendRequest> existingRequest = friendRequestRepository.findBySenderAndReceiver(sender, receiver);
+        if (existingRequest.isPresent()) {
+            throw new RuntimeException("Request already sent");
+        }
+
+        FriendRequest request = new FriendRequest();
+        request.setSender(sender);
+        request.setReceiver(receiver);
+        request.setStatus("PENDING");
+        friendRequestRepository.save(request);
     }
 
-    public void unfriendUser(String username, Long targetUserId) {
-        User user = userRepository.findByUsername(username)
+    @Transactional
+    public void acceptFriendRequest(String username, Long requestId) {
+        User receiver = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.getFriendIds().remove(targetUserId);
-        userRepository.save(user);
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (!request.getReceiver().getId().equals(receiver.getId())) {
+            throw new RuntimeException("Unauthorized to accept this request");
+        }
+
+        User sender = request.getSender();
+        
+        // Add to both sides for bidirectional friendship
+        receiver.getFriendIds().add(sender.getId());
+        sender.getFriendIds().add(receiver.getId());
+
+        userRepository.save(receiver);
+        userRepository.save(sender);
+
+        request.setStatus("ACCEPTED");
+        friendRequestRepository.save(request);
     }
 
+    @Transactional
+    public void declineFriendRequest(String username, Long requestId) {
+        User receiver = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        FriendRequest request = friendRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (!request.getReceiver().getId().equals(receiver.getId()) && !request.getSender().getId().equals(receiver.getId())) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        friendRequestRepository.delete(request);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FriendRequest> getPendingRequests(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return friendRequestRepository.findByReceiverAndStatus(user, "PENDING");
+    }
+
+    @Transactional(readOnly = true)
     public List<User> getFriends(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -126,7 +187,26 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void unfriendUser(String username, Long targetUserId) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        User target = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target user not found"));
+
+        user.getFriendIds().remove(targetUserId);
+        target.getFriendIds().remove(user.getId());
+
+        userRepository.save(user);
+        userRepository.save(target);
+
+        // Also clean up any accepted requests
+        friendRequestRepository.findBySenderAndReceiver(user, target).ifPresent(friendRequestRepository::delete);
+        friendRequestRepository.findBySenderAndReceiver(target, user).ifPresent(friendRequestRepository::delete);
+    }
+
     // --- Blocking ---
+    @Transactional
     public void blockUser(String username, Long targetUserId) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -134,6 +214,7 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional
     public void unblockUser(String username, Long targetUserId) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -141,6 +222,7 @@ public class UserService {
         userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
     public List<User> getBlockedUsers(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
