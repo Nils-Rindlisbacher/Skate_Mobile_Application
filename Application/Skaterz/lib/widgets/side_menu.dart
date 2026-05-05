@@ -76,12 +76,12 @@ class SideMenu extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: <Widget>[
                   _buildMenuItem(context, Icons.person_outline_rounded, localizations.profileMenuItem, onProfileTap),
-                  _buildMenuItem(context, Icons.analytics_outlined, localizations.progressTrackerMenuItem, onProgressTap),
-                  _buildMenuItem(context, Icons.emoji_events_outlined, localizations.leaderboardMenuItem, onLeaderboardTap),
-                  _buildMenuItem(context, Icons.people_outline_rounded, localizations.friends, onFriendsTap),
                   _buildMenuItem(context, Icons.format_list_bulleted_rounded, localizations.trickListMenuItem, onTrickListTap),
+                  _buildMenuItem(context, Icons.analytics_outlined, localizations.progressTrackerMenuItem, onProgressTap),
                   _buildMenuItem(context, Icons.ads_click_rounded, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
                   _buildMenuItem(context, Icons.construction_outlined, localizations.equipmentMenuItem, onEquipmentTap),
+                  _buildMenuItem(context, Icons.emoji_events_outlined, localizations.leaderboardMenuItem, onLeaderboardTap),
+                  _buildMenuItem(context, Icons.people_outline_rounded, localizations.friends, onFriendsTap),
                   _buildMenuItem(context, Icons.settings_outlined, localizations.settingsMenuItem, onSettingsTap),
                   
                   Padding(
@@ -126,39 +126,38 @@ class SideMenu extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 60, 16, 24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.primary.withOpacity(0.3), width: 2),
-                  ),
-                  child: CircleAvatar(
-                    radius: 30,
-                    backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-                    backgroundImage: hasImage 
-                        ? MemoryImage(const Base64Decoder().convert(base64String)) 
-                        : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.primary.withOpacity(0.3), width: 2),
                 ),
-                const SizedBox(height: 12),
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+                  backgroundImage: hasImage 
+                      ? MemoryImage(const Base64Decoder().convert(base64String)) 
+                      : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isLoggedIn ? (userData?['name'] ?? localizations.guest) : localizations.guest,
+                style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              if (isLoggedIn && userData?['username'] != null)
                 Text(
-                  isLoggedIn ? (userData?['name'] ?? localizations.guest) : localizations.guest,
-                  style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
+                  '@${userData?['username']}',
+                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
+                  textAlign: TextAlign.center,
                 ),
-                if (isLoggedIn && userData?['username'] != null)
-                  Text(
-                    '@${userData?['username']}',
-                    style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
-                  ),
-              ],
-            ),
+            ],
           ),
         ],
       ),

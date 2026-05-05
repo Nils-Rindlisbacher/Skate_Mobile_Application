@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +7,8 @@ import 'package:skaterz/services/api_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:skaterz/core/constants.dart';
 import 'package:skaterz/widgets/skate_heatmap.dart';
+import 'package:skaterz/widgets/side_menu.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
 
 enum TrackerView { category, stance }
 
@@ -17,11 +18,37 @@ class PublicProfilePage extends StatefulWidget {
     required this.localizations,
     required this.userId,
     required this.username,
+    required this.isLoggedIn,
+    this.currentUserData,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    required this.onProfileTap,
+    required this.onProgressTap,
+    required this.onLeaderboardTap,
+    required this.onTrickListTap,
+    required this.onFriendsTap,
+    required this.onSessionGoalsTap,
+    required this.onEquipmentTap,
+    required this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
   final int userId;
   final String username;
+  final bool isLoggedIn;
+  final Map<String, dynamic>? currentUserData;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final VoidCallback onProfileTap;
+  final VoidCallback onProgressTap;
+  final VoidCallback onLeaderboardTap;
+  final VoidCallback onTrickListTap;
+  final VoidCallback onFriendsTap;
+  final VoidCallback onSessionGoalsTap;
+  final VoidCallback onEquipmentTap;
+  final VoidCallback onSettingsTap;
 
   @override
   State<PublicProfilePage> createState() => _PublicProfilePageState();
@@ -30,11 +57,14 @@ class PublicProfilePage extends StatefulWidget {
 class _PublicProfilePageState extends State<PublicProfilePage> {
   final ApiService _apiService = ApiService();
   TrackerView _currentView = TrackerView.category;
-  int? _touchedIndex;
   
   bool _isFriend = false;
   int _friendCount = 0;
-  bool _isInitialized = false;
+  bool _isLoading = true;
+  String? _error;
+  Map<String, dynamic>? _profileData;
+  bool _isMenuExpanded = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final Map<int, Color> categoryColors = {
     1: Colors.blue, 2: Colors.red, 3: Colors.green, 
@@ -48,13 +78,32 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     'FAKIE': const Color(0xFFFFB74D),   
   };
 
-  String _formatStance(String stance) {
-    switch (stance.toUpperCase()) {
-      case 'REGULAR': return widget.localizations.regular;
-      case 'NOLLIE': return widget.localizations.nollie;
-      case 'SWITCH': return widget.localizations.switchStance;
-      case 'FAKIE': return widget.localizations.fakie;
-      default: return stance;
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData({bool silent = false}) async {
+    if (!mounted) return;
+    if (!silent) setState(() => _isLoading = true);
+    
+    try {
+      final data = await _loadProfileData();
+      if (mounted) {
+        setState(() {
+          _profileData = data;
+          _isLoading = false;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -64,25 +113,18 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       _apiService.getUserProfile(widget.userId),
       _apiService.getCompletedTricks(userId: widget.userId),
       _apiService.getSkatingSessions(userId: widget.userId),
-      _apiService.getCurrentUser(), 
-      // Fetching equipment for public profile
-      _apiService.getEquipment(), // In production, this would need a userId parameter
     ];
     
     final results = await Future.wait(requests);
     
-    if (!_isInitialized) {
-      final currentUser = results[4] as Map<String, dynamic>?;
-      if (currentUser != null) {
-        final friends = (currentUser['friendIds'] ?? currentUser['friend_ids'] ?? []) as List;
-        _isFriend = friends.contains(widget.userId);
-      }
-      
-      final profile = results[1] as Map<String, dynamic>?;
-      if (profile != null) {
-        _friendCount = (profile['friendCount'] ?? profile['friend_count'] ?? 0) as int;
-      }
-      _isInitialized = true;
+    if (widget.currentUserData != null) {
+      final friends = (widget.currentUserData!['friendIds'] ?? widget.currentUserData!['friend_ids'] ?? []) as List;
+      _isFriend = friends.contains(widget.userId);
+    }
+    
+    final profile = results[1] as Map<String, dynamic>?;
+    if (profile != null) {
+      _friendCount = (profile['friendCount'] ?? profile['friend_count'] ?? 0) as int;
     }
 
     return {
@@ -90,7 +132,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       'profile': results[1],
       'completedTricks': results[2],
       'sessions': results[3],
-      'equipment': results[5],
     };
   }
 
@@ -156,7 +197,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   () async {
                     await _apiService.blockUser(widget.userId);
                     if (mounted) {
-                      Navigator.pop(context); // Go back from profile
+                      Navigator.pop(context); 
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
                     }
                   }
@@ -195,165 +236,269 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: null,
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _loadProfileData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('${widget.localizations.error}: ${snapshot.error}'));
-          }
+    final colorScheme = Theme.of(context).colorScheme;
 
-          final stats = snapshot.data!['stats'] as List<dynamic>;
-          final profile = snapshot.data!['profile'] as Map<String, dynamic>;
-          final completedTricks = snapshot.data!['completedTricks'] as List<dynamic>;
-          final sessionsData = snapshot.data!['sessions'] as List<dynamic>;
-          final equipment = snapshot.data!['equipment'] as List<dynamic>;
-          final List<SkatingSession> sessions = sessionsData.map((s) => SkatingSession.fromJson(s)).toList();
-          final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
-          final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 800;
 
-          final activeEquipment = equipment.where((e) => e['isActive'] == true || e['active'] == true).toList();
+        final sideMenu = SideMenu(
+          localizations: widget.localizations,
+          isLoggedIn: widget.isLoggedIn,
+          userData: widget.currentUserData,
+          isExpanded: _isMenuExpanded,
+          isDesktop: isDesktop,
+          onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
+          onLanguageChange: widget.onLanguageChange,
+          onProfileTap: widget.onProfileTap,
+          onTrickListTap: widget.onTrickListTap,
+          onProgressTap: widget.onProgressTap,
+          onLeaderboardTap: widget.onLeaderboardTap,
+          onFriendsTap: widget.onFriendsTap,
+          onSessionGoalsTap: widget.onSessionGoalsTap,
+          onEquipmentTap: widget.onEquipmentTap,
+          onSettingsTap: widget.onSettingsTap,
+          isDarkMode: widget.isDarkMode,
+          onThemeToggle: widget.onThemeToggle,
+        );
 
-          int totalBaseTricks = 0;
-          for (var cat in stats) {
-            totalBaseTricks += (cat['totalTricks'] as num).toInt();
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 60,
-                  backgroundColor: Colors.grey[200],
-                  backgroundImage: hasCustomImage
-                      ? MemoryImage(const Base64Decoder().convert(base64Image))
-                      : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+        return Scaffold(
+          key: _scaffoldKey,
+          appBar: CustomAppBar(
+            title: widget.username,
+            isDarkMode: widget.isDarkMode,
+            onMenuTap: isDesktop 
+                ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
+                : () => _scaffoldKey.currentState?.openDrawer(),
+            showMenuButton: true,
+            isExpanded: _isMenuExpanded,
+            isDesktop: isDesktop,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onPressed: _showOptions,
+              ),
+            ],
+          ),
+          drawer: isDesktop ? null : sideMenu,
+          body: Row(
+            children: [
+              if (isDesktop) 
+                SizedBox(
+                  width: _isMenuExpanded ? 320 : 100, 
+                  child: sideMenu
                 ),
-                SizedBox(height: 16),
-                Text(
-                  profile['name'] ?? widget.username,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                Text('@${widget.username}', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                SizedBox(height: 8),
-                Text(
-                  '$_friendCount ${widget.localizations.friends.toUpperCase()}',
-                  style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
-                ),
-                SizedBox(height: 24),
-                
-                ElevatedButton.icon(
-                  onPressed: _handleFriendToggle,
-                  icon: Icon(_isFriend ? Icons.check : Icons.person_add),
-                  label: Text(_isFriend ? widget.localizations.friend.toUpperCase() : widget.localizations.addFriend.toUpperCase()),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isFriend ? Colors.grey[200] : AppColors.primary,
-                    foregroundColor: _isFriend ? Colors.black87 : Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  ),
-                ),
+              Expanded(
+                child: _isLoading 
+                    ? const Center(child: CircularProgressIndicator())
+                    : _error != null
+                        ? Center(child: Text('${widget.localizations.error}: $_error'))
+                        : RefreshIndicator(
+                            onRefresh: () => _fetchData(silent: true),
+                            child: _buildContent(context, colorScheme),
+                          ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-                const SizedBox(height: 32),
+  Widget _buildContent(BuildContext context, ColorScheme colorScheme) {
+    if (_profileData == null) return const SizedBox.shrink();
 
-                if (activeEquipment.isNotEmpty) ...[
-                  _buildSectionHeader(widget.localizations.activeSetup),
-                  _buildEquipmentSummary(activeEquipment),
-                  const SizedBox(height: 32),
-                ],
+    final rawStats = _profileData!['stats'] as List<dynamic>;
+    final profile = _profileData!['profile'] as Map<String, dynamic>;
+    final completedTricks = _profileData!['completedTricks'] as List<dynamic>;
+    final sessionsData = _profileData!['sessions'] as List<dynamic>;
+    final List<SkatingSession> sessions = sessionsData.map((s) => SkatingSession.fromJson(s)).toList();
+    final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
+    final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
 
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-                  ),
-                  child: SkateHeatmap(
-                    sessions: sessions,
-                    localizations: widget.localizations,
-                  ),
-                ),
+    // Build category map for quick lookup
+    Map<String, int> categoryCounts = {};
+    for (var item in completedTricks) {
+      final dynamic trick = item['trick'] ?? item;
+      final dynamic category = trick['category'] ?? trick['category_id'] ?? trick['categoryId'];
+      String? catId;
+      if (category is Map) {
+        catId = (category['id'] ?? category['category_id'] ?? category['categoryId'])?.toString();
+      } else {
+        catId = category?.toString();
+      }
+      if (catId != null) {
+        categoryCounts[catId] = (categoryCounts[catId] ?? 0) + 1;
+      }
+    }
 
-                const SizedBox(height: 32),
+    final List<Map<String, dynamic>> stats = rawStats.map((s) {
+      final map = Map<String, dynamic>.from(s as Map);
+      final id = map['id']?.toString();
+      map['manualCompletedCount'] = categoryCounts[id] ?? 0;
+      return map;
+    }).toList();
 
-                SegmentedButton<TrackerView>(
-                  segments: [
-                    ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category_outlined)),
-                    ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run_rounded)),
-                  ],
-                  selected: {_currentView},
-                  onSelectionChanged: (val) => setState(() => _currentView = val.first),
-                ),
+    int totalBaseTricks = 0;
+    for (var cat in stats) {
+      final dynamic total = cat['totalTricks'] ?? cat['total_tricks'] ?? 0;
+      totalBaseTricks += (total as num).toInt();
+    }
 
-                const SizedBox(height: 32),
-                
-                if (_currentView == TrackerView.category) ...[
-                  _buildCategoryChart(stats, completedTricks),
-                  const SizedBox(height: 32),
-                  _buildCategoryList(stats, completedTricks),
-                ] else ...[
-                  _buildStanceGrid(totalBaseTricks, completedTricks),
-                ],
-              ],
+    // Process recently completed (last 3)
+    List<dynamic> recentlyCompleted = List.from(completedTricks);
+    recentlyCompleted.sort((a, b) {
+      final dateA = a['created_at'] ?? a['createdAt'];
+      final dateB = b['created_at'] ?? b['createdAt'];
+      if (dateA == null || dateB == null) return 0;
+      return DateTime.parse(dateB.toString()).compareTo(DateTime.parse(dateA.toString()));
+    });
+    recentlyCompleted = recentlyCompleted.take(3).toList();
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 60,
+            backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+            backgroundImage: hasCustomImage
+                ? MemoryImage(const Base64Decoder().convert(base64Image))
+                : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            profile['name'] ?? widget.username,
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          ),
+          Text(
+            '@${widget.username}', 
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.6)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$_friendCount ${widget.localizations.friends.toUpperCase()}',
+            style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
+          ),
+          const SizedBox(height: 24),
+          
+          ElevatedButton.icon(
+            onPressed: _handleFriendToggle,
+            icon: Icon(_isFriend ? Icons.check : Icons.person_add),
+            label: Text(_isFriend ? widget.localizations.friend.toUpperCase() : widget.localizations.addFriend.toUpperCase()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isFriend ? colorScheme.onSurface.withOpacity(0.05) : AppColors.primary,
+              foregroundColor: _isFriend ? colorScheme.onSurface : Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-          );
-        },
+          ),
+
+          const SizedBox(height: 32),
+
+          _buildSectionHeader(widget.localizations.activityHeatmap, colorScheme),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+            ),
+            child: SkateHeatmap(
+              sessions: sessions,
+              localizations: widget.localizations,
+            ),
+          ),
+
+          if (recentlyCompleted.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            _buildSectionHeader(widget.localizations.recentlyCompleted, colorScheme),
+            _buildRecentlyCompleted(recentlyCompleted, colorScheme),
+          ],
+
+          const SizedBox(height: 32),
+
+          SegmentedButton<TrackerView>(
+            segments: [
+              ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category_outlined)),
+              ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run_rounded)),
+            ],
+            selected: {_currentView},
+            onSelectionChanged: (val) => setState(() => _currentView = val.first),
+          ),
+
+          const SizedBox(height: 32),
+          
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _currentView == TrackerView.category
+              ? Column(
+                  key: const ValueKey('category_view'),
+                  children: [
+                    _buildCategoryChart(stats),
+                    const SizedBox(height: 32),
+                    _buildCategoryList(stats, colorScheme, completedTricks),
+                  ],
+                )
+              : _buildStanceGrid(totalBaseTricks, completedTricks),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, ColorScheme colorScheme) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 12, left: 4),
         child: Text(
           title.toUpperCase(),
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5, fontSize: 12),
+          style: TextStyle(
+            fontWeight: FontWeight.bold, 
+            color: colorScheme.onSurface.withOpacity(0.5), 
+            letterSpacing: 1.5, 
+            fontSize: 12,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEquipmentSummary(List<dynamic> activeItems) {
-    final deck = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'DECK', orElse: () => {});
-    final trucks = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'TRUCKS', orElse: () => {});
-    final wheels = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'WHEELS', orElse: () => {});
-
+  Widget _buildRecentlyCompleted(List<dynamic> tricks, ColorScheme colorScheme) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildSmallSetupIcon(Icons.layers_rounded, deck['brand'] ?? '-', widget.localizations.typeDeck),
-          _buildSmallSetupIcon(Icons.settings_input_component_rounded, trucks['brand'] ?? '-', widget.localizations.typeTrucks),
-          _buildSmallSetupIcon(Icons.album_rounded, wheels['brand'] ?? '-', widget.localizations.typeWheels),
-        ],
+      child: Column(
+        children: tricks.map((trick) {
+          final String stance = trick['stance'] ?? 'REGULAR';
+          final String name = trick['name'] ?? trick['trick']?['name'] ?? widget.localizations.tricks;
+          return ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.check_circle_rounded, color: stanceColors[stance.toUpperCase()] ?? AppColors.primary, size: 20),
+            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(_formatStance(stance)),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _buildSmallSetupIcon(IconData icon, String label, String category) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.primary, size: 24),
-        const SizedBox(height: 8),
-        Text(category.toUpperCase(), style: const TextStyle(color: Colors.grey, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
-        SizedBox(width: 60, child: Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
-      ],
-    );
+  String _formatStance(String stance) {
+    switch (stance.toUpperCase()) {
+      case 'REGULAR': return widget.localizations.regular;
+      case 'NOLLIE': return widget.localizations.nollie;
+      case 'SWITCH': return widget.localizations.switchStance;
+      case 'FAKIE': return widget.localizations.fakie;
+      default: return stance;
+    }
   }
 
   Widget _buildStanceGrid(int totalPerStance, List<dynamic> completedTricks) {
@@ -417,8 +562,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     );
   }
 
-  Widget _buildCategoryChart(List<dynamic> stats, List<dynamic> allCompleted) {
-    final activeStats = stats.where((cat) => (cat['completedTricks'] as num) > 0).toList();
+  Widget _buildCategoryChart(List<dynamic> stats) {
+    final activeStats = stats.where((cat) => (cat['manualCompletedCount'] as num) > 0).toList();
     if (activeStats.isEmpty) return SizedBox(height: 200, child: Center(child: Text(widget.localizations.noData)));
 
     return SizedBox(
@@ -429,8 +574,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             final cat = entry.value;
             return PieChartSectionData(
               color: categoryColors[cat['id']] ?? Colors.grey,
-              value: (cat['completedTricks'] as num).toDouble(),
-              title: '${cat['completedTricks']}',
+              value: (cat['manualCompletedCount'] as num).toDouble(),
+              title: '${cat['manualCompletedCount']}',
               radius: 50,
               titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             );
@@ -440,7 +585,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     );
   }
 
-  Widget _buildCategoryList(List<dynamic> stats, List<dynamic> allCompleted) {
+  Widget _buildCategoryList(List<dynamic> stats, ColorScheme colorScheme, List<dynamic> completedTricks) {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -448,33 +593,114 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       itemBuilder: (context, index) {
         final cat = stats[index];
         final id = cat['id'];
-        final total = (cat['totalTricks'] as num) * 4;
-        final count = cat['completedTricks'] as num;
-        final progress = count / total;
+        final dynamic catTotal = cat['totalTricks'] ?? cat['total_tricks'] ?? 0;
+        final total = (catTotal as num) * 4;
+        final count = (cat['manualCompletedCount'] ?? 0) as num;
+        final progress = total > 0 ? count / total : 0;
 
-        return Container(
+        return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withOpacity(0.05)),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20), 
+            side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05))
           ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => _showCategoryTricks(context, id, cat['name'] ?? '', completedTricks),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
-                  Text(cat['name'].toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1)),
-                  Text('${(progress * 100).toInt()}%', style: TextStyle(fontWeight: FontWeight.w900, color: categoryColors[id] ?? AppColors.primary)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(cat['name'].toString().toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1, color: colorScheme.onSurface)),
+                      Text('${(progress * 100).toInt()}%', style: TextStyle(fontWeight: FontWeight.w900, color: categoryColors[id] ?? AppColors.primary)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  LinearProgressIndicator(
+                    value: progress.toDouble(), 
+                    backgroundColor: colorScheme.onSurface.withOpacity(0.05), 
+                    valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? AppColors.primary), 
+                    minHeight: 4,
+                  ),
                 ],
               ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(value: progress, backgroundColor: Colors.grey.withOpacity(0.1), valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? AppColors.primary), minHeight: 4),
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  void _showCategoryTricks(BuildContext context, dynamic categoryId, String categoryName, List<dynamic> completed) {
+    final categoryTricks = completed.where((item) {
+      final dynamic trick = item['trick'] ?? item;
+      final dynamic category = trick['category'] ?? trick['category_id'] ?? trick['categoryId'];
+      String? catId;
+      if (category is Map) {
+        catId = (category['id'] ?? category['category_id'] ?? category['categoryId'])?.toString();
+      } else {
+        catId = category?.toString();
+      }
+      return catId == categoryId.toString();
+    }).toList();
+
+    final Map<String, List<String>> grouped = {};
+    for (var t in categoryTricks) {
+      final name = t['name'] ?? t['trick']?['name'] ?? widget.localizations.tricks;
+      if (!grouped.containsKey(name)) grouped[name] = [];
+      grouped[name]!.add(t['stance'] ?? 'REGULAR');
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Text(categoryName.toUpperCase(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, color: Theme.of(context).colorScheme.onSurface)),
+            const Divider(),
+            Expanded(
+              child: grouped.isEmpty
+                  ? Center(child: Text(widget.localizations.noTricksYet))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: grouped.length,
+                      itemBuilder: (context, index) {
+                        final name = grouped.keys.elementAt(index);
+                        final stances = grouped[name]!;
+                        return ListTile(
+                          title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                          subtitle: Wrap(
+                            spacing: 8,
+                            children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
+                              final isDone = stances.contains(s);
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked, size: 14, color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.3)),
+                                  const SizedBox(width: 4),
+                                  Text(s.substring(0, 1), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.3))),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

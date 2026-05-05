@@ -8,6 +8,7 @@ import com.trick_manager.Trick_API.entity.User;
 import com.trick_manager.Trick_API.service.TrickService;
 import com.trick_manager.Trick_API.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,11 +57,25 @@ public class TrickActionController {
     }
 
     @GetMapping("/completed")
-    public ResponseEntity<List<Map<String, Object>>> getCompletedTricks(Principal principal) {
-        User user = userService.findByUsername(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<List<Map<String, Object>>> getCompletedTricks(
+            @RequestParam(name = "user_id", required = false) Long userId,
+            Principal principal) {
+        
+        Long targetUserId;
+        if (userId != null) {
+            User targetUser = userService.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            // Check if profile is public OR if it's the owner requesting their own data
+            if (!targetUser.isPublic() && (principal == null || !principal.getName().equals(targetUser.getUsername()))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            targetUserId = userId;
+        } else {
+            if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            targetUserId = getCurrentUserId(principal);
+        }
 
-        return ResponseEntity.ok(trickService.getCompletedTricksWithTimestamps(user.getId()));
+        return ResponseEntity.ok(trickService.getCompletedTricksWithTimestamps(targetUserId));
     }
 
     @PostMapping("/completed/add")

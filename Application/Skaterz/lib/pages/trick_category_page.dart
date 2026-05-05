@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +5,6 @@ import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/pages/trick_list_page.dart';
 import 'package:skaterz/core/constants.dart';
-import 'package:skaterz/widgets/custom_app_bar.dart';
 
 class TrickCategoryPage extends StatefulWidget {
   const TrickCategoryPage({
@@ -14,11 +12,35 @@ class TrickCategoryPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onMenuTap,
+    this.userData,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    required this.onProfileTap,
+    required this.onProgressTap,
+    required this.onLeaderboardTap,
+    required this.onTrickListTap,
+    required this.onFriendsTap,
+    required this.onSessionGoalsTap,
+    required this.onEquipmentTap,
+    required this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onMenuTap;
+  final Map<String, dynamic>? userData;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final VoidCallback onProfileTap;
+  final VoidCallback onProgressTap;
+  final VoidCallback onLeaderboardTap;
+  final VoidCallback onTrickListTap;
+  final VoidCallback onFriendsTap;
+  final VoidCallback onSessionGoalsTap;
+  final VoidCallback onEquipmentTap;
+  final VoidCallback onSettingsTap;
 
   @override
   State<TrickCategoryPage> createState() => _TrickCategoryPageState();
@@ -64,8 +86,6 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: null,
       body: _isLoading && _allCategories.isEmpty
@@ -126,6 +146,18 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
               categoryId: categoryId,
               categoryName: title,
               isLoggedIn: widget.isLoggedIn,
+              userData: widget.userData,
+              isDarkMode: widget.isDarkMode,
+              onThemeToggle: widget.onThemeToggle,
+              onLanguageChange: widget.onLanguageChange,
+              onProfileTap: widget.onProfileTap,
+              onProgressTap: widget.onProgressTap,
+              onLeaderboardTap: widget.onLeaderboardTap,
+              onTrickListTap: widget.onTrickListTap,
+              onFriendsTap: widget.onFriendsTap,
+              onSessionGoalsTap: widget.onSessionGoalsTap,
+              onEquipmentTap: widget.onEquipmentTap,
+              onSettingsTap: widget.onSettingsTap,
             ),
           ),
         );

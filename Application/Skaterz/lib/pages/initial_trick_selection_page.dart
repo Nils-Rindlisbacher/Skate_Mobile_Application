@@ -65,8 +65,9 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
     if (name == 'ollie') {
       return ['REGULAR', 'SWITCH', 'FAKIE'];
     }
-    if (name == 'nollie') {
-      return ['REGULAR', 'SWITCH'];
+    // If the trick name already implies a stance (like Nollie), restrict options
+    if (name.contains('nollie')) {
+      return ['REGULAR'];
     }
     if (name == 'rock to fakie' || 
         name == 'rock n roll' || 
@@ -135,6 +136,10 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final subtitleColor = isDarkMode ? Colors.white70 : Colors.black54;
+
     final filteredTricks = _allTricks.where((trick) =>
       trick['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase())
     ).toList();
@@ -151,14 +156,19 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                     children: [
                       Text(
                         widget.localizations.selectInitialTricksSubtitle,
-                        style: const TextStyle(fontSize: 16, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 16, 
+                          color: subtitleColor,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       TextField(
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           hintText: widget.localizations.searchTricks,
-                          prefixIcon: const Icon(Icons.search),
+                          hintStyle: TextStyle(color: subtitleColor),
+                          prefixIcon: Icon(Icons.search, color: subtitleColor),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                         ),
@@ -189,7 +199,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              color: Colors.grey.withOpacity(0.1),
+                              color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05),
                               child: Text(
                                 categoryName,
                                 style: TextStyle(
@@ -207,7 +217,11 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                               children: [
                                 Text(
                                   trick['name'],
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 16,
+                                    color: textColor,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Wrap(
@@ -219,12 +233,12 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                                         _formatStance(stance),
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: isSelected ? Colors.white : Colors.black87,
+                                          color: isSelected ? Colors.white : textColor,
                                         ),
                                       ),
                                       selected: isSelected,
                                       selectedColor: AppColors.primary,
-                                      backgroundColor: Colors.grey.withOpacity(0.1),
+                                      backgroundColor: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05),
                                       showCheckmark: false,
                                       onSelected: (_) => _toggleStance(id, stance),
                                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -235,7 +249,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                               ],
                             ),
                           ),
-                          const Divider(height: 1),
+                          Divider(height: 1, color: isDarkMode ? Colors.white12 : Colors.black12),
                         ],
                       );
                     },

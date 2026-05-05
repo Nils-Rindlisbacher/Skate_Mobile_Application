@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/core/constants.dart';
+import 'package:skaterz/widgets/side_menu.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
 
 enum TrickFilter { all, completed, wishlist }
 
@@ -14,12 +16,36 @@ class TrickListPage extends StatefulWidget {
     this.categoryId,
     required this.categoryName,
     required this.isLoggedIn,
+    this.userData,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    required this.onProfileTap,
+    required this.onProgressTap,
+    required this.onLeaderboardTap,
+    required this.onTrickListTap,
+    required this.onFriendsTap,
+    required this.onSessionGoalsTap,
+    required this.onEquipmentTap,
+    required this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
   final int? categoryId;
   final String categoryName;
   final bool isLoggedIn;
+  final Map<String, dynamic>? userData;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final VoidCallback onProfileTap;
+  final VoidCallback onProgressTap;
+  final VoidCallback onLeaderboardTap;
+  final VoidCallback onTrickListTap;
+  final VoidCallback onFriendsTap;
+  final VoidCallback onSessionGoalsTap;
+  final VoidCallback onEquipmentTap;
+  final VoidCallback onSettingsTap;
 
   @override
   State<TrickListPage> createState() => _TrickListPageState();
@@ -29,11 +55,13 @@ class _TrickListPageState extends State<TrickListPage> {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Timer? _searchDebounce;
   
   List<dynamic> _tricks = [];
   bool _isLoading = true;
   bool _isFetchingMore = false;
+  bool _isMenuExpanded = false;
   String _selectedStance = 'ALL';
   String _searchQuery = "";
   TrickFilter _currentFilter = TrickFilter.all;
@@ -438,165 +466,213 @@ class _TrickListPageState extends State<TrickListPage> {
       return matchesFilter;
     }).toList();
 
-    return Scaffold(
-      appBar: null,
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: widget.localizations.searchTricks,
-                    prefixIcon: Icon(Icons.search_rounded, color: AppColors.primary),
-                    suffixIcon: _searchController.text.isNotEmpty 
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded),
-                          onPressed: () {
-                            _searchController.clear();
-                            _onSearchChanged("");
-                          },
-                        )
-                      : null,
-                    filled: true,
-                    fillColor: Colors.grey.withOpacity(0.1),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: _onSearchChanged,
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildFilterChip(TrickFilter.all, widget.localizations.allTricks),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(TrickFilter.completed, widget.localizations.completed),
-                            const SizedBox(width: 8),
-                            _buildFilterChip(TrickFilter.wishlist, widget.localizations.wishlist),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_currentFilter != TrickFilter.all) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedStance,
-                            icon: const Icon(Icons.arrow_drop_down, size: 20),
-                            style: TextStyle(
-                              fontSize: 12, 
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                            onChanged: (String? newValue) {
-                              if (newValue != null) {
-                                setState(() => _selectedStance = newValue);
-                              }
-                            },
-                            items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE']
-                                .map<DropdownMenuItem<String>>((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(_formatStance(value)),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 800;
+
+        final sideMenu = SideMenu(
+          localizations: widget.localizations,
+          isLoggedIn: widget.isLoggedIn,
+          userData: widget.userData,
+          isExpanded: _isMenuExpanded,
+          isDesktop: isDesktop,
+          onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
+          onLanguageChange: widget.onLanguageChange,
+          onProfileTap: widget.onProfileTap,
+          onTrickListTap: widget.onTrickListTap,
+          onProgressTap: widget.onProgressTap,
+          onLeaderboardTap: widget.onLeaderboardTap,
+          onFriendsTap: widget.onFriendsTap,
+          onSessionGoalsTap: widget.onSessionGoalsTap,
+          onEquipmentTap: widget.onEquipmentTap,
+          onSettingsTap: widget.onSettingsTap,
+          isDarkMode: widget.isDarkMode,
+          onThemeToggle: widget.onThemeToggle,
+        );
+
+        return Scaffold(
+          key: _scaffoldKey,
+          appBar: CustomAppBar(
+            title: widget.categoryName,
+            isDarkMode: widget.isDarkMode,
+            onMenuTap: isDesktop 
+                ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
+                : () => _scaffoldKey.currentState?.openDrawer(),
+            showMenuButton: true,
+            isExpanded: _isMenuExpanded,
+            isDesktop: isDesktop,
           ),
-          Expanded(
-            child: _isLoading && _tricks.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _loadInitialTricks,
-                    child: filteredTricks.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+          drawer: isDesktop ? null : sideMenu,
+          body: Row(
+            children: [
+              if (isDesktop) 
+                SizedBox(
+                  width: _isMenuExpanded ? 320 : 100, 
+                  child: sideMenu
+                ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: widget.localizations.searchTricks,
+                              prefixIcon: Icon(Icons.search_rounded, color: AppColors.primary),
+                              suffixIcon: _searchController.text.isNotEmpty 
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      _onSearchChanged("");
+                                    },
+                                  )
+                                : null,
+                              filled: true,
+                              fillColor: Colors.grey.withOpacity(0.1),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            ),
+                            onChanged: _onSearchChanged,
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
                             children: [
-                              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
-                              const SizedBox(height: 16),
-                              Text(widget.localizations.noTricksFound, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(
+                                    children: [
+                                      _buildFilterChip(TrickFilter.all, widget.localizations.allTricks),
+                                      const SizedBox(width: 8),
+                                      _buildFilterChip(TrickFilter.completed, widget.localizations.completed),
+                                      const SizedBox(width: 8),
+                                      _buildFilterChip(TrickFilter.wishlist, widget.localizations.wishlist),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (_currentFilter != TrickFilter.all) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: _selectedStance,
+                                      icon: const Icon(Icons.arrow_drop_down, size: 20),
+                                      style: TextStyle(
+                                        fontSize: 12, 
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : Colors.black87,
+                                      ),
+                                      onChanged: (String? newValue) {
+                                        if (newValue != null) {
+                                          setState(() => _selectedStance = newValue);
+                                        }
+                                      },
+                                      items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE']
+                                          .map<DropdownMenuItem<String>>((String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(_formatStance(value)),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                        )
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: filteredTricks.length + (_hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == filteredTricks.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            
-                            final trick = filteredTricks[index];
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _isLoading && _tricks.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : RefreshIndicator(
+                              onRefresh: _loadInitialTricks,
+                              child: filteredTricks.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
+                                        const SizedBox(height: 16),
+                                        Text(widget.localizations.noTricksFound, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                                      ],
+                                    ),
+                                  )
+                                : ListView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.all(16),
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: filteredTricks.length + (_hasMore ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index == filteredTricks.length) {
+                                        return const Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: Center(child: CircularProgressIndicator()),
+                                        );
+                                      }
+                                      
+                                      final trick = filteredTricks[index];
 
-                            return Card(
-                              elevation: 0,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                side: BorderSide(color: Colors.grey.withOpacity(0.1)),
-                              ),
-                              child: ListTile(
-                                onTap: () => _showTrickDetails(trick, index),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                title: Text(
-                                  trick['name'] ?? widget.localizations.tricks,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _buildStanceIndicators(trick), 
-                                    const SizedBox(width: 8),
-                                    const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                  ),
+                                      return Card(
+                                        elevation: 0,
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                          side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                                        ),
+                                        child: ListTile(
+                                          onTap: () => _showTrickDetails(trick, index),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                          title: Text(
+                                            trick['name'] ?? widget.localizations.tricks,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          ),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              _buildStanceIndicators(trick), 
+                                              const SizedBox(width: 8),
+                                              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

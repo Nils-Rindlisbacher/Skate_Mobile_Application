@@ -6,6 +6,7 @@ import com.trick_manager.Trick_API.repository.CategoryRepository;
 import com.trick_manager.Trick_API.service.CategoryService;
 import com.trick_manager.Trick_API.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,13 +41,27 @@ public class CategoryController {
     }
 
     @GetMapping("/stats")
-    public ResponseEntity<?> getCategoryStats(Principal principal) {
-        if (principal == null) return ResponseEntity.status(401).build();
+    public ResponseEntity<?> getCategoryStats(
+            @RequestParam(name = "user_id", required = false) Long userId,
+            Principal principal) {
+        
+        Long targetUserId;
+        if (userId != null) {
+            User targetUser = userService.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            
+            if (!targetUser.isPublic() && (principal == null || !principal.getName().equals(targetUser.getUsername()))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            targetUserId = userId;
+        } else {
+            if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            targetUserId = userService.findByUsername(principal.getName())
+                    .orElseThrow()
+                    .getId();
+        }
 
-        User user = userService.findByUsername(principal.getName()).orElseThrow();
-
-        // This calls a new service method we'll create below
-        return ResponseEntity.ok(categoryService.getCategoryStatsForUser(user.getId()));
+        return ResponseEntity.ok(categoryService.getCategoryStatsForUser(targetUserId));
     }
 
     // Create new category

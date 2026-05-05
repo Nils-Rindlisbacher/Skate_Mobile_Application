@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -13,11 +12,35 @@ class FriendsPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
+    this.userData,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    required this.onProfileTap,
+    required this.onProgressTap,
+    required this.onLeaderboardTap,
+    required this.onTrickListTap,
+    required this.onFriendsTap,
+    required this.onSessionGoalsTap,
+    required this.onEquipmentTap,
+    required this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
+  final Map<String, dynamic>? userData;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final VoidCallback onProfileTap;
+  final VoidCallback onProgressTap;
+  final VoidCallback onLeaderboardTap;
+  final VoidCallback onTrickListTap;
+  final VoidCallback onFriendsTap;
+  final VoidCallback onSessionGoalsTap;
+  final VoidCallback onEquipmentTap;
+  final VoidCallback onSettingsTap;
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -121,6 +144,19 @@ class _FriendsPageState extends State<FriendsPage> {
                                   localizations: widget.localizations,
                                   userId: friend['id'],
                                   username: friend['username'],
+                                  isLoggedIn: widget.isLoggedIn,
+                                  currentUserData: widget.userData,
+                                  isDarkMode: widget.isDarkMode,
+                                  onThemeToggle: widget.onThemeToggle,
+                                  onLanguageChange: widget.onLanguageChange,
+                                  onProfileTap: widget.onProfileTap,
+                                  onProgressTap: widget.onProgressTap,
+                                  onLeaderboardTap: widget.onLeaderboardTap,
+                                  onTrickListTap: widget.onTrickListTap,
+                                  onFriendsTap: widget.onFriendsTap,
+                                  onSessionGoalsTap: widget.onSessionGoalsTap,
+                                  onEquipmentTap: widget.onEquipmentTap,
+                                  onSettingsTap: widget.onSettingsTap,
                                 ),
                               ),
                             ).then((_) => _loadFriends());

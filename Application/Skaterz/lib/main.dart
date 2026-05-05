@@ -221,10 +221,10 @@ class _MainShellState extends State<MainShell> {
       case 1: return widget.localizations.profileMenuItem;
       case 2: return widget.localizations.trickListMenuItem;
       case 3: return widget.localizations.progressTrackerMenuItem;
-      case 4: return widget.localizations.leaderboardMenuItem;
-      case 5: return widget.localizations.friends;
-      case 6: return widget.localizations.sessionGoalsMenuItem;
-      case 7: return widget.localizations.equipmentMenuItem;
+      case 4: return widget.localizations.sessionGoalsMenuItem;
+      case 5: return widget.localizations.equipmentMenuItem;
+      case 6: return widget.localizations.leaderboardMenuItem;
+      case 7: return widget.localizations.friends;
       case 8: return widget.localizations.settingsMenuItem;
       default: return widget.localizations.homePageTitle;
     }
@@ -253,10 +253,10 @@ class _MainShellState extends State<MainShell> {
             onProfileTap: () => _onItemTapped(1),
             onTrickListTap: () => _onItemTapped(2),
             onProgressTap: () => _onItemTapped(3),
-            onLeaderboardTap: () => _onItemTapped(4),
-            onFriendsTap: () => _onItemTapped(5),
-            onSessionGoalsTap: () => _onItemTapped(6),
-            onEquipmentTap: () => _onItemTapped(7),
+            onSessionGoalsTap: () => _onItemTapped(4),
+            onEquipmentTap: () => _onItemTapped(5),
+            onLeaderboardTap: () => _onItemTapped(6),
+            onFriendsTap: () => _onItemTapped(7),
             onSettingsTap: () => _onItemTapped(8),
             isDarkMode: widget.isDarkMode,
             onThemeToggle: widget.onThemeToggle,
@@ -264,7 +264,6 @@ class _MainShellState extends State<MainShell> {
 
           return Scaffold(
             key: _scaffoldKey,
-            // AppBar always on top
             appBar: CustomAppBar(
               title: _getTitleForIndex(_selectedIndex),
               isDarkMode: widget.isDarkMode,
@@ -281,7 +280,7 @@ class _MainShellState extends State<MainShell> {
                 if (isDesktop) 
                   SizedBox(
                     width: _isMenuExpanded ? 320 : 100, 
-                    child: sideMenu // SideMenu now naturally starts below AppBar
+                    child: sideMenu
                   ),
                 Expanded(
                   child: IndexedStack(
@@ -309,6 +308,18 @@ class _MainShellState extends State<MainShell> {
                         localizations: widget.localizations,
                         isLoggedIn: widget.isLoggedIn,
                         onMenuTap: () {  },
+                        userData: widget.userData,
+                        isDarkMode: widget.isDarkMode,
+                        onThemeToggle: widget.onThemeToggle,
+                        onLanguageChange: widget.onLanguageChange,
+                        onProfileTap: () => _onItemTapped(1),
+                        onTrickListTap: () => _onItemTapped(2),
+                        onProgressTap: () => _onItemTapped(3),
+                        onSessionGoalsTap: () => _onItemTapped(4),
+                        onEquipmentTap: () => _onItemTapped(5),
+                        onLeaderboardTap: () => _onItemTapped(6),
+                        onFriendsTap: () => _onItemTapped(7),
+                        onSettingsTap: () => _onItemTapped(8),
                       ),
                       ProgressTrackerPage(
                         localizations: widget.localizations,
@@ -316,19 +327,6 @@ class _MainShellState extends State<MainShell> {
                         onLogin: widget.onLogin,
                         isActive: _selectedIndex == 3,
                         onMenuTap: () {  },
-                      ),
-                      LeaderboardPage(
-                        localizations: widget.localizations,
-                        isLoggedIn: widget.isLoggedIn,
-                        onLogin: widget.onLogin,
-                        onNavigateToSettings: () => _onItemTapped(8),
-                        userData: widget.userData,
-                        isActive: _selectedIndex == 4,
-                      ),
-                      FriendsPage(
-                        localizations: widget.localizations,
-                        isLoggedIn: widget.isLoggedIn,
-                        onLogin: widget.onLogin,
                       ),
                       SessionGoalsPage(
                         localizations: widget.localizations,
@@ -339,6 +337,42 @@ class _MainShellState extends State<MainShell> {
                         localizations: widget.localizations,
                         isLoggedIn: widget.isLoggedIn,
                         onLogin: widget.onLogin,
+                      ),
+                      LeaderboardPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                        onNavigateToSettings: () => _onItemTapped(8),
+                        userData: widget.userData,
+                        isActive: _selectedIndex == 6,
+                        isDarkMode: widget.isDarkMode,
+                        onThemeToggle: widget.onThemeToggle,
+                        onLanguageChange: widget.onLanguageChange,
+                        onProfileTap: () => _onItemTapped(1),
+                        onTrickListTap: () => _onItemTapped(2),
+                        onProgressTap: () => _onItemTapped(3),
+                        onSessionGoalsTap: () => _onItemTapped(4),
+                        onEquipmentTap: () => _onItemTapped(5),
+                        onLeaderboardTap: () => _onItemTapped(6),
+                        onFriendsTap: () => _onItemTapped(7),
+                        onSettingsTap: () => _onItemTapped(8),
+                      ),
+                      FriendsPage(
+                        localizations: widget.localizations,
+                        isLoggedIn: widget.isLoggedIn,
+                        onLogin: widget.onLogin,
+                        userData: widget.userData,
+                        isDarkMode: widget.isDarkMode,
+                        onThemeToggle: widget.onThemeToggle,
+                        onLanguageChange: widget.onLanguageChange,
+                        onProfileTap: () => _onItemTapped(1),
+                        onTrickListTap: () => _onItemTapped(2),
+                        onProgressTap: () => _onItemTapped(3),
+                        onSessionGoalsTap: () => _onItemTapped(4),
+                        onEquipmentTap: () => _onItemTapped(5),
+                        onLeaderboardTap: () => _onItemTapped(6),
+                        onFriendsTap: () => _onItemTapped(7),
+                        onSettingsTap: () => _onItemTapped(8),
                       ),
                       SettingsPage(
                         localizations: widget.localizations,
