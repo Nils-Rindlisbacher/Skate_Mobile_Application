@@ -59,6 +59,15 @@ public class UserService {
         return userRepository.findById(id);
     }
 
+    public List<User> searchUsers(String query) {
+        return userRepository.searchUsers(query).stream()
+                .map(u -> {
+                    u.setPassword(null);
+                    return u;
+                })
+                .collect(Collectors.toList());
+    }
+
     public List<LeaderboardProjection> getLeaderboardData(Long categoryId, String stance) {
         return userRepository.getLeaderboardData(categoryId, stance);
     }
@@ -100,6 +109,30 @@ public class UserService {
 
     // --- Friend Request System (Expert Level) ---
 
+    @Transactional(readOnly = true)
+    public String getRelationshipStatus(String currentUsername, Long targetUserId) {
+        User me = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        User other = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("Target user not found"));
+
+        if (me.getFriendIds().contains(targetUserId)) {
+            return "FRIENDS";
+        }
+
+        Optional<FriendRequest> sent = friendRequestRepository.findBySenderAndReceiver(me, other);
+        if (sent.isPresent() && sent.get().getStatus().equals("PENDING")) {
+            return "REQUEST_SENT";
+        }
+
+        Optional<FriendRequest> received = friendRequestRepository.findBySenderAndReceiver(other, me);
+        if (received.isPresent() && received.get().getStatus().equals("PENDING")) {
+            return "REQUEST_RECEIVED";
+        }
+
+        return "NONE";
+    }
+
     @Transactional
     public void sendFriendRequest(String senderUsername, Long receiverId) {
         User sender = userRepository.findByUsername(senderUsername)
@@ -140,7 +173,6 @@ public class UserService {
 
         User sender = request.getSender();
         
-        // Add to both sides for bidirectional friendship
         receiver.getFriendIds().add(sender.getId());
         sender.getFriendIds().add(receiver.getId());
 
@@ -153,12 +185,12 @@ public class UserService {
 
     @Transactional
     public void declineFriendRequest(String username, Long requestId) {
-        User receiver = userRepository.findByUsername(username)
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         FriendRequest request = friendRequestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
-        if (!request.getReceiver().getId().equals(receiver.getId()) && !request.getSender().getId().equals(receiver.getId())) {
+        if (!request.getReceiver().getId().equals(user.getId()) && !request.getSender().getId().equals(user.getId())) {
             throw new RuntimeException("Unauthorized");
         }
 
@@ -200,7 +232,6 @@ public class UserService {
         userRepository.save(user);
         userRepository.save(target);
 
-        // Also clean up any accepted requests
         friendRequestRepository.findBySenderAndReceiver(user, target).ifPresent(friendRequestRepository::delete);
         friendRequestRepository.findBySenderAndReceiver(target, user).ifPresent(friendRequestRepository::delete);
     }

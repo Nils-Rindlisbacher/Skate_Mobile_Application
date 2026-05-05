@@ -1,6 +1,7 @@
 package com.trick_manager.Trick_API.controller;
 
 import com.trick_manager.Trick_API.entity.User;
+import com.trick_manager.Trick_API.entity.FriendRequest;
 import com.trick_manager.Trick_API.repository.LeaderboardProjection;
 import com.trick_manager.Trick_API.service.UserService;
 import com.trick_manager.Trick_API.config.JwtUtils;
@@ -86,6 +87,11 @@ public class UserController {
                 .orElse(ResponseEntity.status(404).build());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchUsers(@RequestParam String query) {
+        return ResponseEntity.ok(userService.searchUsers(query));
+    }
+
     @PostMapping("/me/image")
     public ResponseEntity<?> updateProfileImage(@RequestBody Map<String, String> request, Principal principal) {
         String base64Image = request.get("image");
@@ -115,17 +121,57 @@ public class UserController {
         return ResponseEntity.ok(userService.getLeaderboardData(categoryId, filterStance));
     }
 
-    // --- Friends ---
-    @PostMapping("/friends/add")
-    public ResponseEntity<?> addFriend(@RequestBody Map<String, Long> request, Principal principal) {
-        userService.addFriend(principal.getName(), request.get("user_id"));
-        return ResponseEntity.ok().build();
+    // --- Friends (Expert Bidirectional System) ---
+    
+    @GetMapping("/relationship/{targetId}")
+    public ResponseEntity<Map<String, String>> getRelationshipStatus(@PathVariable Long targetId, Principal principal) {
+        if (principal == null) return ResponseEntity.status(401).body("Not authenticated");
+        return ResponseEntity.ok(Map.of("status", userService.getRelationshipStatus(principal.getName(), targetId)));
+    }
+
+    @PostMapping("/friends/request/send")
+    public ResponseEntity<?> sendFriendRequest(@RequestBody Map<String, Long> request, Principal principal) {
+        try {
+            userService.sendFriendRequest(principal.getName(), request.get("user_id"));
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/friends/requests/pending")
+    public ResponseEntity<List<FriendRequest>> getPendingRequests(Principal principal) {
+        return ResponseEntity.ok(userService.getPendingRequests(principal.getName()));
+    }
+
+    @PostMapping("/friends/requests/{id}/accept")
+    public ResponseEntity<?> acceptFriendRequest(@PathVariable Long id, Principal principal) {
+        try {
+            userService.acceptFriendRequest(principal.getName(), id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/friends/requests/{id}/decline")
+    public ResponseEntity<?> declineFriendRequest(@PathVariable Long id, Principal principal) {
+        try {
+            userService.declineFriendRequest(principal.getName(), id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/friends/remove")
     public ResponseEntity<?> removeFriend(@RequestBody Map<String, Long> request, Principal principal) {
-        userService.unfriendUser(principal.getName(), request.get("user_id"));
-        return ResponseEntity.ok().build();
+        try {
+            userService.unfriendUser(principal.getName(), request.get("user_id"));
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/friends")
