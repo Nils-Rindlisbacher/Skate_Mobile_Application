@@ -272,6 +272,8 @@ class _MainShellState extends State<MainShell> {
                   ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
                   : _openDrawer,
               showMenuButton: true,
+              isExpanded: _isMenuExpanded,
+              isDesktop: isDesktop,
             ),
             drawer: isDesktop ? null : sideMenu,
             body: Row(

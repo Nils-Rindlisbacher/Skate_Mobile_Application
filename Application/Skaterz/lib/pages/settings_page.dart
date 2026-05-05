@@ -199,7 +199,7 @@ class _SettingsPageState extends State<SettingsPage> {
                               await _apiService.unblockUser(user['id']);
                               setModalState(() {});
                             },
-                            child: Text(widget.localizations.unblock),
+                            child: Text(widget.localizations.unblockUser),
                           ),
                         );
                       },
