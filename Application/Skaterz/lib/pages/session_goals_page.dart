@@ -574,12 +574,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
 
   List<String> _getAvailableStances(String trickName) {
     final name = trickName.toLowerCase();
-    if (name == 'ollie') {
-      return ['REGULAR', 'SWITCH', 'FAKIE'];
-    }
-    if (name == 'nollie') {
-      return ['REGULAR', 'SWITCH'];
-    }
+
     if (name == 'rock to fakie' || 
         name == 'rock n roll' || 
         name == 'blunt to fakie') {

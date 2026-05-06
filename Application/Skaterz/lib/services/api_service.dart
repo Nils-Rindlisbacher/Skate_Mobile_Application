@@ -79,7 +79,12 @@ class ApiService {
       if (response.body.isEmpty) return null;
       return jsonDecode(response.body);
     } else {
-      throw Exception('Server Error (${response.statusCode}): ${response.body}');
+      try {
+        final error = jsonDecode(response.body);
+        throw Exception(error['message'] ?? error.toString());
+      } catch (_) {
+        throw Exception('Server Error (${response.statusCode}): ${response.body}');
+      }
     }
   }
 
@@ -127,7 +132,6 @@ class ApiService {
     }
   }
 
-  // Public method to save arbitrary data
   Future<void> saveData(String key, dynamic data) async {
     await _cacheData(key, data);
   }
@@ -301,16 +305,52 @@ class ApiService {
     return (data != null && data is List) ? data : [];
   }
 
-  // --- Friends System ---
-  Future<void> addFriend(int userId) async {
+  // --- Expert Friends System ---
+  Future<String> getRelationshipStatus(int userId) async {
+    final response = await _get('/users/relationship/$userId');
+    final data = _handleResponse(response);
+    return data['status'] ?? 'NONE';
+  }
+
+  Future<List<dynamic>> searchUsers(String query) async {
+    final response = await _get('/users/search?query=${Uri.encodeComponent(query)}');
+    final data = _handleResponse(response);
+    return (data != null && data is List) ? data : [];
+  }
+
+  Future<void> sendFriendRequest(int userId) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/users/friends/add'),
+      Uri.parse('$baseUrl/users/friends/request/send'),
       headers: await _getHeaders(),
       body: jsonEncode({'user_id': userId}),
     ).timeout(const Duration(seconds: 30));
     _handleResponse(response);
+  }
+
+  Future<List<dynamic>> getPendingRequests() async {
+    final response = await _get('/users/friends/requests/pending');
+    final data = _handleResponse(response);
+    return (data != null && data is List) ? data : [];
+  }
+
+  Future<void> acceptFriendRequest(int requestId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/friends/requests/$requestId/accept'),
+      headers: await _getHeaders(),
+      body: jsonEncode({}),
+    ).timeout(const Duration(seconds: 30));
+    _handleResponse(response);
     await clearCache('user_me');
     await clearCache('friends_list');
+  }
+
+  Future<void> declineFriendRequest(int requestId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/friends/requests/$requestId/decline'),
+      headers: await _getHeaders(),
+      body: jsonEncode({}),
+    ).timeout(const Duration(seconds: 30));
+    _handleResponse(response);
   }
 
   Future<void> removeFriend(int userId) async {

@@ -62,13 +62,7 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
   List<String> _getAvailableStances(String trickName) {
     final name = trickName.toLowerCase();
-    if (name == 'ollie') {
-      return ['REGULAR', 'SWITCH', 'FAKIE'];
-    }
-    // If the trick name already implies a stance (like Nollie), restrict options
-    if (name.contains('nollie')) {
-      return ['REGULAR'];
-    }
+
     if (name == 'rock to fakie' || 
         name == 'rock n roll' || 
         name == 'blunt to fakie') {

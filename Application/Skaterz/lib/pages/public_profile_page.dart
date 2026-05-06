@@ -58,7 +58,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   final ApiService _apiService = ApiService();
   TrackerView _currentView = TrackerView.category;
   
-  bool _isFriend = false;
+  String _relationshipStatus = 'NONE'; // NONE, REQUEST_SENT, REQUEST_RECEIVED, FRIENDS
   int _friendCount = 0;
   bool _isLoading = true;
   String? _error;
@@ -113,19 +113,17 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       _apiService.getUserProfile(widget.userId),
       _apiService.getCompletedTricks(userId: widget.userId),
       _apiService.getSkatingSessions(userId: widget.userId),
+      _apiService.getRelationshipStatus(widget.userId),
     ];
     
     final results = await Future.wait(requests);
-    
-    if (widget.currentUserData != null) {
-      final friends = (widget.currentUserData!['friendIds'] ?? widget.currentUserData!['friend_ids'] ?? []) as List;
-      _isFriend = friends.contains(widget.userId);
-    }
     
     final profile = results[1] as Map<String, dynamic>?;
     if (profile != null) {
       _friendCount = (profile['friendCount'] ?? profile['friend_count'] ?? 0) as int;
     }
+
+    _relationshipStatus = results[4] as String;
 
     return {
       'stats': results[0],
@@ -135,99 +133,41 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     };
   }
 
-  void _handleFriendToggle() async {
+  void _handleFriendAction() async {
     try {
-      if (_isFriend) {
-        await _apiService.removeFriend(widget.userId);
-        setState(() {
-          _isFriend = false;
-          _friendCount--;
-        });
-      } else {
-        await _apiService.addFriend(widget.userId);
-        setState(() {
-          _isFriend = true;
-          _friendCount++;
-        });
+      if (_relationshipStatus == 'NONE') {
+        await _apiService.sendFriendRequest(widget.userId);
+        setState(() => _relationshipStatus = 'REQUEST_SENT');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.requestSent)));
+      } else if (_relationshipStatus == 'REQUEST_RECEIVED') {
+        final pending = await _apiService.getPendingRequests();
+        final request = pending.firstWhere((r) => r['sender']['id'] == widget.userId);
+        await _apiService.acceptFriendRequest(request['id']);
+        _fetchData(silent: true);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.friendshipAccepted)));
+      } else if (_relationshipStatus == 'FRIENDS') {
+        _showUnfriendDialog();
       }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
-  void _showOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(_isFriend ? Icons.person_remove_outlined : Icons.person_add_outlined),
-              title: Text(_isFriend ? widget.localizations.unfriend : widget.localizations.addFriend),
-              onTap: () {
-                Navigator.pop(context);
-                _handleFriendToggle();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
-              title: Text(widget.localizations.reportUser),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmAction(
-                  widget.localizations.reportUser,
-                  widget.localizations.reportConfirm,
-                  () async {
-                    await _apiService.reportUser(widget.userId, "Inappropriate content");
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
-                  }
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.block, color: Colors.red),
-              title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmAction(
-                  widget.localizations.blockUser,
-                  widget.localizations.blockConfirm,
-                  () async {
-                    await _apiService.blockUser(widget.userId);
-                    if (mounted) {
-                      Navigator.pop(context); 
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
-                    }
-                  }
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _confirmAction(String title, String message, Future<void> Function() action) {
+  void _showUnfriendDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        title: Text(widget.localizations.unfriend),
+        content: Text(widget.localizations.unfriendConfirm),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              try {
-                await action();
-              } catch (e) {
-                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-              }
+              await _apiService.removeFriend(widget.userId);
+              _fetchData(silent: true);
             },
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(widget.localizations.unfriend, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -316,7 +256,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
     final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
 
-    // Build category map for quick lookup
     Map<String, int> categoryCounts = {};
     for (var item in completedTricks) {
       final dynamic trick = item['trick'] ?? item;
@@ -345,7 +284,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       totalBaseTricks += (total as num).toInt();
     }
 
-    // Process recently completed (last 3)
     List<dynamic> recentlyCompleted = List.from(completedTricks);
     recentlyCompleted.sort((a, b) {
       final dateA = a['created_at'] ?? a['createdAt'];
@@ -383,18 +321,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           ),
           const SizedBox(height: 24),
           
-          ElevatedButton.icon(
-            onPressed: _handleFriendToggle,
-            icon: Icon(_isFriend ? Icons.check : Icons.person_add),
-            label: Text(_isFriend ? widget.localizations.friend.toUpperCase() : widget.localizations.addFriend.toUpperCase()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _isFriend ? colorScheme.onSurface.withOpacity(0.05) : AppColors.primary,
-              foregroundColor: _isFriend ? colorScheme.onSurface : Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
-          ),
+          _buildRelationshipButton(colorScheme),
 
           const SizedBox(height: 32),
 
@@ -443,6 +370,130 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   ],
                 )
               : _buildStanceGrid(totalBaseTricks, completedTricks),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRelationshipButton(ColorScheme colorScheme) {
+    String label = "";
+    IconData icon = Icons.person_add;
+    Color bgColor = AppColors.primary;
+    Color textColor = Colors.white;
+    bool enabled = true;
+
+    switch (_relationshipStatus) {
+      case 'FRIENDS':
+        label = widget.localizations.friend.toUpperCase();
+        icon = Icons.check;
+        bgColor = colorScheme.onSurface.withOpacity(0.05);
+        textColor = colorScheme.onSurface;
+        break;
+      case 'REQUEST_SENT':
+        label = widget.localizations.requestSent.toUpperCase();
+        icon = Icons.hourglass_empty;
+        bgColor = colorScheme.onSurface.withOpacity(0.05);
+        textColor = colorScheme.onSurface.withOpacity(0.5);
+        enabled = false;
+        break;
+      case 'REQUEST_RECEIVED':
+        label = widget.localizations.acceptRequest.toUpperCase();
+        icon = Icons.check_circle_outline;
+        bgColor = Colors.green;
+        break;
+      default:
+        label = widget.localizations.addFriend.toUpperCase();
+        icon = Icons.person_add;
+    }
+
+    return ElevatedButton.icon(
+      onPressed: enabled ? _handleFriendAction : null,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: bgColor,
+        foregroundColor: textColor,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
+  void _showOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(_relationshipStatus == 'FRIENDS' ? Icons.person_remove_outlined : Icons.person_add_outlined),
+              title: Text(_relationshipStatus == 'FRIENDS' ? widget.localizations.unfriend : widget.localizations.addFriend),
+              onTap: () {
+                Navigator.pop(context);
+                _handleFriendAction();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
+              title: Text(widget.localizations.reportUser),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmAction(
+                  widget.localizations.reportUser,
+                  widget.localizations.reportConfirm,
+                  () async {
+                    await _apiService.reportUser(widget.userId, "Inappropriate content");
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
+                  }
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.block, color: Colors.red),
+              title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmAction(
+                  widget.localizations.blockUser,
+                  widget.localizations.blockConfirm,
+                  () async {
+                    await _apiService.blockUser(widget.userId);
+                    if (mounted) {
+                      Navigator.pop(context); 
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
+                    }
+                  }
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmAction(String title, String message, Future<void> Function() action) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await action();
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -512,10 +563,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 0.65,
+        crossAxisCount: 4, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.65,
       ),
       itemCount: 4,
       itemBuilder: (context, index) {
@@ -523,7 +571,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         final color = stanceColors[stance]!;
         final count = stanceCounts[stance] ?? 0;
         final double progress = totalPerStance > 0 ? count / totalPerStance : 0;
-
         return Container(
           decoration: BoxDecoration(
             color: color.withOpacity(0.05),
@@ -565,11 +612,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   Widget _buildCategoryChart(List<dynamic> stats) {
     final activeStats = stats.where((cat) => (cat['manualCompletedCount'] as num) > 0).toList();
     if (activeStats.isEmpty) return SizedBox(height: 200, child: Center(child: Text(widget.localizations.noData)));
-
     return SizedBox(
       height: 200,
-      child: PieChart(
-        PieChartData(
+      child: PieChart(PieChartData(
           sections: activeStats.asMap().entries.map((entry) {
             final cat = entry.value;
             return PieChartSectionData(
@@ -580,8 +625,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
               titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             );
           }).toList(),
-        ),
-      ),
+      )),
     );
   }
 
@@ -597,14 +641,10 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         final total = (catTotal as num) * 4;
         final count = (cat['manualCompletedCount'] ?? 0) as num;
         final progress = total > 0 ? count / total : 0;
-
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20), 
-            side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05))
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05))),
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () => _showCategoryTricks(context, id, cat['name'] ?? '', completedTricks),
