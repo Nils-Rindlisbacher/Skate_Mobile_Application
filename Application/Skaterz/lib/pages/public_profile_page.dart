@@ -78,6 +78,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     'FAKIE': const Color(0xFFFFB74D),   
   };
 
+  bool get _isMe => widget.userId == widget.currentUserData?['id'] || widget.username == widget.currentUserData?['username'];
+
   @override
   void initState() {
     super.initState();
@@ -113,7 +115,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       _apiService.getUserProfile(widget.userId),
       _apiService.getCompletedTricks(userId: widget.userId),
       _apiService.getSkatingSessions(userId: widget.userId),
-      _apiService.getRelationshipStatus(widget.userId),
+      _isMe ? Future.value('NONE') : _apiService.getRelationshipStatus(widget.userId),
     ];
     
     final results = await Future.wait(requests);
@@ -134,6 +136,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   void _handleFriendAction() async {
+    if (_isMe) return;
     try {
       if (_relationshipStatus == 'NONE') {
         await _apiService.sendFriendRequest(widget.userId);
@@ -256,6 +259,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
     final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
 
+    // Build category map for quick lookup
     Map<String, int> categoryCounts = {};
     for (var item in completedTricks) {
       final dynamic trick = item['trick'] ?? item;
@@ -284,6 +288,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       totalBaseTricks += (total as num).toInt();
     }
 
+    // Process recently completed (last 3)
     List<dynamic> recentlyCompleted = List.from(completedTricks);
     recentlyCompleted.sort((a, b) {
       final dateA = a['created_at'] ?? a['createdAt'];
@@ -321,7 +326,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           ),
           const SizedBox(height: 24),
           
-          _buildRelationshipButton(colorScheme),
+          if (!_isMe) _buildRelationshipButton(colorScheme),
 
           const SizedBox(height: 32),
 
@@ -429,14 +434,15 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: Icon(_relationshipStatus == 'FRIENDS' ? Icons.person_remove_outlined : Icons.person_add_outlined),
-              title: Text(_relationshipStatus == 'FRIENDS' ? widget.localizations.unfriend : widget.localizations.addFriend),
-              onTap: () {
-                Navigator.pop(context);
-                _handleFriendAction();
-              },
-            ),
+            if (!_isMe)
+              ListTile(
+                leading: Icon(_relationshipStatus == 'FRIENDS' ? Icons.person_remove_outlined : Icons.person_add_outlined),
+                title: Text(_relationshipStatus == 'FRIENDS' ? widget.localizations.unfriend : widget.localizations.addFriend),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleFriendAction();
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
               title: Text(widget.localizations.reportUser),
@@ -452,24 +458,25 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.block, color: Colors.red),
-              title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmAction(
-                  widget.localizations.blockUser,
-                  widget.localizations.blockConfirm,
-                  () async {
-                    await _apiService.blockUser(widget.userId);
-                    if (mounted) {
-                      Navigator.pop(context); 
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
+            if (!_isMe)
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.red),
+                title: Text(widget.localizations.blockUser, style: const TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmAction(
+                    widget.localizations.blockUser,
+                    widget.localizations.blockConfirm,
+                    () async {
+                      await _apiService.blockUser(widget.userId);
+                      if (mounted) {
+                        Navigator.pop(context); 
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userBlocked)));
+                      }
                     }
-                  }
-                );
-              },
-            ),
+                  );
+                },
+              ),
           ],
         ),
       ),
