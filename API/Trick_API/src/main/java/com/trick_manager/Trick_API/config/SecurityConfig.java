@@ -18,12 +18,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors(Customizer.withDefaults()) // Enable CORS in Spring Security
+        http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/login", "/api/users/register").permitAll()
+                        .requestMatchers("/api/users/profile/**", "/api/users/relationship/**").permitAll()
                         .requestMatchers("/api/tricks/**", "/api/categories/**").permitAll()
+                        .requestMatchers("/api/completed", "/api/sessions").permitAll()
                         .anyRequest().authenticated()
                 );
 

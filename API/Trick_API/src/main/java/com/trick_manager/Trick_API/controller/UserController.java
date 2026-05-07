@@ -125,7 +125,8 @@ public class UserController {
     
     @GetMapping("/relationship/{targetId}")
     public ResponseEntity<Map<String, String>> getRelationshipStatus(@PathVariable Long targetId, Principal principal) {
-        if (principal == null) return ResponseEntity.status(401).body("Not authenticated");
+        // Fallback for guests: relationship is always NONE
+        if (principal == null) return ResponseEntity.ok(Map.of("status", "NONE"));
         return ResponseEntity.ok(Map.of("status", userService.getRelationshipStatus(principal.getName(), targetId)));
     }
 
