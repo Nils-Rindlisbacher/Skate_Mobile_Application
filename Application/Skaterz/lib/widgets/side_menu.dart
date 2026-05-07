@@ -76,12 +76,12 @@ class SideMenu extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: <Widget>[
                   _buildMenuItem(context, Icons.person_outline_rounded, localizations.profileMenuItem, onProfileTap),
-                  _buildMenuItem(context, Icons.format_list_bulleted_rounded, localizations.trickListMenuItem, onTrickListTap),
-                  _buildMenuItem(context, Icons.analytics_outlined, localizations.progressTrackerMenuItem, onProgressTap),
-                  _buildMenuItem(context, Icons.ads_click_rounded, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
-                  _buildMenuItem(context, Icons.construction_outlined, localizations.equipmentMenuItem, onEquipmentTap),
-                  _buildMenuItem(context, Icons.emoji_events_outlined, localizations.leaderboardMenuItem, onLeaderboardTap),
                   _buildMenuItem(context, Icons.people_outline_rounded, localizations.friends, onFriendsTap),
+                  _buildMenuItem(context, Icons.checklist_outlined, localizations.trickListMenuItem, onTrickListTap),
+                  _buildMenuItem(context, Icons.bar_chart_outlined, localizations.progressTrackerMenuItem, onProgressTap),
+                  _buildMenuItem(context, Icons.ads_click_rounded, localizations.sessionGoalsMenuItem, onSessionGoalsTap),
+                  _buildMenuItem(context, Icons.emoji_events_outlined, localizations.leaderboardMenuItem, onLeaderboardTap),
+                  _buildMenuItem(context, Icons.construction_outlined, localizations.equipmentMenuItem, onEquipmentTap),
                   _buildMenuItem(context, Icons.settings_outlined, localizations.settingsMenuItem, onSettingsTap),
                   
                   Padding(
