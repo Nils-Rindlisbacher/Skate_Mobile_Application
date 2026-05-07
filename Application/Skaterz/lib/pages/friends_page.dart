@@ -76,7 +76,6 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   @override
   void didUpdateWidget(covariant FriendsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Wenn wir vorher nicht eingeloggt waren, es jetzt aber sind: Daten laden!
     if (widget.isLoggedIn && !oldWidget.isLoggedIn) {
       debugPrint("FriendsPage: Login erkannt, lade Daten...");
       _loadData();
@@ -211,7 +210,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
                   : null,
                 filled: true,
                 fillColor: colorScheme.onSurface.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BoxSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
             ),
