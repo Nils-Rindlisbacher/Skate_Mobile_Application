@@ -108,8 +108,6 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    // --- Friend Request System (Expert Level) ---
-
     @Transactional(readOnly = true)
     public String getRelationshipStatus(String currentUsername, Long targetUserId) {
         User me = userRepository.findByUsername(currentUsername)
@@ -205,10 +203,13 @@ public class UserService {
         return friendRequestRepository.findByReceiverAndStatus(user, "PENDING");
     }
 
-    /**
-     * Optimized: Fetches all friends in a single database query.
-     * Prevents the N+1 problem which was likely causing timeouts.
-     */
+    @Transactional(readOnly = true)
+    public List<FriendRequest> getSentRequests(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return friendRequestRepository.findBySenderAndStatus(user, "PENDING");
+    }
+
     @Transactional(readOnly = true)
     public List<User> getFriends(String username) {
         User user = userRepository.findByUsername(username)
@@ -243,7 +244,6 @@ public class UserService {
         friendRequestRepository.findBySenderAndReceiver(target, user).ifPresent(friendRequestRepository::delete);
     }
 
-    // --- Blocking ---
     @Transactional
     public void blockUser(String username, Long targetUserId) {
         User user = userRepository.findByUsername(username)
@@ -277,7 +277,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    // --- Reporting ---
     public void reportUser(String reporterUsername, Long targetUserId, String reason) {
         System.out.println("USER REPORTED: " + reporterUsername + " reported user " + targetUserId + " for: " + reason);
     }

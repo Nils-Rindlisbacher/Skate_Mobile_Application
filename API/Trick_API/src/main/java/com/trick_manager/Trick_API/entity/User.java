@@ -28,6 +28,7 @@ public class User {
     private String email;
 
     @Column(name = "profile_image", columnDefinition = "TEXT")
+    @JsonProperty("profile_image") // Explicitly map for Flutter consistency
     private String profileImage;
 
     @Column(name = "is_public", nullable = false)
@@ -35,9 +36,11 @@ public class User {
     private boolean isPublic = true;
 
     @Column(name = "skate_wins")
+    @JsonProperty("skate_wins")
     private int skateWins = 0;
 
     @Column(name = "skate_losses")
+    @JsonProperty("skate_losses")
     private int skateLosses = 0;
 
     @ElementCollection(fetch = FetchType.EAGER)
@@ -52,7 +55,7 @@ public class User {
     @JsonProperty("blocked_ids")
     private Set<Long> blockedIds = new HashSet<>();
 
-    @JsonProperty("friendCount")
+    @JsonProperty("friend_count") // Snake case for consistency
     public int getFriendCount() {
         return friendIds != null ? friendIds.size() : 0;
     }

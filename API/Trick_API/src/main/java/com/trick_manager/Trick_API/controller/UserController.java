@@ -125,7 +125,6 @@ public class UserController {
     
     @GetMapping("/relationship/{targetId}")
     public ResponseEntity<Map<String, String>> getRelationshipStatus(@PathVariable Long targetId, Principal principal) {
-        // Fallback for guests: relationship is always NONE
         if (principal == null) return ResponseEntity.ok(Map.of("status", "NONE"));
         return ResponseEntity.ok(Map.of("status", userService.getRelationshipStatus(principal.getName(), targetId)));
     }
@@ -143,6 +142,11 @@ public class UserController {
     @GetMapping("/friends/requests/pending")
     public ResponseEntity<List<FriendRequest>> getPendingRequests(Principal principal) {
         return ResponseEntity.ok(userService.getPendingRequests(principal.getName()));
+    }
+
+    @GetMapping("/friends/requests/sent")
+    public ResponseEntity<List<FriendRequest>> getSentRequests(Principal principal) {
+        return ResponseEntity.ok(userService.getSentRequests(principal.getName()));
     }
 
     @PostMapping("/friends/requests/{id}/accept")

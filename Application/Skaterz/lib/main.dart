@@ -57,11 +57,15 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _initializeApp() async {
+    // Profi-Tipp: Nicht auf warmUp warten! 
+    // Der warmUp soll im Hintergrund laufen, während die App startet.
+    // Wenn wir darauf warten, blockieren wir den Login-Check für bis zu 30 Sekunden.
+    unawaited(_apiService.warmUp()); 
+    
     await Future.wait([
       _loadThemeMode(),
       _loadLocale(),
       _checkLoginStatus(),
-      _apiService.warmUp(),
     ]);
     _apiService.onUnauthorized = _handleLogout;
   }
@@ -154,6 +158,9 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+
+// Hilfsfunktion für unawaited Futures
+void unawaited(Future<void> future) {}
 
 class MainShell extends StatefulWidget {
   const MainShell({

@@ -72,6 +72,17 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     }
   }
 
+  /// PROFI-FIX: Reagiert auf die Änderung des Login-Status
+  @override
+  void didUpdateWidget(covariant FriendsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Wenn wir vorher nicht eingeloggt waren, es jetzt aber sind: Daten laden!
+    if (widget.isLoggedIn && !oldWidget.isLoggedIn) {
+      debugPrint("FriendsPage: Login erkannt, lade Daten...");
+      _loadData();
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -82,14 +93,16 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
 
   /// Optimized Loading: Sequential loading to avoid overloading Render free tier during cold start.
   Future<void> _loadData() async {
-    if (!mounted) return;
+    if (!mounted || !widget.isLoggedIn) return;
+    
+    debugPrint("FriendsPage: Starte _loadData...");
     setState(() {
       _isLoadingFriends = true;
       _isLoadingRequests = true;
     });
 
     try {
-      // Step 1: Load friends first (usually the most important)
+      // Step 1: Load friends first
       final friends = await _apiService.getFriends();
       if (mounted) {
         setState(() {
@@ -107,7 +120,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         });
       }
     } catch (e) {
-      debugPrint("Load error: $e");
+      debugPrint("FriendsPage: Fehler beim Laden: $e");
       if (mounted) {
         setState(() {
           _isLoadingFriends = false;
@@ -198,7 +211,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
                   : null,
                 filled: true,
                 fillColor: colorScheme.onSurface.withOpacity(0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BoxSide.none),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
             ),
