@@ -154,17 +154,19 @@ class ApiService {
     return null;
   }
 
+  // Improved warm-up logic to wake up Render instance (Oregon Latenz!)
   Future<void> warmUp() async {
     try {
-      // ignore: unawaited_futures
-      Future.wait([
-        http.get(Uri.parse('$baseUrl/categories')).timeout(const Duration(seconds: 10)),
-        http.get(Uri.parse('$baseUrl/tricks/count')).timeout(const Duration(seconds: 10)),
-      ]).then((_) => null).catchError((_) => null);
+      // Very long timeout for initial ping to wake up the server
+      await http.get(Uri.parse('$baseUrl/categories'))
+          .timeout(const Duration(seconds: 45))
+          .catchError((_) => http.Response('', 408));
     } catch (_) {}
   }
 
-  Future<http.Response> _get(String path, {Duration timeout = const Duration(seconds: 60)}) async {
+  Future<http.Response> _get(String path, {Duration? timeout}) async {
+    // Standard timeout increased to 45s for Oregon -> Client latency + Render Cold Start
+    final effectiveTimeout = timeout ?? const Duration(seconds: 45);
     final Uri uri = Uri.parse('$baseUrl$path');
     final Map<String, String> queryParams = Map.from(uri.queryParameters);
     queryParams['_t'] = DateTime.now().millisecondsSinceEpoch.toString();
@@ -175,9 +177,9 @@ class ApiService {
       return await http.get(
         finalUri,
         headers: await _getHeaders(),
-      ).timeout(timeout);
+      ).timeout(effectiveTimeout);
     } on TimeoutException {
-      throw Exception('The server is taking too long to respond. It might be waking up. Please try again in a few seconds.');
+      throw Exception('Server-Timeout (Oregon/Render). Bitte ziehe die Liste nach unten zum Aktualisieren.');
     } catch (e) {
       rethrow;
     }
@@ -194,7 +196,7 @@ class ApiService {
         'email': email,
         'name': name,
       }),
-    ).timeout(const Duration(seconds: 30));
+    ).timeout(const Duration(seconds: 45));
     _handleResponse(response);
   }
 
@@ -206,7 +208,7 @@ class ApiService {
         'username': username,
         'password': password,
       }),
-    ).timeout(const Duration(seconds: 30));
+    ).timeout(const Duration(seconds: 45));
 
     final data = _handleResponse(response);
     if (data != null && data is Map && data['token'] != null) {
@@ -432,7 +434,7 @@ class ApiService {
     if (userId != null) path += '&user_id=$userId';
     
     try {
-      final response = await _get(path, timeout: const Duration(seconds: 30));
+      final response = await _get(path);
       final data = _handleResponse(response);
       if (data != null && data is List) {
         return data;

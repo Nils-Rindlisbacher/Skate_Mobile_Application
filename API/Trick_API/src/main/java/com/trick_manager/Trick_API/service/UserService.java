@@ -8,6 +8,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -204,14 +205,20 @@ public class UserService {
         return friendRequestRepository.findByReceiverAndStatus(user, "PENDING");
     }
 
+    /**
+     * Optimized: Fetches all friends in a single database query.
+     * Prevents the N+1 problem which was likely causing timeouts.
+     */
     @Transactional(readOnly = true)
     public List<User> getFriends(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return user.getFriendIds().stream()
-                .map(userRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        
+        if (user.getFriendIds() == null || user.getFriendIds().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return userRepository.findAllByIdIn(user.getFriendIds()).stream()
                 .map(u -> {
                     u.setPassword(null);
                     return u;
@@ -257,10 +264,12 @@ public class UserService {
     public List<User> getBlockedUsers(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return user.getBlockedIds().stream()
-                .map(userRepository::findById)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+        
+        if (user.getBlockedIds() == null || user.getBlockedIds().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return userRepository.findAllByIdIn(user.getBlockedIds()).stream()
                 .map(u -> {
                     u.setPassword(null);
                     return u;

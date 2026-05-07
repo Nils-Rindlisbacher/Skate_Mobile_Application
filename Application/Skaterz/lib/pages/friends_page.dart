@@ -56,7 +56,8 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   List<dynamic> _friends = [];
   List<dynamic> _pendingRequests = [];
   List<dynamic> _searchResults = [];
-  bool _isLoading = true;
+  bool _isLoadingFriends = true;
+  bool _isLoadingRequests = true;
   bool _isSearching = false;
 
   @override
@@ -66,7 +67,8 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     if (widget.isLoggedIn) {
       _loadData();
     } else {
-      _isLoading = false;
+      _isLoadingFriends = false;
+      _isLoadingRequests = false;
     }
   }
 
@@ -78,25 +80,46 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     super.dispose();
   }
 
+  /// Optimized Loading: Sequential loading to avoid overloading Render free tier during cold start.
   Future<void> _loadData() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoadingFriends = true;
+      _isLoadingRequests = true;
+    });
+
     try {
-      final results = await Future.wait([
-        _apiService.getFriends(),
-        _apiService.getPendingRequests(),
-      ]);
+      // Step 1: Load friends first (usually the most important)
+      final friends = await _apiService.getFriends();
       if (mounted) {
         setState(() {
-          _friends = results[0];
-          _pendingRequests = results[1];
-          _isLoading = false;
+          _friends = friends;
+          _isLoadingFriends = false;
+        });
+      }
+
+      // Step 2: Load pending requests
+      final requests = await _apiService.getPendingRequests();
+      if (mounted) {
+        setState(() {
+          _pendingRequests = requests;
+          _isLoadingRequests = false;
         });
       }
     } catch (e) {
+      debugPrint("Load error: $e");
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
+        setState(() {
+          _isLoadingFriends = false;
+          _isLoadingRequests = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${widget.localizations.error}: $e'),
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(label: 'Retry', onPressed: _loadData),
+          )
+        );
       }
     }
   }
@@ -220,7 +243,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildFriendsList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoadingFriends) return const Center(child: CircularProgressIndicator());
     if (_friends.isEmpty) return _buildEmptyState(Icons.people_outline_rounded, widget.localizations.noUsersFound);
 
     return RefreshIndicator(
@@ -248,7 +271,7 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildRequestsList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoadingRequests) return const Center(child: CircularProgressIndicator());
     if (_pendingRequests.isEmpty) return _buildEmptyState(Icons.mark_email_unread_outlined, widget.localizations.noPendingRequests);
 
     return RefreshIndicator(
@@ -269,10 +292,12 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey.withOpacity(0.1),
-          backgroundImage: avatarData != null ? MemoryImage(base64Decode(avatarData)) : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+          backgroundImage: (avatarData != null && avatarData.isNotEmpty) 
+              ? MemoryImage(base64Decode(avatarData)) 
+              : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
         ),
-        title: Text(user['name'] ?? user['username'], style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('@${user['username']}'),
+        title: Text(user['name'] ?? user['username'] ?? 'Skater', style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('@${user['username'] ?? 'unknown'}'),
         trailing: isFriend ? Icon(Icons.check_circle_rounded, color: AppColors.primary) : const Icon(Icons.chevron_right_rounded),
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => PublicProfilePage(
           localizations: widget.localizations,
@@ -298,13 +323,19 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
     final sender = request['sender'];
+    if (sender == null) return const SizedBox.shrink();
+    
     final String? avatarData = sender['profile_image'] ?? sender['profileImage'];
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
-        leading: CircleAvatar(backgroundImage: avatarData != null ? MemoryImage(base64Decode(avatarData)) : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider),
-        title: Text(sender['name'] ?? sender['username'], style: const TextStyle(fontWeight: FontWeight.bold)),
+        leading: CircleAvatar(
+          backgroundImage: (avatarData != null && avatarData.isNotEmpty) 
+              ? MemoryImage(base64Decode(avatarData)) 
+              : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider
+        ),
+        title: Text(sender['name'] ?? sender['username'] ?? 'Skater', style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(widget.localizations.wantsToBeYourFriend),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
