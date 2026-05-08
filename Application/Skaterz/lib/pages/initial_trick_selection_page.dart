@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/core/constants.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
 
 class InitialTrickSelectionPage extends StatefulWidget {
   const InitialTrickSelectionPage({
@@ -20,7 +21,6 @@ class InitialTrickSelectionPage extends StatefulWidget {
 class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
   final ApiService _apiService = ApiService();
   List<dynamic> _allTricks = [];
-  // Stores trickId -> Set of selected stances
   final Map<int, Set<String>> _selectedStances = {};
   bool _isLoading = true;
   bool _isSaving = false;
@@ -62,7 +62,6 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
   List<String> _getAvailableStances(String trickName) {
     final name = trickName.toLowerCase();
-
     if (name == 'rock to fakie' || 
         name == 'rock n roll' || 
         name == 'blunt to fakie') {
@@ -75,15 +74,11 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
     setState(() => _isSaving = true);
     try {
       final List<Future> saveTasks = [];
-      
       _selectedStances.forEach((trickId, stances) {
         for (String stance in stances) {
           saveTasks.add(_apiService.toggleCompleted(trickId, false, stance));
         }
       });
-
-      // Execute all toggles. Depending on server capacity, maybe chunk these or use a bulk endpoint if available.
-      // For now, simple Future.wait.
       await Future.wait(saveTasks);
       
       if (mounted) {
@@ -130,18 +125,25 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final subtitleColor = isDarkMode ? Colors.white70 : Colors.black54;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     final filteredTricks = _allTricks.where((trick) =>
       trick['name'].toString().toLowerCase().contains(_searchQuery.toLowerCase())
     ).toList();
 
     return Scaffold(
-      appBar: null,
+      backgroundColor: colorScheme.surface,
+      appBar: CustomAppBar(
+        title: widget.localizations.selectInitialTricksTitle,
+        isDarkMode: isDarkMode,
+        onMenuTap: () {}, // Not needed here as it's an initial setup page
+        showMenuButton: false,
+      ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primaryColor))
           : Column(
               children: [
                 Padding(
@@ -152,18 +154,28 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                         widget.localizations.selectInitialTricksSubtitle,
                         style: TextStyle(
                           fontSize: 16, 
-                          color: subtitleColor,
+                          color: colorScheme.onSurface.withOpacity(0.8),
                         ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       TextField(
-                        style: TextStyle(color: textColor),
+                        style: TextStyle(color: colorScheme.onSurface),
+                        cursorColor: primaryColor,
                         decoration: InputDecoration(
                           hintText: widget.localizations.searchTricks,
-                          hintStyle: TextStyle(color: subtitleColor),
-                          prefixIcon: Icon(Icons.search, color: subtitleColor),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                          prefixIcon: Icon(Icons.search, color: colorScheme.onSurface.withOpacity(0.5)),
+                          filled: true,
+                          fillColor: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: primaryColor.withOpacity(0.5)),
+                          ),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                         ),
                         onChanged: (value) => setState(() => _searchQuery = value),
@@ -193,19 +205,19 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05),
+                              color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
                               child: Text(
-                                categoryName,
+                                categoryName.toUpperCase(),
                                 style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary.withOpacity(0.8),
-                                  fontSize: 14,
-                                  letterSpacing: 1.1,
+                                  fontWeight: FontWeight.w900,
+                                  color: primaryColor,
+                                  fontSize: 12,
+                                  letterSpacing: 1.2,
                                 ),
                               ),
                             ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -214,12 +226,13 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold, 
                                     fontSize: 16,
-                                    color: textColor,
+                                    color: colorScheme.onSurface,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                                 Wrap(
                                   spacing: 8,
+                                  runSpacing: 8,
                                   children: availableStances.map((stance) {
                                     final isSelected = selectedStances.contains(stance);
                                     return ChoiceChip(
@@ -227,43 +240,68 @@ class _InitialTrickSelectionPageState extends State<InitialTrickSelectionPage> {
                                         _formatStance(stance),
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: isSelected ? Colors.white : textColor,
+                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          color: isSelected ? Colors.white : colorScheme.onSurface,
                                         ),
                                       ),
                                       selected: isSelected,
-                                      selectedColor: AppColors.primary,
-                                      backgroundColor: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05),
+                                      selectedColor: primaryColor,
+                                      backgroundColor: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                                       showCheckmark: false,
                                       onSelected: (_) => _toggleStance(id, stance),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10),
                                       visualDensity: VisualDensity.compact,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(20),
+                                        side: BorderSide(
+                                          color: isSelected ? primaryColor : Colors.transparent,
+                                        ),
+                                      ),
                                     );
                                   }).toList(),
                                 ),
                               ],
                             ),
                           ),
-                          Divider(height: 1, color: isDarkMode ? Colors.white12 : Colors.black12),
+                          Divider(height: 1, color: colorScheme.onSurface.withOpacity(0.05)),
                         ],
                       );
                     },
                   ),
                 ),
-                Padding(
+                Container(
                   padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _handleSave,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: primaryColor,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
                       ),
                       child: _isSaving 
-                        ? const CircularProgressIndicator(color: Colors.white) 
-                        : Text(widget.localizations.saveAndContinue, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                        : Text(
+                            widget.localizations.saveAndContinue.toUpperCase(), 
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 1),
+                          ),
                     ),
                   ),
                 ),
