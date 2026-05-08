@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 
@@ -6,7 +5,6 @@ class SideMenu extends StatelessWidget {
   const SideMenu({
     super.key,
     required this.localizations,
-    required this.isLoggedIn,
     required this.onProfileTap,
     required this.onProgressTap,
     required this.onLeaderboardTap,
@@ -18,6 +16,8 @@ class SideMenu extends StatelessWidget {
     required this.onLanguageChange,
     required this.isDarkMode,
     required this.onThemeToggle,
+    // Fix: Parameter fuer Kompatibilitaet mit bestehenden Seiten wieder hinzugefuegt
+    this.isLoggedIn = false,
     this.userData,
     this.isExpanded = true,
     this.isDesktop = false,
@@ -54,13 +54,12 @@ class SideMenu extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      width: isDesktop ? (isExpanded ? 320 : 100) : null,
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         boxShadow: [
           if (isDesktop)
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
               offset: const Offset(2, 0),
             ),
@@ -69,11 +68,14 @@ class SideMenu extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context),
+            // Profi-Header: Minimaler Abstand oben statt Platzverschwender fuer Bild/Name
+            const SizedBox(height: 12),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.zero,
+                physics: const BouncingScrollPhysics(),
                 children: <Widget>[
                   _buildMenuItem(context, Icons.person_outline_rounded, localizations.profileMenuItem, onProfileTap),
                   _buildMenuItem(context, Icons.people_outline_rounded, localizations.friends, onFriendsTap),
@@ -86,12 +88,11 @@ class SideMenu extends StatelessWidget {
                   
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    child: Divider(height: 1, thickness: 0.5, color: colorScheme.outline),
+                    child: Divider(height: 1, thickness: 0.5, color: colorScheme.outline.withOpacity(0.2)),
                   ),
 
                   _buildLanguageExpansion(context),
 
-                  // Dark Mode Toggle - Integrated into menu list for perfect alignment
                   _buildMenuItem(
                     context, 
                     isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded, 
@@ -101,12 +102,36 @@ class SideMenu extends StatelessWidget {
                 ],
               ),
             ),
-            if (isExpanded || !isDesktop)
+            
+            // Footer Info mit weichem Ausfaden
+            if (isDesktop)
               Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  "© 2024 SKATERZ",
-                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.3), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 2),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: isExpanded ? 0.2 : 0.0,
+                  child: Text(
+                    "© 2026 SKATERZ",
+                    style: TextStyle(
+                      color: colorScheme.onSurface, 
+                      fontSize: 9, 
+                      fontWeight: FontWeight.bold, 
+                      letterSpacing: 2
+                    ),
+                    maxLines: 1,
+                    softWrap: false,
+                  ),
+                ),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.all(24.0),
+                child: Opacity(
+                  opacity: 0.2,
+                  child: Text(
+                    "© 2026 SKATERZ",
+                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 2),
+                  ),
                 ),
               ),
           ],
@@ -115,95 +140,82 @@ class SideMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    if (isDesktop && !isExpanded) return const SizedBox.shrink();
-
+  Widget _buildMenuItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
     final colorScheme = Theme.of(context).colorScheme;
-    final String? base64String = userData?['profile_image'] ?? userData?['profileImage'];
-    final bool hasImage = base64String != null && base64String.isNotEmpty;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 60, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _onTileTap(context, onTap),
+        child: Container(
+          height: 50,
+          width: double.infinity,
+          padding: const EdgeInsets.only(left: 24), // Fixierte 24px Achse (Absolut stabil)
+          child: Row(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: colorScheme.primary.withOpacity(0.3), width: 2),
-                ),
-                child: CircleAvatar(
-                  radius: 30,
-                  backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-                  backgroundImage: hasImage 
-                      ? MemoryImage(const Base64Decoder().convert(base64String)) 
-                      : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                isLoggedIn ? (userData?['name'] ?? localizations.guest) : localizations.guest,
-                style: TextStyle(color: colorScheme.onSurface, fontSize: 16, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              if (isLoggedIn && userData?['username'] != null)
+              Icon(icon, color: colorScheme.primary, size: 24),
+              const SizedBox(width: 24), // Konsistenter Abstand Icon zu Text
+              if (isDesktop)
+                Expanded(
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: isExpanded ? 1.0 : 0.0,
+                    curve: Curves.easeInOut,
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.clip,
+                      softWrap: false,
+                    ),
+                  ),
+                )
+              else
                 Text(
-                  '@${userData?['username']}',
-                  style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
-                  textAlign: TextAlign.center,
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
             ],
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, VoidCallback onTap) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    // If collapsed on desktop, center the icon
-    if (isDesktop && !isExpanded) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Tooltip(
-          message: title,
-          child: InkWell(
-            onTap: () => _onTileTap(context, onTap),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              height: 48,
-              width: double.infinity,
-              child: Center(
-                child: Icon(icon, color: colorScheme.primary, size: 26),
-              ),
-            ),
-          ),
         ),
-      );
-    }
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-      leading: Icon(icon, color: colorScheme.primary, size: 24),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: colorScheme.onSurface)),
-      onTap: () => _onTileTap(context, onTap),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
   Widget _buildLanguageExpansion(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (isExpanded || !isDesktop) {
-      return ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 24),
-        leading: Icon(Icons.language_rounded, color: colorScheme.primary),
-        title: Text(localizations.language, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: colorScheme.onSurface)),
+    
+    // Im eingeklappten Zustand zeigen wir nur das Icon
+    if (isDesktop && !isExpanded) {
+      return _buildMenuItem(context, Icons.language_rounded, localizations.language, () {});
+    }
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.only(left: 24, right: 16),
+        leading: Icon(Icons.language_rounded, color: colorScheme.primary, size: 24),
+        title: Text(
+          localizations.language, 
+          style: TextStyle(
+            fontWeight: FontWeight.w600, 
+            fontSize: 14, 
+            color: colorScheme.onSurface
+          ),
+          maxLines: 1,
+          softWrap: false,
+        ),
         children: <Widget>[
           _buildLanguageOption(context, '🇩🇪', localizations.german, 'de'),
           _buildLanguageOption(context, '🇬🇧', localizations.english, 'en'),
@@ -211,15 +223,13 @@ class SideMenu extends StatelessWidget {
           _buildLanguageOption(context, '🇮🇹', localizations.italian, 'it'),
           _buildLanguageOption(context, '🇫🇷', localizations.french, 'fr'),
         ],
-      );
-    } else {
-      return const SizedBox.shrink();
-    }
+      ),
+    );
   }
 
   Widget _buildLanguageOption(BuildContext context, String flag, String name, String locale) {
     return ListTile(
-      contentPadding: const EdgeInsets.only(left: 48, right: 24),
+      contentPadding: const EdgeInsets.only(left: 72, right: 24),
       title: Text('$flag  $name', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface)),
       onTap: () => onLanguageChange(locale),
     );

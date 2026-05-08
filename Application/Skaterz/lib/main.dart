@@ -57,10 +57,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _initializeApp() async {
-    // Profi-Tipp: Nicht auf warmUp warten! 
-    // Der warmUp soll im Hintergrund laufen, während die App startet.
-    // Wenn wir darauf warten, blockieren wir den Login-Check für bis zu 30 Sekunden.
-    unawaited(_apiService.warmUp()); 
+    _apiService.warmUp(); 
     
     await Future.wait([
       _loadThemeMode(),
@@ -159,9 +156,6 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-// Hilfsfunktion für unawaited Futures
-void unawaited(Future<void> future) {}
-
 class MainShell extends StatefulWidget {
   const MainShell({
     super.key,
@@ -252,7 +246,6 @@ class _MainShellState extends State<MainShell> {
           final sideMenu = SideMenu(
             localizations: widget.localizations,
             isLoggedIn: widget.isLoggedIn,
-            userData: widget.userData,
             isExpanded: _isMenuExpanded,
             isDesktop: isDesktop,
             onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
@@ -285,8 +278,11 @@ class _MainShellState extends State<MainShell> {
             body: Row(
               children: [
                 if (isDesktop) 
-                  SizedBox(
-                    width: _isMenuExpanded ? 320 : 100, 
+                  // Profi-Fix: 72px für die eingeklappte Rail-Ansicht
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    width: _isMenuExpanded ? 280 : 72, 
                     child: sideMenu
                   ),
                 Expanded(

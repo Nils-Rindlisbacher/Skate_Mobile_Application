@@ -217,10 +217,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             isExpanded: _isMenuExpanded,
             isDesktop: isDesktop,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
-                onPressed: _showOptions,
-              ),
+              // Menü-Icon nur anzeigen, wenn es nicht das eigene Profil ist
+              if (!_isMe)
+                IconButton(
+                  icon: const Icon(Icons.more_vert, color: Colors.white),
+                  onPressed: _showOptions,
+                ),
             ],
           ),
           drawer: isDesktop ? null : sideMenu,
@@ -443,21 +445,23 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   _handleFriendAction();
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
-              title: Text(widget.localizations.reportUser),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmAction(
-                  widget.localizations.reportUser,
-                  widget.localizations.reportConfirm,
-                  () async {
-                    await _apiService.reportUser(widget.userId, "Inappropriate content");
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
-                  }
-                );
-              },
-            ),
+            // Man kann sich selbst nicht melden
+            if (!_isMe)
+              ListTile(
+                leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
+                title: Text(widget.localizations.reportUser),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmAction(
+                    widget.localizations.reportUser,
+                    widget.localizations.reportConfirm,
+                    () async {
+                      await _apiService.reportUser(widget.userId, "Inappropriate content");
+                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.localizations.userReported)));
+                    }
+                  );
+                },
+              ),
             if (!_isMe)
               ListTile(
                 leading: const Icon(Icons.block, color: Colors.red),

@@ -26,48 +26,30 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    double leadingWidth = 56.0;
+    // Profi-Fix: Weiten exakt an Sidebar anpassen für nahtlosen Übergang
+    double leadingWidth = isDesktop ? (isExpanded ? 280 : 72) : 72;
     Widget? leading;
 
     if (showMenuButton) {
-      if (isDesktop) {
-        leadingWidth = isExpanded ? 320 : 100;
-        leading = Container(
-          width: leadingWidth,
-          alignment: isExpanded ? Alignment.centerLeft : Alignment.center,
-          padding: isExpanded ? const EdgeInsets.only(left: 24.0) : EdgeInsets.zero,
-          child: IconButton(
-            icon: Icon(Icons.menu, color: Colors.white, size: isExpanded ? 24 : 26),
-            onPressed: onMenuTap,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(), // Removes extra padding/constraints
-            alignment: isExpanded ? Alignment.centerLeft : Alignment.center,
-            splashRadius: 24,
-          ),
-        );
-      } else {
-        // Mobile alignment: matches SideMenu's ListTile horizontal padding of 24
-        leadingWidth = 72;
-        leading = Container(
-          width: 72,
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: 24.0),
-          child: IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white, size: 24),
-            onPressed: onMenuTap,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            alignment: Alignment.centerLeft,
-            splashRadius: 24,
-          ),
-        );
-      }
+      leading = Container(
+        width: leadingWidth,
+        // Profi-Fix: Button bleibt IMMER an der gleichen Position (24px vom Rand)
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 24.0),
+        child: IconButton(
+          icon: const Icon(Icons.menu_rounded, color: Colors.white, size: 24),
+          onPressed: onMenuTap,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          splashRadius: 24,
+        ),
+      );
     }
 
     final Widget appBarBody = AppBar(
       elevation: 0,
       backgroundColor: Colors.transparent,
-      automaticallyImplyLeading: false, // Ensure we have full control over the leading area
+      automaticallyImplyLeading: false,
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: isDarkMode ? AppColors.primaryGradient : AppColors.oldGradient,
