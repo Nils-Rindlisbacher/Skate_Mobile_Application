@@ -25,6 +25,8 @@ class FriendsPage extends StatefulWidget {
     required this.onSessionGoalsTap,
     required this.onEquipmentTap,
     required this.onSettingsTap,
+    this.isMenuExpanded = false,
+    this.onToggleMenu,
   });
 
   final AppLocalizations localizations;
@@ -42,6 +44,8 @@ class FriendsPage extends StatefulWidget {
   final VoidCallback onSessionGoalsTap;
   final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
+  final bool isMenuExpanded;
+  final VoidCallback? onToggleMenu;
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -72,12 +76,10 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     }
   }
 
-  /// PROFI-FIX: Reagiert auf die Änderung des Login-Status
   @override
   void didUpdateWidget(covariant FriendsPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isLoggedIn && !oldWidget.isLoggedIn) {
-      debugPrint("FriendsPage: Login erkannt, lade Daten...");
       _loadData();
     }
   }
@@ -90,18 +92,17 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
     super.dispose();
   }
 
-  /// Optimized Loading: Sequential loading to avoid overloading Render free tier during cold start.
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool silent = false}) async {
     if (!mounted || !widget.isLoggedIn) return;
     
-    debugPrint("FriendsPage: Starte _loadData...");
-    setState(() {
-      _isLoadingFriends = true;
-      _isLoadingRequests = true;
-    });
+    if (!silent) {
+      setState(() {
+        _isLoadingFriends = true;
+        _isLoadingRequests = true;
+      });
+    }
 
     try {
-      // Step 1: Load friends first
       final friends = await _apiService.getFriends();
       if (mounted) {
         setState(() {
@@ -110,7 +111,6 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         });
       }
 
-      // Step 2: Load pending requests
       final requests = await _apiService.getPendingRequests();
       if (mounted) {
         setState(() {
@@ -119,19 +119,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         });
       }
     } catch (e) {
-      debugPrint("FriendsPage: Fehler beim Laden: $e");
       if (mounted) {
         setState(() {
           _isLoadingFriends = false;
           _isLoadingRequests = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${widget.localizations.error}: $e'),
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(label: 'Retry', onPressed: _loadData),
-          )
-        );
       }
     }
   }
@@ -255,11 +247,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildFriendsList() {
-    if (_isLoadingFriends) return const Center(child: CircularProgressIndicator());
+    if (_isLoadingFriends && _friends.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_friends.isEmpty) return _buildEmptyState(Icons.people_outline_rounded, widget.localizations.noUsersFound);
 
     return RefreshIndicator(
-      onRefresh: _loadData,
+      onRefresh: () => _loadData(silent: true),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _friends.length,
@@ -283,11 +275,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildRequestsList() {
-    if (_isLoadingRequests) return const Center(child: CircularProgressIndicator());
+    if (_isLoadingRequests && _pendingRequests.isEmpty) return const Center(child: CircularProgressIndicator());
     if (_pendingRequests.isEmpty) return _buildEmptyState(Icons.mark_email_unread_outlined, widget.localizations.noPendingRequests);
 
     return RefreshIndicator(
-      onRefresh: _loadData,
+      onRefresh: () => _loadData(silent: true),
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _pendingRequests.length,
@@ -298,37 +290,55 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
 
   Widget _buildUserCard(Map<String, dynamic> user, {bool isFriend = false}) {
     final String? avatarData = user['profile_image'] ?? user['profileImage'];
+    final int userId = user['id'];
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.grey.withOpacity(0.1),
-          backgroundImage: (avatarData != null && avatarData.isNotEmpty) 
-              ? MemoryImage(base64Decode(avatarData)) 
-              : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+        leading: Hero(
+          tag: 'avatar_$userId',
+          child: CircleAvatar(
+            backgroundColor: Colors.grey.withOpacity(0.1),
+            backgroundImage: (avatarData != null && avatarData.isNotEmpty) 
+                ? MemoryImage(base64Decode(avatarData)) 
+                : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+          ),
         ),
         title: Text(user['name'] ?? user['username'] ?? 'Skater', style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text('@${user['username'] ?? 'unknown'}'),
         trailing: isFriend ? Icon(Icons.check_circle_rounded, color: AppColors.primary) : const Icon(Icons.chevron_right_rounded),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => PublicProfilePage(
-          localizations: widget.localizations,
-          userId: user['id'],
-          username: user['username'],
-          isLoggedIn: widget.isLoggedIn,
-          currentUserData: widget.userData,
-          isDarkMode: widget.isDarkMode,
-          onThemeToggle: widget.onThemeToggle,
-          onLanguageChange: widget.onLanguageChange,
-          onProfileTap: widget.onProfileTap,
-          onProgressTap: widget.onProgressTap,
-          onLeaderboardTap: widget.onLeaderboardTap,
-          onTrickListTap: widget.onTrickListTap,
-          onFriendsTap: widget.onFriendsTap,
-          onSessionGoalsTap: widget.onSessionGoalsTap,
-          onEquipmentTap: widget.onEquipmentTap,
-          onSettingsTap: widget.onSettingsTap,
-        ))).then((_) => _loadData()),
+        onTap: () => Navigator.push(context, PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+            opacity: animation,
+            child: PublicProfilePage(
+              localizations: widget.localizations,
+              userId: userId,
+              username: user['username'],
+              isLoggedIn: widget.isLoggedIn,
+              currentUserData: widget.userData,
+              isDarkMode: widget.isDarkMode,
+              onThemeToggle: widget.onThemeToggle,
+              onLanguageChange: widget.onLanguageChange,
+              onProfileTap: widget.onProfileTap,
+              onProgressTap: widget.onProgressTap,
+              onLeaderboardTap: widget.onLeaderboardTap,
+              onTrickListTap: widget.onTrickListTap,
+              onFriendsTap: widget.onFriendsTap,
+              onSessionGoalsTap: widget.onSessionGoalsTap,
+              onEquipmentTap: widget.onEquipmentTap,
+              onSettingsTap: widget.onSettingsTap,
+              isMenuExpanded: widget.isMenuExpanded,
+              onToggleMenu: widget.onToggleMenu,
+            ),
+          ),
+        )).then((_) {
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) _loadData(silent: true);
+          });
+        }),
       ),
     );
   }

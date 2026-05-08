@@ -278,7 +278,6 @@ class _MainShellState extends State<MainShell> {
             body: Row(
               children: [
                 if (isDesktop) 
-                  // Profi-Fix: 72px für die eingeklappte Rail-Ansicht
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 250),
                     curve: Curves.easeInOut,
@@ -323,6 +322,8 @@ class _MainShellState extends State<MainShell> {
                         onLeaderboardTap: () => _onItemTapped(6),
                         onFriendsTap: () => _onItemTapped(7),
                         onSettingsTap: () => _onItemTapped(8),
+                        isMenuExpanded: _isMenuExpanded,
+                        onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
                       ),
                       ProgressTrackerPage(
                         localizations: widget.localizations,
@@ -359,6 +360,8 @@ class _MainShellState extends State<MainShell> {
                         onLeaderboardTap: () => _onItemTapped(6),
                         onFriendsTap: () => _onItemTapped(7),
                         onSettingsTap: () => _onItemTapped(8),
+                        isMenuExpanded: _isMenuExpanded,
+                        onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
                       ),
                       FriendsPage(
                         localizations: widget.localizations,
@@ -376,6 +379,8 @@ class _MainShellState extends State<MainShell> {
                         onLeaderboardTap: () => _onItemTapped(6),
                         onFriendsTap: () => _onItemTapped(7),
                         onSettingsTap: () => _onItemTapped(8),
+                        isMenuExpanded: _isMenuExpanded,
+                        onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
                       ),
                       SettingsPage(
                         localizations: widget.localizations,

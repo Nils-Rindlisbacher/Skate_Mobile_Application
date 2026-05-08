@@ -31,6 +31,8 @@ class PublicProfilePage extends StatefulWidget {
     required this.onSessionGoalsTap,
     required this.onEquipmentTap,
     required this.onSettingsTap,
+    this.isMenuExpanded = false,
+    this.onToggleMenu,
   });
 
   final AppLocalizations localizations;
@@ -49,6 +51,8 @@ class PublicProfilePage extends StatefulWidget {
   final VoidCallback onSessionGoalsTap;
   final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
+  final bool isMenuExpanded;
+  final VoidCallback? onToggleMenu;
 
   @override
   State<PublicProfilePage> createState() => _PublicProfilePageState();
@@ -58,12 +62,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   final ApiService _apiService = ApiService();
   TrackerView _currentView = TrackerView.category;
   
-  String _relationshipStatus = 'NONE'; // NONE, REQUEST_SENT, REQUEST_RECEIVED, FRIENDS
+  String _relationshipStatus = 'NONE'; 
   int _friendCount = 0;
   bool _isLoading = true;
   String? _error;
   Map<String, dynamic>? _profileData;
-  bool _isMenuExpanded = false;
+  late bool _isMenuExpanded;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final Map<int, Color> categoryColors = {
@@ -83,6 +87,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   @override
   void initState() {
     super.initState();
+    _isMenuExpanded = widget.isMenuExpanded;
     _fetchData();
   }
 
@@ -177,6 +182,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     );
   }
 
+  void _toggleMenu() {
+    setState(() => _isMenuExpanded = !_isMenuExpanded);
+    widget.onToggleMenu?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -191,7 +201,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           userData: widget.currentUserData,
           isExpanded: _isMenuExpanded,
           isDesktop: isDesktop,
-          onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
+          onToggleMenu: _toggleMenu,
           onLanguageChange: widget.onLanguageChange,
           onProfileTap: widget.onProfileTap,
           onTrickListTap: widget.onTrickListTap,
@@ -210,14 +220,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           appBar: CustomAppBar(
             title: widget.username,
             isDarkMode: widget.isDarkMode,
-            onMenuTap: isDesktop 
-                ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
-                : () => _scaffoldKey.currentState?.openDrawer(),
+            onMenuTap: isDesktop ? _toggleMenu : () => _scaffoldKey.currentState?.openDrawer(),
             showMenuButton: true,
             isExpanded: _isMenuExpanded,
             isDesktop: isDesktop,
             actions: [
-              // Menü-Icon nur anzeigen, wenn es nicht das eigene Profil ist
               if (!_isMe)
                 IconButton(
                   icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -229,12 +236,14 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           body: Row(
             children: [
               if (isDesktop) 
-                SizedBox(
-                  width: _isMenuExpanded ? 320 : 100, 
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  width: _isMenuExpanded ? 280 : 72, 
                   child: sideMenu
                 ),
               Expanded(
-                child: _isLoading 
+                child: _isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : _error != null
                         ? Center(child: Text('${widget.localizations.error}: $_error'))
@@ -261,7 +270,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
     final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
 
-    // Build category map for quick lookup
     Map<String, int> categoryCounts = {};
     for (var item in completedTricks) {
       final dynamic trick = item['trick'] ?? item;
@@ -290,7 +298,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       totalBaseTricks += (total as num).toInt();
     }
 
-    // Process recently completed (last 3)
     List<dynamic> recentlyCompleted = List.from(completedTricks);
     recentlyCompleted.sort((a, b) {
       final dateA = a['created_at'] ?? a['createdAt'];
@@ -318,7 +325,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
           ),
           Text(
-            '@${widget.username}', 
+            '@${widget.username}',
             style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.6)),
           ),
           const SizedBox(height: 8),
@@ -327,7 +334,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
           ),
           const SizedBox(height: 24),
-          
+
           if (!_isMe) _buildRelationshipButton(colorScheme),
 
           const SizedBox(height: 32),
@@ -364,7 +371,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           ),
 
           const SizedBox(height: 32),
-          
+
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: _currentView == TrackerView.category
@@ -445,7 +452,6 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                   _handleFriendAction();
                 },
               ),
-            // Man kann sich selbst nicht melden
             if (!_isMe)
               ListTile(
                 leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),

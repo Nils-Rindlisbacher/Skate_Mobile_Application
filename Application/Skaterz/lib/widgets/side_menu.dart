@@ -16,7 +16,6 @@ class SideMenu extends StatelessWidget {
     required this.onLanguageChange,
     required this.isDarkMode,
     required this.onThemeToggle,
-    // Fix: Parameter fuer Kompatibilitaet mit bestehenden Seiten wieder hinzugefuegt
     this.isLoggedIn = false,
     this.userData,
     this.isExpanded = true,
@@ -70,7 +69,6 @@ class SideMenu extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profi-Header: Minimaler Abstand oben statt Platzverschwender fuer Bild/Name
             const SizedBox(height: 12),
             Expanded(
               child: ListView(
@@ -91,19 +89,19 @@ class SideMenu extends StatelessWidget {
                     child: Divider(height: 1, thickness: 0.5, color: colorScheme.outline.withOpacity(0.2)),
                   ),
 
-                  _buildLanguageExpansion(context),
-
                   _buildMenuItem(
                     context, 
                     isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded, 
                     localizations.darkMode, 
                     () => onThemeToggle(!isDarkMode)
                   ),
+
+                  // Sprachen nach ganz unten verschoben
+                  _buildLanguageExpansion(context),
                 ],
               ),
             ),
             
-            // Footer Info mit weichem Ausfaden
             if (isDesktop)
               Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -150,11 +148,11 @@ class SideMenu extends StatelessWidget {
         child: Container(
           height: 50,
           width: double.infinity,
-          padding: const EdgeInsets.only(left: 24), // Fixierte 24px Achse (Absolut stabil)
+          padding: const EdgeInsets.only(left: 24), 
           child: Row(
             children: [
               Icon(icon, color: colorScheme.primary, size: 24),
-              const SizedBox(width: 24), // Konsistenter Abstand Icon zu Text
+              const SizedBox(width: 24), 
               if (isDesktop)
                 Expanded(
                   child: AnimatedOpacity(
@@ -193,9 +191,9 @@ class SideMenu extends StatelessWidget {
   Widget _buildLanguageExpansion(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     
-    // Im eingeklappten Zustand zeigen wir nur das Icon
+    // Im eingeklappten Zustand: Klick expandiert Sidebar UND oeffnet Dropdown
     if (isDesktop && !isExpanded) {
-      return _buildMenuItem(context, Icons.language_rounded, localizations.language, () {});
+      return _buildMenuItem(context, Icons.language_rounded, localizations.language, onToggleMenu ?? () {});
     }
 
     return Theme(
@@ -204,17 +202,24 @@ class SideMenu extends StatelessWidget {
         hoverColor: Colors.transparent,
       ),
       child: ExpansionTile(
+        // Profi-Fix: initiallyExpanded auf true setzen, wenn wir gerade erst expandiert haben (stateless workaround)
+        // Wenn isDesktop true ist, nehmen wir an, dass man es oft offen sehen will oder es gerade geoeffnet wurde.
+        initiallyExpanded: isDesktop && isExpanded, 
         tilePadding: const EdgeInsets.only(left: 24, right: 16),
         leading: Icon(Icons.language_rounded, color: colorScheme.primary, size: 24),
-        title: Text(
-          localizations.language, 
-          style: TextStyle(
-            fontWeight: FontWeight.w600, 
-            fontSize: 14, 
-            color: colorScheme.onSurface
+        // Profi-Fix: Padding hinzugefuegt, um die 8px Differenz zwischen ListTile-Gap (16) und SizedBox (24) auszugleichen
+        title: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Text(
+            localizations.language, 
+            style: TextStyle(
+              fontWeight: FontWeight.w600, 
+              fontSize: 14, 
+              color: colorScheme.onSurface
+            ),
+            maxLines: 1,
+            softWrap: false,
           ),
-          maxLines: 1,
-          softWrap: false,
         ),
         children: <Widget>[
           _buildLanguageOption(context, '🇩🇪', localizations.german, 'de'),

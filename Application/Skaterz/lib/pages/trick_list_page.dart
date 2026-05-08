@@ -28,6 +28,8 @@ class TrickListPage extends StatefulWidget {
     required this.onSessionGoalsTap,
     required this.onEquipmentTap,
     required this.onSettingsTap,
+    this.isMenuExpanded = false,
+    this.onToggleMenu,
   });
 
   final AppLocalizations localizations;
@@ -46,6 +48,8 @@ class TrickListPage extends StatefulWidget {
   final VoidCallback onSessionGoalsTap;
   final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
+  final bool isMenuExpanded;
+  final VoidCallback? onToggleMenu;
 
   @override
   State<TrickListPage> createState() => _TrickListPageState();
@@ -57,29 +61,30 @@ class _TrickListPageState extends State<TrickListPage> {
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Timer? _searchDebounce;
-  
+
   List<dynamic> _tricks = [];
   bool _isLoading = true;
   bool _isFetchingMore = false;
-  bool _isMenuExpanded = false;
+  late bool _isMenuExpanded;
   String _selectedStance = 'ALL';
   String _searchQuery = "";
   TrickFilter _currentFilter = TrickFilter.all;
-  
+
   final int _pageSize = 20;
   int _currentPage = 0;
   bool _hasMore = true;
 
   final Map<String, Color> stanceColors = {
-    'REGULAR': const Color(0xFF4FC3F7), 
-    'NOLLIE': const Color(0xFFFF8A65),  
-    'SWITCH': const Color(0xFF9575CD),  
-    'FAKIE': const Color(0xFF4DB6AC),   
+    'REGULAR': const Color(0xFF4FC3F7),
+    'NOLLIE': const Color(0xFFFF8A65),
+    'SWITCH': const Color(0xFF9575CD),
+    'FAKIE': const Color(0xFF4DB6AC),
   };
 
   @override
   void initState() {
     super.initState();
+    _isMenuExpanded = widget.isMenuExpanded;
     _loadInitialTricks();
     _scrollController.addListener(_onScroll);
   }
@@ -114,8 +119,8 @@ class _TrickListPageState extends State<TrickListPage> {
   List<String> _getAvailableStances(String trickName) {
     final name = trickName.toLowerCase();
 
-    if (name == 'rock to fakie' || 
-        name == 'rock n roll' || 
+    if (name == 'rock to fakie' ||
+        name == 'rock n roll' ||
         name == 'blunt to fakie') {
       return ['REGULAR'];
     }
@@ -137,7 +142,7 @@ class _TrickListPageState extends State<TrickListPage> {
         page: 0,
         size: _pageSize,
       );
-      
+
       if (mounted) {
         setState(() {
           _tricks = tricks;
@@ -168,7 +173,7 @@ class _TrickListPageState extends State<TrickListPage> {
         page: nextPage,
         size: _pageSize,
       );
-      
+
       if (mounted) {
         setState(() {
           _currentPage = nextPage;
@@ -270,7 +275,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
     String innerSelectedStance = _selectedStance == 'ALL' ? 'REGULAR' : _selectedStance;
     final availableStances = _getAvailableStances(trick['name'] ?? '');
-    
+
     if (!availableStances.contains(innerSelectedStance)) {
       innerSelectedStance = 'REGULAR';
     }
@@ -337,11 +342,11 @@ class _TrickListPageState extends State<TrickListPage> {
                       final isSelected = innerSelectedStance == stance;
                       final bool stanceDone = _isTrickCompleted(currentTrickData, stance);
                       final Color sColor = stanceColors[stance] ?? AppColors.primary;
-                      
+
                       return ChoiceChip(
                         label: Text(_formatStance(stance)),
                         selected: isSelected,
-                        showCheckmark: false, 
+                        showCheckmark: false,
                         selectedColor: sColor.withOpacity(0.2),
                         labelStyle: TextStyle(
                           color: isSelected ? sColor : null,
@@ -372,7 +377,7 @@ class _TrickListPageState extends State<TrickListPage> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: isCompleted ? Colors.grey : Colors.red,
                             side: BorderSide(
-                              color: isCompleted ? Colors.grey.withOpacity(0.2) : Colors.red, 
+                              color: isCompleted ? Colors.grey.withOpacity(0.2) : Colors.red,
                               width: 1.5
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -389,7 +394,7 @@ class _TrickListPageState extends State<TrickListPage> {
                             }
                           }),
                           icon: Icon(isCompleted ? Icons.undo_rounded : Icons.check_circle_rounded),
-                          label: Text(isCompleted ? widget.localizations.undo : widget.localizations.complete), 
+                          label: Text(isCompleted ? widget.localizations.undo : widget.localizations.complete),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isCompleted ? Colors.grey[300] : currentStanceColor,
                             foregroundColor: isCompleted ? Colors.black87 : Colors.white,
@@ -421,7 +426,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
         final bool isDone = _isTrickCompleted(trick, stance);
         final bool isWishlisted = _isTrickWishlisted(trick, stance);
-        
+
         if (_currentFilter == TrickFilter.wishlist) {
             return Container(
               margin: const EdgeInsets.only(left: 4),
@@ -446,6 +451,11 @@ class _TrickListPageState extends State<TrickListPage> {
     );
   }
 
+  void _toggleMenu() {
+    setState(() => _isMenuExpanded = !_isMenuExpanded);
+    widget.onToggleMenu?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
@@ -457,7 +467,7 @@ class _TrickListPageState extends State<TrickListPage> {
       } else if (_currentFilter == TrickFilter.wishlist) {
         matchesFilter = _isTrickWishlisted(trick, _selectedStance);
       }
-      
+
       return matchesFilter;
     }).toList();
 
@@ -471,7 +481,7 @@ class _TrickListPageState extends State<TrickListPage> {
           userData: widget.userData,
           isExpanded: _isMenuExpanded,
           isDesktop: isDesktop,
-          onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
+          onToggleMenu: _toggleMenu,
           onLanguageChange: widget.onLanguageChange,
           onProfileTap: widget.onProfileTap,
           onTrickListTap: widget.onTrickListTap,
@@ -490,9 +500,7 @@ class _TrickListPageState extends State<TrickListPage> {
           appBar: CustomAppBar(
             title: widget.categoryName,
             isDarkMode: widget.isDarkMode,
-            onMenuTap: isDesktop 
-                ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
-                : () => _scaffoldKey.currentState?.openDrawer(),
+            onMenuTap: isDesktop ? _toggleMenu : () => _scaffoldKey.currentState?.openDrawer(),
             showMenuButton: true,
             isExpanded: _isMenuExpanded,
             isDesktop: isDesktop,
@@ -500,9 +508,11 @@ class _TrickListPageState extends State<TrickListPage> {
           drawer: isDesktop ? null : sideMenu,
           body: Row(
             children: [
-              if (isDesktop) 
-                SizedBox(
-                  width: _isMenuExpanded ? 320 : 100, 
+              if (isDesktop)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  width: _isMenuExpanded ? 280 : 72,
                   child: sideMenu
                 ),
               Expanded(
@@ -527,7 +537,7 @@ class _TrickListPageState extends State<TrickListPage> {
                             decoration: InputDecoration(
                               hintText: widget.localizations.searchTricks,
                               prefixIcon: Icon(Icons.search_rounded, color: AppColors.primary),
-                              suffixIcon: _searchController.text.isNotEmpty 
+                              suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear_rounded),
                                     onPressed: () {
@@ -577,7 +587,7 @@ class _TrickListPageState extends State<TrickListPage> {
                                       value: _selectedStance,
                                       icon: const Icon(Icons.arrow_drop_down, size: 20),
                                       style: TextStyle(
-                                        fontSize: 12, 
+                                        fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                         color: isDark ? Colors.white : Colors.black87,
                                       ),
@@ -630,7 +640,7 @@ class _TrickListPageState extends State<TrickListPage> {
                                           child: Center(child: CircularProgressIndicator()),
                                         );
                                       }
-                                      
+
                                       final trick = filteredTricks[index];
 
                                       return Card(
@@ -650,7 +660,7 @@ class _TrickListPageState extends State<TrickListPage> {
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              _buildStanceIndicators(trick), 
+                                              _buildStanceIndicators(trick),
                                               const SizedBox(width: 8),
                                               const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                                             ],
@@ -673,6 +683,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
   Widget _buildFilterChip(TrickFilter filter, String label) {
     final isSelected = _currentFilter == filter;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -693,7 +704,7 @@ class _TrickListPageState extends State<TrickListPage> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
+            color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 13,
           ),

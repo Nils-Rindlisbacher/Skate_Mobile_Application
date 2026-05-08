@@ -26,6 +26,8 @@ class LeaderboardPage extends StatefulWidget {
     required this.onSessionGoalsTap,
     required this.onEquipmentTap,
     required this.onSettingsTap,
+    this.isMenuExpanded = false,
+    this.onToggleMenu,
   });
 
   final AppLocalizations localizations;
@@ -45,6 +47,8 @@ class LeaderboardPage extends StatefulWidget {
   final VoidCallback onSessionGoalsTap;
   final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
+  final bool isMenuExpanded;
+  final VoidCallback? onToggleMenu;
 
   @override
   State<LeaderboardPage> createState() => _LeaderboardPageState();
@@ -74,16 +78,19 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   void didUpdateWidget(LeaderboardPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.isLoggedIn && widget.isLoggedIn) {
-      setState(() => _isLoading = true);
       _loadData();
     } else if (widget.isLoggedIn && widget.isActive && !oldWidget.isActive) {
-      _loadData(); 
+      _loadData(silent: true); 
     }
   }
 
   bool get _isUserPublic => widget.userData?['isPublic'] ?? widget.userData?['is_public'] ?? true;
 
-  Future<void> _loadData() async {
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _isLoading = true);
+    }
+    
     try {
       final results = await Future.wait([
         _apiService.getLeaderboard(categoryId: _selectedCategoryId, stance: _selectedStance),
@@ -106,7 +113,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         });
       }
     } catch (e) {
-      if (mounted && _leaderboard.isEmpty) {
+      if (mounted) {
         setState(() => _isLoading = false);
       }
     }
@@ -222,7 +229,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   onChanged: (value) {
                     setState(() {
                       _selectedCategoryId = value;
-                      _isLoading = true;
                     });
                     _loadData();
                   },
@@ -246,7 +252,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                     if (value != null) {
                       setState(() {
                         _selectedStance = value;
-                        _isLoading = true;
                       });
                       _loadData();
                     }
@@ -258,7 +263,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           
           Expanded(
             child: RefreshIndicator(
-              onRefresh: _loadData,
+              onRefresh: () => _loadData(silent: true),
               child: _isLoading && _leaderboard.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : filteredLeaderboard.isEmpty
@@ -291,27 +296,39 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                 onTap: userId == null ? null : () {
                                   Navigator.push(
                                     context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PublicProfilePage(
-                                        localizations: widget.localizations,
-                                        userId: userId,
-                                        username: username,
-                                        isLoggedIn: widget.isLoggedIn,
-                                        currentUserData: widget.userData,
-                                        isDarkMode: widget.isDarkMode,
-                                        onThemeToggle: widget.onThemeToggle,
-                                        onLanguageChange: widget.onLanguageChange,
-                                        onProfileTap: widget.onProfileTap,
-                                        onProgressTap: widget.onProgressTap,
-                                        onLeaderboardTap: widget.onLeaderboardTap,
-                                        onTrickListTap: widget.onTrickListTap,
-                                        onFriendsTap: widget.onFriendsTap,
-                                        onSessionGoalsTap: widget.onSessionGoalsTap,
-                                        onEquipmentTap: widget.onEquipmentTap,
-                                        onSettingsTap: widget.onSettingsTap,
+                                    PageRouteBuilder(
+                                      transitionDuration: const Duration(milliseconds: 300),
+                                      reverseTransitionDuration: const Duration(milliseconds: 250),
+                                      pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+                                        opacity: animation,
+                                        child: PublicProfilePage(
+                                          localizations: widget.localizations,
+                                          userId: userId,
+                                          username: username,
+                                          isLoggedIn: widget.isLoggedIn,
+                                          currentUserData: widget.userData,
+                                          isDarkMode: widget.isDarkMode,
+                                          onThemeToggle: widget.onThemeToggle,
+                                          onLanguageChange: widget.onLanguageChange,
+                                          onProfileTap: widget.onProfileTap,
+                                          onProgressTap: widget.onProgressTap,
+                                          onLeaderboardTap: widget.onLeaderboardTap,
+                                          onTrickListTap: widget.onTrickListTap,
+                                          onFriendsTap: widget.onFriendsTap,
+                                          onSessionGoalsTap: widget.onSessionGoalsTap,
+                                          onEquipmentTap: widget.onEquipmentTap,
+                                          onSettingsTap: widget.onSettingsTap,
+                                          isMenuExpanded: widget.isMenuExpanded,
+                                          onToggleMenu: widget.onToggleMenu,
+                                        ),
                                       ),
                                     ),
-                                  ).then((_) => _loadData()); // Refresh if user returns from profile
+                                  ).then((_) {
+                                    // PROFI-FIX: Refresh verzögern um Animation nicht zu stören
+                                    Future.delayed(const Duration(milliseconds: 300), () {
+                                      if (mounted) _loadData(silent: true);
+                                    });
+                                  }); 
                                 },
                                 child: ListTile(
                                   leading: Row(
@@ -329,11 +346,14 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                         ),
                                       ),
                                       const SizedBox(width: 8),
-                                      CircleAvatar(
-                                        backgroundColor: Colors.grey.withOpacity(0.2),
-                                        backgroundImage: hasCustomImage
-                                            ? MemoryImage(const Base64Decoder().convert(base64Image))
-                                            : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+                                      Hero(
+                                        tag: 'avatar_$userId',
+                                        child: CircleAvatar(
+                                          backgroundColor: Colors.grey.withOpacity(0.2),
+                                          backgroundImage: hasCustomImage
+                                              ? MemoryImage(const Base64Decoder().convert(base64Image))
+                                              : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+                                        ),
                                       ),
                                     ],
                                   ),

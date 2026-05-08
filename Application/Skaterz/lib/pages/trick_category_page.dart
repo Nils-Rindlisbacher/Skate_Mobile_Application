@@ -24,6 +24,8 @@ class TrickCategoryPage extends StatefulWidget {
     required this.onSessionGoalsTap,
     required this.onEquipmentTap,
     required this.onSettingsTap,
+    this.isMenuExpanded = false,
+    this.onToggleMenu,
   });
 
   final AppLocalizations localizations;
@@ -41,6 +43,8 @@ class TrickCategoryPage extends StatefulWidget {
   final VoidCallback onSessionGoalsTap;
   final VoidCallback onEquipmentTap;
   final VoidCallback onSettingsTap;
+  final bool isMenuExpanded;
+  final VoidCallback? onToggleMenu;
 
   @override
   State<TrickCategoryPage> createState() => _TrickCategoryPageState();
@@ -77,9 +81,6 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
     } catch (e) {
       if (mounted && _allCategories.isEmpty) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${widget.localizations.error}: $e')),
-        );
       }
     }
   }
@@ -135,29 +136,38 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
   }
 
   Widget _buildCategoryTile(BuildContext context, String title, IconData icon, int? categoryId, Color color) {
+    final heroTag = categoryId != null ? 'category_icon_$categoryId' : 'category_icon_all';
+    
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => TrickListPage(
-              localizations: widget.localizations,
-              categoryId: categoryId,
-              categoryName: title,
-              isLoggedIn: widget.isLoggedIn,
-              userData: widget.userData,
-              isDarkMode: widget.isDarkMode,
-              onThemeToggle: widget.onThemeToggle,
-              onLanguageChange: widget.onLanguageChange,
-              onProfileTap: widget.onProfileTap,
-              onProgressTap: widget.onProgressTap,
-              onLeaderboardTap: widget.onLeaderboardTap,
-              onTrickListTap: widget.onTrickListTap,
-              onFriendsTap: widget.onFriendsTap,
-              onSessionGoalsTap: widget.onSessionGoalsTap,
-              onEquipmentTap: widget.onEquipmentTap,
-              onSettingsTap: widget.onSettingsTap,
+          PageRouteBuilder(
+            transitionDuration: const Duration(milliseconds: 300),
+            reverseTransitionDuration: const Duration(milliseconds: 250),
+            pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+              opacity: animation,
+              child: TrickListPage(
+                localizations: widget.localizations,
+                categoryId: categoryId,
+                categoryName: title,
+                isLoggedIn: widget.isLoggedIn,
+                userData: widget.userData,
+                isDarkMode: widget.isDarkMode,
+                onThemeToggle: widget.onThemeToggle,
+                onLanguageChange: widget.onLanguageChange,
+                onProfileTap: widget.onProfileTap,
+                onProgressTap: widget.onProgressTap,
+                onLeaderboardTap: widget.onLeaderboardTap,
+                onTrickListTap: widget.onTrickListTap,
+                onFriendsTap: widget.onFriendsTap,
+                onSessionGoalsTap: widget.onSessionGoalsTap,
+                onEquipmentTap: widget.onEquipmentTap,
+                onSettingsTap: widget.onSettingsTap,
+                isMenuExpanded: widget.isMenuExpanded,
+                onToggleMenu: widget.onToggleMenu,
+              ),
             ),
           ),
         );
@@ -173,21 +183,21 @@ class _TrickCategoryPageState extends State<TrickCategoryPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
+              Hero(
+                tag: heroTag,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 40, color: color),
                 ),
-                child: Icon(icon, size: 40, color: color),
               ),
               const SizedBox(height: 16),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16, 
-                  fontWeight: FontWeight.bold,
-                ),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
