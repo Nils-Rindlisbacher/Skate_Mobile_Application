@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -17,6 +16,10 @@ class ProgressTrackerPage extends StatefulWidget {
     required this.onLogin,
     required this.onMenuTap,
     this.isActive = true,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    this.isMenuExpanded = false,
   });
 
   final AppLocalizations localizations;
@@ -24,6 +27,10 @@ class ProgressTrackerPage extends StatefulWidget {
   final VoidCallback onLogin;
   final VoidCallback onMenuTap;
   final bool isActive;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final bool isMenuExpanded;
 
   @override
   State<ProgressTrackerPage> createState() => _ProgressTrackerPageState();
@@ -99,7 +106,6 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
     } catch (e) {
       if (mounted && _stats.isEmpty) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -112,7 +118,11 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         onLogin: widget.onLogin,
         featureName: widget.localizations.progressTrackerMenuItem,
         icon: Icons.analytics_outlined,
-        onMenuTap: () { }
+        onMenuTap: widget.onMenuTap,
+        isDarkMode: widget.isDarkMode,
+        isMenuExpanded: widget.isMenuExpanded,
+        onThemeToggle: widget.onThemeToggle,
+        onLanguageChange: widget.onLanguageChange,
       );
     }
     

@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,11 +13,21 @@ class SessionGoalsPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
+    required this.onMenuTap,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    this.isMenuExpanded = false,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
+  final VoidCallback onMenuTap;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final bool isMenuExpanded;
 
   @override
   State<SessionGoalsPage> createState() => _SessionGoalsPageState();
@@ -171,7 +180,11 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
         onLogin: widget.onLogin,
         featureName: widget.localizations.sessionGoalsTitle,
         icon: Icons.track_changes,
-        onMenuTap: () { },
+        onMenuTap: widget.onMenuTap,
+        isDarkMode: widget.isDarkMode,
+        isMenuExpanded: widget.isMenuExpanded,
+        onThemeToggle: widget.onThemeToggle,
+        onLanguageChange: widget.onLanguageChange,
       );
     }
 
@@ -559,7 +572,6 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
         });
       }
 
-      // Fetch a large page size to ensure all tricks are available for autocomplete
       final tricks = await api.getTricks(size: 1000);
       if (!mounted) return;
       setState(() {
@@ -670,7 +682,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                     return filtered;
                   },
                   onSelected: (option) {
-                    setState(() {}); // Refresh to update stance options
+                    setState(() {}); 
                   },
                   displayStringForOption: (option) => option['name']?.toString() ?? "",
                   fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {

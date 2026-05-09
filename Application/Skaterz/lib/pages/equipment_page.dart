@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -13,11 +12,21 @@ class EquipmentPage extends StatefulWidget {
     required this.localizations,
     required this.isLoggedIn,
     required this.onLogin,
+    required this.onMenuTap,
+    required this.isDarkMode,
+    required this.onThemeToggle,
+    required this.onLanguageChange,
+    this.isMenuExpanded = false,
   });
 
   final AppLocalizations localizations;
   final bool isLoggedIn;
   final VoidCallback onLogin;
+  final VoidCallback onMenuTap;
+  final bool isDarkMode;
+  final Function(bool) onThemeToggle;
+  final Function(String) onLanguageChange;
+  final bool isMenuExpanded;
 
   @override
   State<EquipmentPage> createState() => _EquipmentPageState();
@@ -69,10 +78,9 @@ class _EquipmentPageState extends State<EquipmentPage> {
         onSave: (data) async {
           Navigator.pop(context);
           
-          // Optimistic UI update
           setState(() {
             if (item == null) {
-              _equipment.add(Map<String, dynamic>.from(data)..['id'] = -1); // Temporary ID
+              _equipment.add(Map<String, dynamic>.from(data)..['id'] = -1);
             } else {
               final index = _equipment.indexWhere((e) => e['id'] == item['id']);
               if (index != -1) _equipment[index] = data;
@@ -90,7 +98,6 @@ class _EquipmentPageState extends State<EquipmentPage> {
               await _apiService.updateEquipment(item['id'], data);
             }
           } catch (e) {
-            // Revert on error
             _loadEquipment(); 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -123,7 +130,6 @@ class _EquipmentPageState extends State<EquipmentPage> {
       final originalItem = _equipment.firstWhere((e) => e['id'] == id);
       final index = _equipment.indexOf(originalItem);
 
-      // Optimistic UI update
       setState(() {
         _equipment.removeWhere((e) => e['id'] == id);
       });
@@ -131,7 +137,6 @@ class _EquipmentPageState extends State<EquipmentPage> {
       try {
         await _apiService.deleteEquipment(id);
       } catch (e) {
-        // Revert on error
         setState(() {
           _equipment.insert(index, originalItem);
         });
@@ -152,7 +157,11 @@ class _EquipmentPageState extends State<EquipmentPage> {
         onLogin: widget.onLogin,
         featureName: widget.localizations.equipmentMenuItem,
         icon: Icons.handyman_outlined,
-        onMenuTap: () {  },
+        onMenuTap: widget.onMenuTap,
+        isDarkMode: widget.isDarkMode,
+        isMenuExpanded: widget.isMenuExpanded,
+        onThemeToggle: widget.onThemeToggle,
+        onLanguageChange: widget.onLanguageChange,
       );
     }
 
@@ -351,7 +360,7 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
     super.initState();
     final item = widget.item;
     _type = item?['type'] ?? 'DECK';
-    _nameController = TextEditingController(text: item?['brand'] ?? ''); // Use Brand as default name
+    _nameController = TextEditingController(text: item?['brand'] ?? ''); 
     _brandController = TextEditingController(text: item?['brand'] ?? '');
     _modelController = TextEditingController(text: item?['model'] ?? '');
     _sizeController = TextEditingController(text: item?['size'] ?? '');
@@ -407,7 +416,7 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                 onSelected: (String selection) {
                   setState(() {
                     _brandController.text = selection;
-                    _nameController.text = selection; // Auto-fill name with brand
+                    _nameController.text = selection; 
                   });
                 },
                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {

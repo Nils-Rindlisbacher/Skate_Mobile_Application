@@ -27,6 +27,7 @@ class FriendsPage extends StatefulWidget {
     required this.onSettingsTap,
     this.isMenuExpanded = false,
     this.onToggleMenu,
+    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
@@ -46,6 +47,7 @@ class FriendsPage extends StatefulWidget {
   final VoidCallback onSettingsTap;
   final bool isMenuExpanded;
   final VoidCallback? onToggleMenu;
+  final VoidCallback onMenuTap;
 
   @override
   State<FriendsPage> createState() => _FriendsPageState();
@@ -180,7 +182,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         onLogin: widget.onLogin,
         featureName: widget.localizations.friends,
         icon: Icons.people_outline_rounded,
-        onMenuTap: () {},
+        onMenuTap: widget.onMenuTap,
+        isDarkMode: widget.isDarkMode,
+        isMenuExpanded: widget.isMenuExpanded,
+        onThemeToggle: widget.onThemeToggle,
+        onLanguageChange: widget.onLanguageChange,
       );
     }
 

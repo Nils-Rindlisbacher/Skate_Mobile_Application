@@ -28,6 +28,7 @@ class LeaderboardPage extends StatefulWidget {
     required this.onSettingsTap,
     this.isMenuExpanded = false,
     this.onToggleMenu,
+    required this.onMenuTap,
   });
 
   final AppLocalizations localizations;
@@ -49,6 +50,7 @@ class LeaderboardPage extends StatefulWidget {
   final VoidCallback onSettingsTap;
   final bool isMenuExpanded;
   final VoidCallback? onToggleMenu;
+  final VoidCallback onMenuTap;
 
   @override
   State<LeaderboardPage> createState() => _LeaderboardPageState();
@@ -140,7 +142,11 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         onLogin: widget.onLogin,
         featureName: widget.localizations.leaderboardMenuItem,
         icon: Icons.emoji_events_outlined,
-        onMenuTap: () { },
+        onMenuTap: widget.onMenuTap,
+        isDarkMode: widget.isDarkMode,
+        isMenuExpanded: widget.isMenuExpanded,
+        onThemeToggle: widget.onThemeToggle,
+        onLanguageChange: widget.onLanguageChange,
       );
     }
 

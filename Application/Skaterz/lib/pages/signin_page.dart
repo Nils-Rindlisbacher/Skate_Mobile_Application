@@ -3,16 +3,30 @@ import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/services/api_service.dart';
 import 'package:skaterz/pages/initial_trick_selection_page.dart';
 import 'package:skaterz/core/constants.dart';
+import 'package:skaterz/widgets/custom_app_bar.dart';
+import 'package:skaterz/widgets/side_menu.dart';
 
 class SignInPage extends StatefulWidget {
   const SignInPage({
     super.key,
     required this.localizations,
     required this.onLogin,
+    this.onMenuTap,
+    this.isStandalone = false,
+    this.isDarkMode = true,
+    this.isMenuExpanded = false,
+    this.onThemeToggle,
+    this.onLanguageChange,
   });
 
   final AppLocalizations localizations;
   final VoidCallback onLogin;
+  final VoidCallback? onMenuTap;
+  final bool isStandalone;
+  final bool isDarkMode;
+  final bool isMenuExpanded;
+  final Function(bool)? onThemeToggle;
+  final Function(String)? onLanguageChange;
 
   @override
   State<SignInPage> createState() => _SignInPageState();
@@ -24,8 +38,16 @@ class _SignInPageState extends State<SignInPage> {
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _apiService = ApiService();
   bool _isLoading = false;
+  late bool _isMenuExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isMenuExpanded = widget.isMenuExpanded;
+  }
 
   @override
   void dispose() {
@@ -85,13 +107,15 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: null,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
+    final content = Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32.0),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Form(
+            key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,7 +125,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _nameController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.name,
-                    prefixIcon: Icon(Icons.person_outline, color: AppColors.getDynamicPrimary(context)),
+                    prefixIcon: Icon(Icons.person_outline, color: primaryColor),
                   ),
                   validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterName : null,
                 ),
@@ -110,7 +134,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _usernameController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.username,
-                    prefixIcon: Icon(Icons.alternate_email, color: AppColors.getDynamicPrimary(context)),
+                    prefixIcon: Icon(Icons.alternate_email, color: primaryColor),
                   ),
                   validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterUsername : null,
                 ),
@@ -119,7 +143,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _emailController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.email,
-                    prefixIcon: Icon(Icons.email_outlined, color: AppColors.getDynamicPrimary(context)),
+                    prefixIcon: Icon(Icons.email_outlined, color: primaryColor),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) => (value == null || value.isEmpty) ? widget.localizations.enterEmail : null,
@@ -129,7 +153,7 @@ class _SignInPageState extends State<SignInPage> {
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: widget.localizations.password,
-                    prefixIcon: Icon(Icons.lock_outline, color: AppColors.getDynamicPrimary(context)),
+                    prefixIcon: Icon(Icons.lock_outline, color: primaryColor),
                   ),
                   obscureText: true,
                   validator: (value) => (value == null || value.length < 6) ? widget.localizations.passwordTooShort : null,
@@ -138,10 +162,11 @@ class _SignInPageState extends State<SignInPage> {
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.getDynamicPrimary(context),
+                    backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
                   ),
                   child: _isLoading 
                     ? const SizedBox(
@@ -149,13 +174,68 @@ class _SignInPageState extends State<SignInPage> {
                         width: 20, 
                         child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
                       ) 
-                    : Text(widget.localizations.registerButton, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    : Text(widget.localizations.registerButton.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+
+    if (!widget.isStandalone) {
+      return Scaffold(body: content);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth > 800;
+        final sideMenu = SideMenu(
+          localizations: widget.localizations,
+          isLoggedIn: false,
+          isExpanded: _isMenuExpanded,
+          isDesktop: isDesktop,
+          onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
+          onLanguageChange: widget.onLanguageChange ?? (v) {},
+          onProfileTap: () {},
+          onTrickListTap: () {},
+          onProgressTap: () {},
+          onSessionGoalsTap: () {},
+          onEquipmentTap: () {},
+          onLeaderboardTap: () {},
+          onFriendsTap: () {},
+          onSettingsTap: () {},
+          isDarkMode: widget.isDarkMode,
+          onThemeToggle: widget.onThemeToggle ?? (v) {},
+        );
+
+        return Scaffold(
+          key: _scaffoldKey,
+          appBar: CustomAppBar(
+            title: widget.localizations.registerPageTitle,
+            isDarkMode: widget.isDarkMode,
+            onMenuTap: isDesktop 
+                ? () => setState(() => _isMenuExpanded = !_isMenuExpanded) 
+                : () => _scaffoldKey.currentState?.openDrawer(),
+            showMenuButton: true,
+            isExpanded: _isMenuExpanded,
+            isDesktop: isDesktop,
+          ),
+          drawer: isDesktop ? null : sideMenu,
+          body: Row(
+            children: [
+              if (isDesktop)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  width: _isMenuExpanded ? 280 : 72,
+                  child: sideMenu,
+                ),
+              Expanded(child: content),
+            ],
+          ),
+        );
+      }
     );
   }
 }

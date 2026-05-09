@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
 import 'package:skaterz/pages/login_page.dart';
+import 'package:skaterz/pages/signin_page.dart';
 import 'package:skaterz/core/constants.dart';
 
 class LoginRequiredView extends StatelessWidget {
@@ -9,46 +10,59 @@ class LoginRequiredView extends StatelessWidget {
     required this.localizations,
     required this.onLogin,
     required this.featureName,
-    required this.icon, 
-    required Null Function() onMenuTap,
+    required this.icon,
+    required this.onMenuTap,
+    this.isDarkMode = true,
+    this.isMenuExpanded = false,
+    this.onThemeToggle,
+    this.onLanguageChange,
   });
 
   final AppLocalizations localizations;
   final VoidCallback onLogin;
   final String featureName;
   final IconData icon;
+  final VoidCallback onMenuTap;
+  final bool isDarkMode;
+  final bool isMenuExpanded;
+  final Function(bool)? onThemeToggle;
+  final Function(String)? onLanguageChange;
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 120, color: Colors.grey.withOpacity(0.4)),
+            Icon(icon, size: 100, color: primaryColor.withOpacity(0.2)),
             const SizedBox(height: 24),
             Text(
               featureName,
               style: TextStyle(
                 fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               localizations.loginRequiredWarning,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16, 
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
+            
+            // Login Button
             SizedBox(
-              width: 250,
+              width: 280,
               child: ElevatedButton(
                 onPressed: () => Navigator.push(
                   context,
@@ -56,25 +70,59 @@ class LoginRequiredView extends StatelessWidget {
                     builder: (_) => LogInPage(
                       localizations: localizations,
                       onLogin: onLogin,
-                      onMenuTap: () { },
+                      onMenuTap: onMenuTap,
+                      isStandalone: true,
+                      isDarkMode: isDarkMode,
+                      isMenuExpanded: isMenuExpanded,
+                      onThemeToggle: onThemeToggle,
+                      onLanguageChange: onLanguageChange,
                     ),
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.getDynamicPrimary(context),
+                  backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 0,
                 ),
                 child: Text(
-                  localizations.loginNow,
-                  style: const TextStyle(
-                    fontSize: 16, 
-                    fontWeight: FontWeight.bold,
+                  localizations.loginNow.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Register Button
+            SizedBox(
+              width: 280,
+              child: OutlinedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SignInPage(
+                      localizations: localizations,
+                      onLogin: onLogin,
+                      onMenuTap: onMenuTap,
+                      isStandalone: true,
+                      isDarkMode: isDarkMode,
+                      isMenuExpanded: isMenuExpanded,
+                      onThemeToggle: onThemeToggle,
+                      onLanguageChange: onLanguageChange,
+                    ),
                   ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: primaryColor,
+                  side: BorderSide(color: primaryColor, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: Text(
+                  localizations.registerButton.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1),
                 ),
               ),
             ),
