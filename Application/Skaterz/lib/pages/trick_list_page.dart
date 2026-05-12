@@ -118,10 +118,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
   List<String> _getAvailableStances(String trickName) {
     final name = trickName.toLowerCase();
-
-    if (name == 'rock to fakie' ||
-        name == 'rock n roll' ||
-        name == 'blunt to fakie') {
+    if (name == 'rock to fakie' || name == 'rock n roll' || name == 'blunt to fakie') {
       return ['REGULAR'];
     }
     return ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
@@ -160,10 +157,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
   Future<void> _loadMoreTricks() async {
     if (_isFetchingMore) return;
-
-    setState(() {
-      _isFetchingMore = true;
-    });
+    setState(() => _isFetchingMore = true);
 
     try {
       final nextPage = _currentPage + 1;
@@ -183,9 +177,7 @@ class _TrickListPageState extends State<TrickListPage> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isFetchingMore = false);
-      }
+      if (mounted) setState(() => _isFetchingMore = false);
     }
   }
 
@@ -193,9 +185,7 @@ class _TrickListPageState extends State<TrickListPage> {
     if (_searchDebounce?.isActive ?? false) _searchDebounce!.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
-        setState(() {
-          _searchQuery = query;
-        });
+        setState(() => _searchQuery = query);
         _loadInitialTricks();
       }
     });
@@ -222,23 +212,15 @@ class _TrickListPageState extends State<TrickListPage> {
   Future<void> _handleToggleWishlist(int trickId, bool currentStatus, String stance, void Function(void Function()) setModalState) async {
     final trickIndex = _tricks.indexWhere((t) => t['id'] == trickId);
     if (trickIndex != -1) {
-      setState(() {
-        _tricks[trickIndex]['stances'][stance]['wishlisted'] = !currentStatus;
-      });
+      setState(() => _tricks[trickIndex]['stances'][stance]['wishlisted'] = !currentStatus);
       setModalState(() {});
     }
-
     try {
       await _apiService.toggleWishlist(trickId, currentStatus, stance);
     } catch (e) {
       if (trickIndex != -1) {
-        setState(() {
-          _tricks[trickIndex]['stances'][stance]['wishlisted'] = currentStatus;
-        });
+        setState(() => _tricks[trickIndex]['stances'][stance]['wishlisted'] = currentStatus);
         setModalState(() {});
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -246,23 +228,15 @@ class _TrickListPageState extends State<TrickListPage> {
   Future<void> _handleToggleCompleted(int trickId, bool currentStatus, String stance, void Function(void Function()) setModalState) async {
     final trickIndex = _tricks.indexWhere((t) => t['id'] == trickId);
     if (trickIndex != -1) {
-      setState(() {
-        _tricks[trickIndex]['stances'][stance]['completed'] = !currentStatus;
-      });
+      setState(() => _tricks[trickIndex]['stances'][stance]['completed'] = !currentStatus);
       setModalState(() {});
     }
-
     try {
       await _apiService.toggleCompleted(trickId, currentStatus, stance);
     } catch (e) {
       if (trickIndex != -1) {
-        setState(() {
-          _tricks[trickIndex]['stances'][stance]['completed'] = currentStatus;
-        });
+        setState(() => _tricks[trickIndex]['stances'][stance]['completed'] = currentStatus);
         setModalState(() {});
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${widget.localizations.error}: $e')));
       }
     }
   }
@@ -275,10 +249,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
     String innerSelectedStance = _selectedStance == 'ALL' ? 'REGULAR' : _selectedStance;
     final availableStances = _getAvailableStances(trick['name'] ?? '');
-
-    if (!availableStances.contains(innerSelectedStance)) {
-      innerSelectedStance = 'REGULAR';
-    }
+    if (!availableStances.contains(innerSelectedStance)) innerSelectedStance = 'REGULAR';
 
     showModalBottomSheet(
       context: context,
@@ -290,16 +261,8 @@ class _TrickListPageState extends State<TrickListPage> {
         final primaryColor = AppColors.getDynamicPrimary(context);
 
         return Container(
-          decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          ),
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
-            left: 24,
-            right: 24,
-            top: 12,
-          ),
+          decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(32))),
+          padding: EdgeInsets.only(bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24, left: 24, right: 24, top: 12),
           child: StatefulBuilder(
             builder: (context, setModalState) {
               final currentTrickData = _tricks.firstWhere((t) => t['id'] == trick['id'], orElse: () => trick);
@@ -311,101 +274,67 @@ class _TrickListPageState extends State<TrickListPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                  Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.1), borderRadius: BorderRadius.circular(2)))),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(currentTrickData['name'] ?? widget.localizations.tricks, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.close_rounded, color: colorScheme.onSurface),
-                        onPressed: () => Navigator.pop(context),
-                        style: IconButton.styleFrom(backgroundColor: colorScheme.onSurface.withOpacity(0.1)),
-                      ),
+                      Expanded(child: Text(currentTrickData['name'] ?? widget.localizations.tricks, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: primaryColor, letterSpacing: -0.5))),
+                      IconButton(icon: Icon(Icons.close_rounded, color: colorScheme.onSurface.withOpacity(0.5)), onPressed: () => Navigator.pop(context), style: IconButton.styleFrom(backgroundColor: colorScheme.onSurface.withOpacity(0.05))),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  Text('${widget.localizations.stances} *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colorScheme.onSurface)),
+                  const SizedBox(height: 32),
+                  Text(widget.localizations.stances.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1.5, color: colorScheme.onSurface.withOpacity(0.5))),
                   const SizedBox(height: 12),
                   Wrap(
-                    spacing: 8,
+                    spacing: 10, runSpacing: 10,
                     children: availableStances.map((stance) {
                       final isSelected = innerSelectedStance == stance;
                       final bool stanceDone = _isTrickCompleted(currentTrickData, stance);
                       final Color sColor = stanceColors[stance] ?? primaryColor;
-
                       return ChoiceChip(
                         label: Text(_formatStance(stance)),
                         selected: isSelected,
                         showCheckmark: false,
-                        selectedColor: sColor.withOpacity(0.2),
+                        selectedColor: sColor.withOpacity(0.15),
                         backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-                        labelStyle: TextStyle(
-                          color: isSelected ? sColor : colorScheme.onSurface,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        avatar: stanceDone ? Icon(Icons.check, size: 16, color: sColor) : null,
-                        onSelected: (selected) {
-                          if (selected) {
-                            HapticFeedback.selectionClick();
-                            setModalState(() => innerSelectedStance = stance);
-                          }
-                        },
+                        labelStyle: TextStyle(color: isSelected ? sColor : colorScheme.onSurface, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600, fontSize: 13),
+                        avatar: stanceDone ? Icon(Icons.check_circle_rounded, size: 16, color: sColor) : null,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: isSelected ? sColor.withOpacity(0.3) : Colors.transparent)),
+                        onSelected: (selected) { if (selected) { HapticFeedback.selectionClick(); setModalState(() => innerSelectedStance = stance); } },
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 40),
                   Row(
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: isCompleted ? null : () => _handleToggleWishlist(currentTrickData['id'], isWishlisted, innerSelectedStance, (fn) {
-                            if (context.mounted) {
-                               setModalState(fn);
-                            }
-                          }),
-                          icon: Icon(isWishlisted ? Icons.favorite_rounded : Icons.favorite_border_rounded),
-                          label: Text(widget.localizations.wishlist),
+                          onPressed: isCompleted ? null : () => _handleToggleWishlist(currentTrickData['id'], isWishlisted, innerSelectedStance, (fn) => setModalState(fn)),
+                          icon: Icon(isWishlisted ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 20),
+                          label: Text(widget.localizations.wishlist.toUpperCase()),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: isCompleted ? colorScheme.onSurface.withOpacity(0.3) : Colors.red,
-                            side: BorderSide(
-                              color: isCompleted ? colorScheme.onSurface.withOpacity(0.1) : Colors.red,
-                              width: 1.5
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            foregroundColor: isCompleted ? colorScheme.onSurface.withOpacity(0.2) : Colors.redAccent,
+                            side: BorderSide(color: isCompleted ? colorScheme.onSurface.withOpacity(0.1) : Colors.redAccent.withOpacity(0.5), width: 1.5),
+                            padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            textStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 12),
                           ),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _handleToggleCompleted(currentTrickData['id'], isCompleted, innerSelectedStance, (fn) {
-                            if (context.mounted) {
-                               setModalState(fn);
-                            }
-                          }),
-                          icon: Icon(isCompleted ? Icons.undo_rounded : Icons.check_circle_rounded),
-                          label: Text(isCompleted ? widget.localizations.undo : widget.localizations.complete),
+                          onPressed: () => _handleToggleCompleted(currentTrickData['id'], isCompleted, innerSelectedStance, (fn) => setModalState(fn)),
+                          icon: Icon(isCompleted ? Icons.history_rounded : Icons.check_circle_rounded, size: 20),
+                          label: Text((isCompleted ? widget.localizations.undo : widget.localizations.complete).toUpperCase()),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isCompleted ? colorScheme.onSurface.withOpacity(0.1) : currentStanceColor,
                             foregroundColor: isCompleted ? colorScheme.onSurface : Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 18),
                             elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            textStyle: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1, fontSize: 12),
                           ),
                         ),
                       ),
@@ -424,35 +353,16 @@ class _TrickListPageState extends State<TrickListPage> {
     final availableStances = _getAvailableStances(trick['name'] ?? '');
     final allPossibleStances = ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
     final colorScheme = Theme.of(context).colorScheme;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: allPossibleStances.map((stance) {
         if (!availableStances.contains(stance)) return const SizedBox.shrink();
-
         final bool isDone = _isTrickCompleted(trick, stance);
         final bool isWishlisted = _isTrickWishlisted(trick, stance);
-
         if (_currentFilter == TrickFilter.wishlist) {
-            return Container(
-              margin: const EdgeInsets.only(left: 4),
-              child: Icon(
-                isDone ? Icons.favorite : (isWishlisted ? Icons.favorite : Icons.favorite_border),
-                color: isDone ? Colors.green : (isWishlisted ? stanceColors[stance] : colorScheme.onSurface.withOpacity(0.1)),
-                size: 14,
-              ),
-            );
+            return Container(margin: const EdgeInsets.only(left: 6), child: Icon(isDone ? Icons.favorite : (isWishlisted ? Icons.favorite : Icons.favorite_border), color: isDone ? Colors.green : (isWishlisted ? stanceColors[stance] : colorScheme.onSurface.withOpacity(0.1)), size: 14));
         }
-
-        return Container(
-          margin: const EdgeInsets.only(left: 4),
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isDone ? stanceColors[stance] : colorScheme.onSurface.withOpacity(0.1),
-          ),
-        );
+        return Container(margin: const EdgeInsets.only(left: 6), width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: isDone ? stanceColors[stance] : colorScheme.onSurface.withOpacity(0.1)));
       }).toList(),
     );
   }
@@ -469,159 +379,77 @@ class _TrickListPageState extends State<TrickListPage> {
     final primaryColor = AppColors.getDynamicPrimary(context);
 
     final filteredTricks = _tricks.where((trick) {
-      bool matchesFilter = true;
-      if (_currentFilter == TrickFilter.completed) {
-        matchesFilter = _isTrickCompleted(trick, _selectedStance);
-      } else if (_currentFilter == TrickFilter.wishlist) {
-        matchesFilter = _isTrickWishlisted(trick, _selectedStance);
-      }
-
-      return matchesFilter;
+      if (_currentFilter == TrickFilter.completed) return _isTrickCompleted(trick, _selectedStance);
+      if (_currentFilter == TrickFilter.wishlist) return _isTrickWishlisted(trick, _selectedStance);
+      return true;
     }).toList();
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth > 800;
-
         final sideMenu = SideMenu(
-          localizations: widget.localizations,
-          isLoggedIn: widget.isLoggedIn,
-          userData: widget.userData,
-          isExpanded: _isMenuExpanded,
-          isDesktop: isDesktop,
-          onToggleMenu: _toggleMenu,
-          onLanguageChange: widget.onLanguageChange,
-          onProfileTap: widget.onProfileTap,
-          onTrickListTap: widget.onTrickListTap,
-          onProgressTap: widget.onProgressTap,
-          onLeaderboardTap: widget.onLeaderboardTap,
-          onFriendsTap: widget.onFriendsTap,
-          onSessionGoalsTap: widget.onSessionGoalsTap,
-          onEquipmentTap: widget.onEquipmentTap,
-          onSettingsTap: widget.onSettingsTap,
-          isDarkMode: widget.isDarkMode,
-          onThemeToggle: widget.onThemeToggle,
+          localizations: widget.localizations, isLoggedIn: widget.isLoggedIn, userData: widget.userData, isExpanded: _isMenuExpanded, isDesktop: isDesktop, onToggleMenu: _toggleMenu, onLanguageChange: widget.onLanguageChange, onProfileTap: widget.onProfileTap, onTrickListTap: widget.onTrickListTap, onProgressTap: widget.onProgressTap, onLeaderboardTap: widget.onLeaderboardTap, onFriendsTap: widget.onFriendsTap, onSessionGoalsTap: widget.onSessionGoalsTap, onEquipmentTap: widget.onEquipmentTap, onSettingsTap: widget.onSettingsTap, isDarkMode: widget.isDarkMode, onThemeToggle: widget.onThemeToggle,
         );
 
         return Scaffold(
           key: _scaffoldKey,
           backgroundColor: colorScheme.surface,
-          appBar: CustomAppBar(
-            title: widget.categoryName,
-            isDarkMode: widget.isDarkMode,
-            onMenuTap: isDesktop ? _toggleMenu : () => _scaffoldKey.currentState?.openDrawer(),
-            showMenuButton: true,
-            isExpanded: _isMenuExpanded,
-            isDesktop: isDesktop,
-          ),
+          appBar: CustomAppBar(title: widget.categoryName, isDarkMode: widget.isDarkMode, onMenuTap: isDesktop ? _toggleMenu : () => _scaffoldKey.currentState?.openDrawer(), showMenuButton: true, isExpanded: _isMenuExpanded, isDesktop: isDesktop),
           drawer: isDesktop ? null : sideMenu,
           body: Row(
             children: [
-              if (isDesktop)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  width: _isMenuExpanded ? 280 : 72,
-                  child: sideMenu
-                ),
+              if (isDesktop) AnimatedContainer(duration: const Duration(milliseconds: 250), curve: Curves.easeInOut, width: _isMenuExpanded ? 280 : 72, child: sideMenu),
               Expanded(
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      decoration: BoxDecoration(
-                        color: theme.scaffoldBackgroundColor,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
+                      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]),
                       child: Column(
                         children: [
                           TextField(
                             controller: _searchController,
-                            style: TextStyle(color: colorScheme.onSurface),
+                            style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w600),
                             cursorColor: primaryColor,
                             decoration: InputDecoration(
                               hintText: widget.localizations.searchTricks,
-                              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
                               prefixIcon: Icon(Icons.search_rounded, color: primaryColor),
-                              suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(Icons.clear_rounded, color: colorScheme.onSurface.withOpacity(0.5)),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      _onSearchChanged("");
-                                    },
-                                  )
-                                : null,
-                              filled: true,
-                              fillColor: colorScheme.onSurface.withOpacity(0.05),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              suffixIcon: _searchController.text.isNotEmpty ? IconButton(icon: Icon(Icons.clear_rounded, color: colorScheme.onSurface.withOpacity(0.4)), onPressed: () { _searchController.clear(); _onSearchChanged(""); }) : null,
+                              filled: true, fillColor: colorScheme.onSurface.withOpacity(0.04),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             ),
                             onChanged: _onSearchChanged,
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           Row(
                             children: [
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      _buildFilterChip(TrickFilter.all, widget.localizations.allTricks),
-                                      const SizedBox(width: 8),
-                                      _buildFilterChip(TrickFilter.completed, widget.localizations.completed),
-                                      const SizedBox(width: 8),
-                                      _buildFilterChip(TrickFilter.wishlist, widget.localizations.wishlist),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                              Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+                                _buildFilterChip(TrickFilter.all, widget.localizations.allTricks),
+                                const SizedBox(width: 10),
+                                _buildFilterChip(TrickFilter.completed, widget.localizations.completed),
+                                const SizedBox(width: 10),
+                                _buildFilterChip(TrickFilter.wishlist, widget.localizations.wishlist),
+                              ]))),
                               if (_currentFilter != TrickFilter.all) ...[
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 Container(
-                                  height: 36,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.onSurface.withOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      value: _selectedStance,
-                                      icon: Icon(Icons.arrow_drop_down, size: 20, color: colorScheme.onSurface.withOpacity(0.7)),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.onSurface,
-                                      ),
-                                      dropdownColor: theme.cardColor,
-                                      onChanged: (String? newValue) {
-                                        if (newValue != null) {
-                                          setState(() => _selectedStance = newValue);
-                                        }
-                                      },
-                                      items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE']
-                                          .map<DropdownMenuItem<String>>((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(_formatStance(value)),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
+                                  height: 40, padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.04), borderRadius: BorderRadius.circular(12), border: Border.all(color: colorScheme.onSurface.withOpacity(0.05))),
+                                  child: DropdownButtonHideUnderline(child: DropdownButton<String>(
+                                    value: _selectedStance,
+                                    icon: Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: colorScheme.onSurface.withOpacity(0.5)),
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: colorScheme.onSurface, letterSpacing: 0.5),
+                                    dropdownColor: theme.cardColor,
+                                    onChanged: (String? newValue) { if (newValue != null) setState(() => _selectedStance = newValue); },
+                                    items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map<DropdownMenuItem<String>>((String value) => DropdownMenuItem<String>(value: value, child: Text(_formatStance(value).toUpperCase()))).toList(),
+                                  )),
                                 ),
                               ],
                             ],
                           ),
+                          const SizedBox(height: 8),
                         ],
                       ),
                     ),
@@ -632,54 +460,24 @@ class _TrickListPageState extends State<TrickListPage> {
                               onRefresh: _loadInitialTricks,
                               color: primaryColor,
                               child: filteredTricks.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.search_off_rounded, size: 64, color: colorScheme.onSurface.withOpacity(0.2)),
-                                        const SizedBox(height: 16),
-                                        Text(widget.localizations.noTricksFound, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 16)),
-                                      ],
-                                    ),
-                                  )
+                                ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.search_off_rounded, size: 64, color: colorScheme.onSurface.withOpacity(0.1)), const SizedBox(height: 16), Text(widget.localizations.noTricksFound, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.4), fontSize: 16, fontWeight: FontWeight.w600))]))
                                 : ListView.builder(
                                     controller: _scrollController,
                                     padding: const EdgeInsets.all(16),
                                     physics: const BouncingScrollPhysics(),
                                     itemCount: filteredTricks.length + (_hasMore ? 1 : 0),
                                     itemBuilder: (context, index) {
-                                      if (index == filteredTricks.length) {
-                                        return Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Center(child: CircularProgressIndicator(color: primaryColor)),
-                                        );
-                                      }
-
+                                      if (index == filteredTricks.length) return Padding(padding: const EdgeInsets.all(24.0), child: Center(child: CircularProgressIndicator(color: primaryColor, strokeWidth: 3)));
                                       final trick = filteredTricks[index];
-
                                       return Card(
-                                        elevation: 0,
-                                        margin: const EdgeInsets.only(bottom: 12),
+                                        elevation: 0, margin: const EdgeInsets.only(bottom: 12),
                                         color: theme.cardColor,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                          side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
-                                        ),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: colorScheme.onSurface.withOpacity(0.04))),
                                         child: ListTile(
                                           onTap: () => _showTrickDetails(trick, index),
-                                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                          title: Text(
-                                            trick['name'] ?? widget.localizations.tricks,
-                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface),
-                                          ),
-                                          trailing: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              _buildStanceIndicators(trick),
-                                              const SizedBox(width: 8),
-                                              Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface.withOpacity(0.3)),
-                                            ],
-                                          ),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                          title: Text(trick['name'] ?? widget.localizations.tricks, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface)),
+                                          trailing: Row(mainAxisSize: MainAxisSize.min, children: [_buildStanceIndicators(trick), const SizedBox(width: 12), Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface.withOpacity(0.2))]),
                                         ),
                                       );
                                     },
@@ -700,32 +498,13 @@ class _TrickListPageState extends State<TrickListPage> {
     final isSelected = _currentFilter == filter;
     final colorScheme = Theme.of(context).colorScheme;
     final primaryColor = AppColors.getDynamicPrimary(context);
-
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        setState(() {
-          _currentFilter = filter;
-          if (filter == TrickFilter.all) {
-            _selectedStance = 'ALL';
-          }
-        });
-      },
+      onTap: () { HapticFeedback.lightImpact(); setState(() { _currentFilter = filter; if (filter == TrickFilter.all) _selectedStance = 'ALL'; }); },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? primaryColor : colorScheme.onSurface.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.7),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 13,
-          ),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(color: isSelected ? primaryColor : colorScheme.onSurface.withOpacity(0.05), borderRadius: BorderRadius.circular(14), border: Border.all(color: isSelected ? primaryColor : Colors.transparent)),
+        child: Text(label.toUpperCase(), style: TextStyle(color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1)),
       ),
     );
   }

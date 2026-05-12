@@ -36,7 +36,6 @@ class LoginRequiredView extends StatelessWidget {
   final Function(bool)? onThemeToggle;
   final Function(String)? onLanguageChange;
   
-  // Navigation Callbacks für die Sidebar
   final VoidCallback? onProfileTap;
   final VoidCallback? onProgressTap;
   final VoidCallback? onLeaderboardTap;
@@ -45,6 +44,21 @@ class LoginRequiredView extends StatelessWidget {
   final VoidCallback? onSessionGoalsTap;
   final VoidCallback? onEquipmentTap;
   final VoidCallback? onSettingsTap;
+
+  // Profi-Navigations-Fix für nahtlose Übergänge
+  void _pushPage(BuildContext context, Widget page) {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+          opacity: animation,
+          child: page,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,33 +92,27 @@ class LoginRequiredView extends StatelessWidget {
             ),
             const SizedBox(height: 40),
             
-            // Login Button
             SizedBox(
               width: 280,
               child: ElevatedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LogInPage(
-                      localizations: localizations,
-                      onLogin: onLogin,
-                      onMenuTap: onMenuTap,
-                      isStandalone: true,
-                      isDarkMode: isDarkMode,
-                      isMenuExpanded: isMenuExpanded,
-                      onThemeToggle: onThemeToggle,
-                      onLanguageChange: onLanguageChange,
-                      onProfileTap: onProfileTap,
-                      onProgressTap: onProgressTap,
-                      onLeaderboardTap: onLeaderboardTap,
-                      onTrickListTap: onTrickListTap,
-                      onFriendsTap: onFriendsTap,
-                      onSessionGoalsTap: onSessionGoalsTap,
-                      onEquipmentTap: onEquipmentTap,
-                      onSettingsTap: onSettingsTap,
-                    ),
-                  ),
-                ),
+                onPressed: () => _pushPage(context, LogInPage(
+                  localizations: localizations,
+                  onLogin: onLogin,
+                  onMenuTap: onMenuTap,
+                  isStandalone: true,
+                  isDarkMode: isDarkMode,
+                  isMenuExpanded: isMenuExpanded,
+                  onThemeToggle: onThemeToggle,
+                  onLanguageChange: onLanguageChange,
+                  onProfileTap: onProfileTap,
+                  onProgressTap: onProgressTap,
+                  onLeaderboardTap: onLeaderboardTap,
+                  onTrickListTap: onTrickListTap,
+                  onFriendsTap: onFriendsTap,
+                  onSessionGoalsTap: onSessionGoalsTap,
+                  onEquipmentTap: onEquipmentTap,
+                  onSettingsTap: onSettingsTap,
+                )),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
@@ -121,33 +129,27 @@ class LoginRequiredView extends StatelessWidget {
             
             const SizedBox(height: 16),
             
-            // Register Button
             SizedBox(
               width: 280,
               child: OutlinedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SignInPage(
-                      localizations: localizations,
-                      onLogin: onLogin,
-                      onMenuTap: onMenuTap,
-                      isStandalone: true,
-                      isDarkMode: isDarkMode,
-                      isMenuExpanded: isMenuExpanded,
-                      onThemeToggle: onThemeToggle,
-                      onLanguageChange: onLanguageChange,
-                      onProfileTap: onProfileTap,
-                      onProgressTap: onProgressTap,
-                      onLeaderboardTap: onLeaderboardTap,
-                      onTrickListTap: onTrickListTap,
-                      onFriendsTap: onFriendsTap,
-                      onSessionGoalsTap: onSessionGoalsTap,
-                      onEquipmentTap: onEquipmentTap,
-                      onSettingsTap: onSettingsTap,
-                    ),
-                  ),
-                ),
+                onPressed: () => _pushPage(context, SignInPage(
+                  localizations: localizations,
+                  onLogin: onLogin,
+                  onMenuTap: onMenuTap,
+                  isStandalone: true,
+                  isDarkMode: isDarkMode,
+                  isMenuExpanded: isMenuExpanded,
+                  onThemeToggle: onThemeToggle,
+                  onLanguageChange: onLanguageChange,
+                  onProfileTap: onProfileTap,
+                  onProgressTap: onProgressTap,
+                  onLeaderboardTap: onLeaderboardTap,
+                  onTrickListTap: onTrickListTap,
+                  onFriendsTap: onFriendsTap,
+                  onSessionGoalsTap: onSessionGoalsTap,
+                  onEquipmentTap: onEquipmentTap,
+                  onSettingsTap: onSettingsTap,
+                )),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: primaryColor,
                   side: BorderSide(color: primaryColor, width: 2),

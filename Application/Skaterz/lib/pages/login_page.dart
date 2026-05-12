@@ -72,7 +72,7 @@ class _LogInPageState extends State<LogInPage> {
   void _nav(VoidCallback? originalCallback) {
     if (originalCallback != null) {
       if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
+        Navigator.of(context).popUntil((route) => route.isFirst);
       }
       originalCallback();
     }
@@ -95,7 +95,7 @@ class _LogInPageState extends State<LogInPage> {
       if (mounted) {
         widget.onLogin();
         if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
+          Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
     } catch (e) {
@@ -166,26 +166,32 @@ class _LogInPageState extends State<LogInPage> {
               const SizedBox(height: 16),
               OutlinedButton(
                 onPressed: () {
+                  // Profi-Fix: FadeTransition statt Slide für nahtlosen Übergang
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => SignInPage(
-                        localizations: widget.localizations,
-                        onLogin: widget.onLogin,
-                        onMenuTap: widget.onMenuTap,
-                        isStandalone: widget.isStandalone,
-                        isDarkMode: widget.isDarkMode,
-                        isMenuExpanded: _isMenuExpanded,
-                        onThemeToggle: widget.onThemeToggle,
-                        onLanguageChange: widget.onLanguageChange,
-                        onProfileTap: widget.onProfileTap,
-                        onProgressTap: widget.onProgressTap,
-                        onLeaderboardTap: widget.onLeaderboardTap,
-                        onTrickListTap: widget.onTrickListTap,
-                        onFriendsTap: widget.onFriendsTap,
-                        onSessionGoalsTap: widget.onSessionGoalsTap,
-                        onEquipmentTap: widget.onEquipmentTap,
-                        onSettingsTap: widget.onSettingsTap,
+                    PageRouteBuilder(
+                      transitionDuration: const Duration(milliseconds: 300),
+                      reverseTransitionDuration: const Duration(milliseconds: 250),
+                      pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+                        opacity: animation,
+                        child: SignInPage(
+                          localizations: widget.localizations,
+                          onLogin: widget.onLogin,
+                          onMenuTap: widget.onMenuTap,
+                          isStandalone: widget.isStandalone,
+                          isDarkMode: widget.isDarkMode,
+                          isMenuExpanded: _isMenuExpanded,
+                          onThemeToggle: widget.onThemeToggle,
+                          onLanguageChange: widget.onLanguageChange,
+                          onProfileTap: widget.onProfileTap,
+                          onProgressTap: widget.onProgressTap,
+                          onLeaderboardTap: widget.onLeaderboardTap,
+                          onTrickListTap: widget.onTrickListTap,
+                          onFriendsTap: widget.onFriendsTap,
+                          onSessionGoalsTap: widget.onSessionGoalsTap,
+                          onEquipmentTap: widget.onEquipmentTap,
+                          onSettingsTap: widget.onSettingsTap,
+                        ),
                       ),
                     ),
                   );
