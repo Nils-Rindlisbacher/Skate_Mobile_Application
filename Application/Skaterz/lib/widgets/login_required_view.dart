@@ -16,6 +16,14 @@ class LoginRequiredView extends StatelessWidget {
     this.isMenuExpanded = false,
     this.onThemeToggle,
     this.onLanguageChange,
+    this.onProfileTap,
+    this.onProgressTap,
+    this.onLeaderboardTap,
+    this.onTrickListTap,
+    this.onFriendsTap,
+    this.onSessionGoalsTap,
+    this.onEquipmentTap,
+    this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -27,6 +35,16 @@ class LoginRequiredView extends StatelessWidget {
   final bool isMenuExpanded;
   final Function(bool)? onThemeToggle;
   final Function(String)? onLanguageChange;
+  
+  // Navigation Callbacks für die Sidebar
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onProgressTap;
+  final VoidCallback? onLeaderboardTap;
+  final VoidCallback? onTrickListTap;
+  final VoidCallback? onFriendsTap;
+  final VoidCallback? onSessionGoalsTap;
+  final VoidCallback? onEquipmentTap;
+  final VoidCallback? onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +94,14 @@ class LoginRequiredView extends StatelessWidget {
                       isMenuExpanded: isMenuExpanded,
                       onThemeToggle: onThemeToggle,
                       onLanguageChange: onLanguageChange,
+                      onProfileTap: onProfileTap,
+                      onProgressTap: onProgressTap,
+                      onLeaderboardTap: onLeaderboardTap,
+                      onTrickListTap: onTrickListTap,
+                      onFriendsTap: onFriendsTap,
+                      onSessionGoalsTap: onSessionGoalsTap,
+                      onEquipmentTap: onEquipmentTap,
+                      onSettingsTap: onSettingsTap,
                     ),
                   ),
                 ),
@@ -111,6 +137,14 @@ class LoginRequiredView extends StatelessWidget {
                       isMenuExpanded: isMenuExpanded,
                       onThemeToggle: onThemeToggle,
                       onLanguageChange: onLanguageChange,
+                      onProfileTap: onProfileTap,
+                      onProgressTap: onProgressTap,
+                      onLeaderboardTap: onLeaderboardTap,
+                      onTrickListTap: onTrickListTap,
+                      onFriendsTap: onFriendsTap,
+                      onSessionGoalsTap: onSessionGoalsTap,
+                      onEquipmentTap: onEquipmentTap,
+                      onSettingsTap: onSettingsTap,
                     ),
                   ),
                 ),

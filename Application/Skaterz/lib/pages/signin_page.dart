@@ -17,6 +17,14 @@ class SignInPage extends StatefulWidget {
     this.isMenuExpanded = false,
     this.onThemeToggle,
     this.onLanguageChange,
+    this.onProfileTap,
+    this.onProgressTap,
+    this.onLeaderboardTap,
+    this.onTrickListTap,
+    this.onFriendsTap,
+    this.onSessionGoalsTap,
+    this.onEquipmentTap,
+    this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -27,6 +35,14 @@ class SignInPage extends StatefulWidget {
   final bool isMenuExpanded;
   final Function(bool)? onThemeToggle;
   final Function(String)? onLanguageChange;
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onProgressTap;
+  final VoidCallback? onLeaderboardTap;
+  final VoidCallback? onTrickListTap;
+  final VoidCallback? onFriendsTap;
+  final VoidCallback? onSessionGoalsTap;
+  final VoidCallback? onEquipmentTap;
+  final VoidCallback? onSettingsTap;
 
   @override
   State<SignInPage> createState() => _SignInPageState();
@@ -56,6 +72,14 @@ class _SignInPageState extends State<SignInPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _nav(VoidCallback? originalCallback) {
+    if (originalCallback != null) {
+      // Profi-Fix: Pop bis zur MainShell (Root), damit der Tab-Wechsel sichtbar wird
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      originalCallback();
+    }
   }
 
   Future<void> _handleRegister() async {
@@ -197,14 +221,14 @@ class _SignInPageState extends State<SignInPage> {
           isDesktop: isDesktop,
           onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
           onLanguageChange: widget.onLanguageChange ?? (v) {},
-          onProfileTap: () {},
-          onTrickListTap: () {},
-          onProgressTap: () {},
-          onSessionGoalsTap: () {},
-          onEquipmentTap: () {},
-          onLeaderboardTap: () {},
-          onFriendsTap: () {},
-          onSettingsTap: () {},
+          onProfileTap: () => _nav(widget.onProfileTap),
+          onTrickListTap: () => _nav(widget.onTrickListTap),
+          onProgressTap: () => _nav(widget.onProgressTap),
+          onSessionGoalsTap: () => _nav(widget.onSessionGoalsTap),
+          onEquipmentTap: () => _nav(widget.onEquipmentTap),
+          onLeaderboardTap: () => _nav(widget.onLeaderboardTap),
+          onFriendsTap: () => _nav(widget.onFriendsTap),
+          onSettingsTap: () => _nav(widget.onSettingsTap),
           isDarkMode: widget.isDarkMode,
           onThemeToggle: widget.onThemeToggle ?? (v) {},
         );

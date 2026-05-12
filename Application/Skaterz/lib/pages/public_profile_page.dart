@@ -162,11 +162,13 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   void _showUnfriendDialog() {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(widget.localizations.unfriend),
-        content: Text(widget.localizations.unfriendConfirm),
+        backgroundColor: theme.cardColor,
+        title: Text(widget.localizations.unfriend, style: TextStyle(color: theme.colorScheme.onSurface)),
+        content: Text(widget.localizations.unfriendConfirm, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
           TextButton(
@@ -189,7 +191,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -217,6 +221,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
         return Scaffold(
           key: _scaffoldKey,
+          backgroundColor: colorScheme.surface,
           appBar: CustomAppBar(
             title: widget.username,
             isDarkMode: widget.isDarkMode,
@@ -244,11 +249,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 ),
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? Center(child: CircularProgressIndicator(color: primaryColor))
                     : _error != null
-                        ? Center(child: Text('${widget.localizations.error}: $_error'))
+                        ? Center(child: Text('${widget.localizations.error}: $_error', style: TextStyle(color: colorScheme.onSurface)))
                         : RefreshIndicator(
                             onRefresh: () => _fetchData(silent: true),
+                            color: primaryColor,
                             child: _buildContent(context, colorScheme),
                           ),
               ),
@@ -262,13 +268,59 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   Widget _buildContent(BuildContext context, ColorScheme colorScheme) {
     if (_profileData == null) return const SizedBox.shrink();
 
-    final rawStats = _profileData!['stats'] as List<dynamic>;
     final profile = _profileData!['profile'] as Map<String, dynamic>;
+    final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
+    final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          Hero(
+            tag: 'avatar_${widget.userId}',
+            child: CircleAvatar(
+              radius: 60,
+              backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+              backgroundImage: hasCustomImage
+                  ? MemoryImage(const Base64Decoder().convert(base64Image))
+                  : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            profile['name'] ?? widget.username,
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          ),
+          Text(
+            '@${widget.username}', 
+            style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.6)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$_friendCount ${widget.localizations.friends.toUpperCase()}',
+            style: TextStyle(fontWeight: FontWeight.w900, color: primaryColor, fontSize: 12, letterSpacing: 1),
+          ),
+          const SizedBox(height: 24),
+          
+          if (!_isMe) _buildRelationshipButton(colorScheme),
+
+          const SizedBox(height: 32),
+
+          _buildSectionHeader(widget.localizations.activityHeatmap, colorScheme),
+          _buildStatsContent(colorScheme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsContent(ColorScheme colorScheme) {
+    final rawStats = _profileData!['stats'] as List<dynamic>;
     final completedTricks = _profileData!['completedTricks'] as List<dynamic>;
     final sessionsData = _profileData!['sessions'] as List<dynamic>;
     final List<SkatingSession> sessions = sessionsData.map((s) => SkatingSession.fromJson(s)).toList();
-    final String? base64Image = profile['profile_image'] ?? profile['profileImage'];
-    final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     Map<String, int> categoryCounts = {};
     for (var item in completedTricks) {
@@ -307,93 +359,67 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
     });
     recentlyCompleted = recentlyCompleted.take(3).toList();
 
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 60,
-            backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-            backgroundImage: hasCustomImage
-                ? MemoryImage(const Base64Decoder().convert(base64Image))
-                : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
           ),
-          const SizedBox(height: 16),
-          Text(
-            profile['name'] ?? widget.username,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          child: SkateHeatmap(
+            sessions: sessions,
+            localizations: widget.localizations,
           ),
-          Text(
-            '@${widget.username}',
-            style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.6)),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$_friendCount ${widget.localizations.friends.toUpperCase()}',
-            style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 12, letterSpacing: 1),
-          ),
-          const SizedBox(height: 24),
+        ),
 
-          if (!_isMe) _buildRelationshipButton(colorScheme),
-
+        if (recentlyCompleted.isNotEmpty) ...[
           const SizedBox(height: 32),
-
-          _buildSectionHeader(widget.localizations.activityHeatmap, colorScheme),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-            ),
-            child: SkateHeatmap(
-              sessions: sessions,
-              localizations: widget.localizations,
-            ),
-          ),
-
-          if (recentlyCompleted.isNotEmpty) ...[
-            const SizedBox(height: 32),
-            _buildSectionHeader(widget.localizations.recentlyCompleted, colorScheme),
-            _buildRecentlyCompleted(recentlyCompleted, colorScheme),
-          ],
-
-          const SizedBox(height: 32),
-
-          SegmentedButton<TrackerView>(
-            segments: [
-              ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category_outlined)),
-              ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run_rounded)),
-            ],
-            selected: {_currentView},
-            onSelectionChanged: (val) => setState(() => _currentView = val.first),
-          ),
-
-          const SizedBox(height: 32),
-
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _currentView == TrackerView.category
-              ? Column(
-                  key: const ValueKey('category_view'),
-                  children: [
-                    _buildCategoryChart(stats),
-                    const SizedBox(height: 32),
-                    _buildCategoryList(stats, colorScheme, completedTricks),
-                  ],
-                )
-              : _buildStanceGrid(totalBaseTricks, completedTricks),
-          ),
+          _buildSectionHeader(widget.localizations.recentlyCompleted, colorScheme),
+          _buildRecentlyCompleted(recentlyCompleted, colorScheme),
         ],
-      ),
+
+        const SizedBox(height: 32),
+
+        SegmentedButton<TrackerView>(
+          style: SegmentedButton.styleFrom(
+            backgroundColor: colorScheme.onSurface.withOpacity(0.05),
+            selectedBackgroundColor: primaryColor,
+            selectedForegroundColor: Colors.white,
+            side: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+          ),
+          segments: [
+            ButtonSegment(value: TrackerView.category, label: Text(widget.localizations.category), icon: const Icon(Icons.category_outlined)),
+            ButtonSegment(value: TrackerView.stance, label: Text(widget.localizations.stance), icon: const Icon(Icons.directions_run_rounded)),
+          ],
+          selected: {_currentView},
+          onSelectionChanged: (val) => setState(() => _currentView = val.first),
+        ),
+
+        const SizedBox(height: 32),
+        
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _currentView == TrackerView.category
+            ? Column(
+                key: const ValueKey('category_view'),
+                children: [
+                  _buildCategoryChart(stats),
+                  const SizedBox(height: 32),
+                  _buildCategoryList(stats, colorScheme, completedTricks),
+                ],
+              )
+            : _buildStanceGrid(totalBaseTricks, completedTricks),
+        ),
+      ],
     );
   }
 
   Widget _buildRelationshipButton(ColorScheme colorScheme) {
     String label = "";
     IconData icon = Icons.person_add;
-    Color bgColor = AppColors.primary;
+    Color bgColor = AppColors.getDynamicPrimary(context);
     Color textColor = Colors.white;
     bool enabled = true;
 
@@ -436,8 +462,11 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   void _showOptions() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     showModalBottomSheet(
       context: context,
+      backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
         child: Column(
@@ -445,8 +474,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           children: [
             if (!_isMe)
               ListTile(
-                leading: Icon(_relationshipStatus == 'FRIENDS' ? Icons.person_remove_outlined : Icons.person_add_outlined),
-                title: Text(_relationshipStatus == 'FRIENDS' ? widget.localizations.unfriend : widget.localizations.addFriend),
+                leading: Icon(_relationshipStatus == 'FRIENDS' ? Icons.person_remove_outlined : Icons.person_add_outlined, color: colorScheme.onSurface),
+                title: Text(_relationshipStatus == 'FRIENDS' ? widget.localizations.unfriend : widget.localizations.addFriend, style: TextStyle(color: colorScheme.onSurface)),
                 onTap: () {
                   Navigator.pop(context);
                   _handleFriendAction();
@@ -455,7 +484,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
             if (!_isMe)
               ListTile(
                 leading: const Icon(Icons.report_problem_outlined, color: Colors.orange),
-                title: Text(widget.localizations.reportUser),
+                title: Text(widget.localizations.reportUser, style: TextStyle(color: colorScheme.onSurface)),
                 onTap: () {
                   Navigator.pop(context);
                   _confirmAction(
@@ -494,11 +523,13 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   void _confirmAction(String title, String message, Future<void> Function() action) {
+    final theme = Theme.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        backgroundColor: theme.cardColor,
+        title: Text(title, style: TextStyle(color: theme.colorScheme.onSurface)),
+        content: Text(message, style: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.8))),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(widget.localizations.cancel)),
           TextButton(
@@ -536,11 +567,12 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   Widget _buildRecentlyCompleted(List<dynamic> tricks, ColorScheme colorScheme) {
+    final theme = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: theme.cardColor,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
       ),
@@ -550,9 +582,9 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
           final String name = trick['name'] ?? trick['trick']?['name'] ?? widget.localizations.tricks;
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: Icon(Icons.check_circle_rounded, color: stanceColors[stance.toUpperCase()] ?? AppColors.primary, size: 20),
-            title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(_formatStance(stance)),
+            leading: Icon(Icons.check_circle_rounded, color: stanceColors[stance.toUpperCase()] ?? AppColors.getDynamicPrimary(context), size: 20),
+            title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+            subtitle: Text(_formatStance(stance), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
           );
         }).toList(),
       ),
@@ -570,6 +602,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   Widget _buildStanceGrid(int totalPerStance, List<dynamic> completedTricks) {
+    final colorScheme = Theme.of(context).colorScheme;
     Map<String, int> stanceCounts = {'REGULAR': 0, 'NOLLIE': 0, 'SWITCH': 0, 'FAKIE': 0};
     for (var item in completedTricks) {
       final stance = (item['stance'] ?? 'REGULAR').toString().toUpperCase();
@@ -618,7 +651,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text('$count/$totalPerStance', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.grey)),
+              Text('$count/$totalPerStance', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.5))),
             ],
           ),
         );
@@ -628,7 +661,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
 
   Widget _buildCategoryChart(List<dynamic> stats) {
     final activeStats = stats.where((cat) => (cat['manualCompletedCount'] as num) > 0).toList();
-    if (activeStats.isEmpty) return SizedBox(height: 200, child: Center(child: Text(widget.localizations.noData)));
+    if (activeStats.isEmpty) return SizedBox(height: 200, child: Center(child: Text(widget.localizations.noData, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)))));
     return SizedBox(
       height: 200,
       child: PieChart(PieChartData(
@@ -647,6 +680,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   Widget _buildCategoryList(List<dynamic> stats, ColorScheme colorScheme, List<dynamic> completedTricks) {
+    final theme = Theme.of(context);
+    final primaryColor = AppColors.getDynamicPrimary(context);
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -661,6 +696,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 0,
+          color: theme.cardColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05))),
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
@@ -673,14 +709,14 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(cat['name'].toString().toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, letterSpacing: 1, color: colorScheme.onSurface)),
-                      Text('${(progress * 100).toInt()}%', style: TextStyle(fontWeight: FontWeight.w900, color: categoryColors[id] ?? AppColors.primary)),
+                      Text('${(progress * 100).toInt()}%', style: TextStyle(fontWeight: FontWeight.w900, color: categoryColors[id] ?? primaryColor)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   LinearProgressIndicator(
                     value: progress.toDouble(), 
                     backgroundColor: colorScheme.onSurface.withOpacity(0.05), 
-                    valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? AppColors.primary), 
+                    valueColor: AlwaysStoppedAnimation(categoryColors[id] ?? primaryColor), 
                     minHeight: 4,
                   ),
                 ],
@@ -693,6 +729,8 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
   }
 
   void _showCategoryTricks(BuildContext context, dynamic categoryId, String categoryName, List<dynamic> completed) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final categoryTricks = completed.where((item) {
       final dynamic trick = item['trick'] ?? item;
       final dynamic category = trick['category'] ?? trick['category_id'] ?? trick['categoryId'];
@@ -718,17 +756,17 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
+        decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, borderRadius: const BorderRadius.vertical(top: Radius.circular(30))),
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2))),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.2), borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            Text(categoryName.toUpperCase(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, color: Theme.of(context).colorScheme.onSurface)),
-            const Divider(),
+            Text(categoryName.toUpperCase(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, color: colorScheme.onSurface)),
+            Divider(color: colorScheme.onSurface.withOpacity(0.1)),
             Expanded(
               child: grouped.isEmpty
-                  ? Center(child: Text(widget.localizations.noTricksYet))
+                  ? Center(child: Text(widget.localizations.noTricksYet, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: grouped.length,
@@ -736,17 +774,18 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
                         final name = grouped.keys.elementAt(index);
                         final stances = grouped[name]!;
                         return ListTile(
-                          title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                          title: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
                           subtitle: Wrap(
                             spacing: 8,
                             children: ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((s) {
                               final isDone = stances.contains(s);
+                              final sColor = stanceColors[s] ?? AppColors.getDynamicPrimary(context);
                               return Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked, size: 14, color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.3)),
+                                  Icon(isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked, size: 14, color: isDone ? sColor : colorScheme.onSurface.withOpacity(0.2)),
                                   const SizedBox(width: 4),
-                                  Text(s.substring(0, 1), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDone ? stanceColors[s] : Colors.grey.withOpacity(0.3))),
+                                  Text(s.substring(0, 1), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isDone ? sColor : colorScheme.onSurface.withOpacity(0.2))),
                                 ],
                               );
                             }).toList(),

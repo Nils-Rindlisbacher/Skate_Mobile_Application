@@ -18,6 +18,14 @@ class SessionGoalsPage extends StatefulWidget {
     required this.onThemeToggle,
     required this.onLanguageChange,
     this.isMenuExpanded = false,
+    this.onProfileTap,
+    this.onProgressTap,
+    this.onLeaderboardTap,
+    this.onTrickListTap,
+    this.onFriendsTap,
+    this.onSessionGoalsTap,
+    this.onEquipmentTap,
+    this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -28,6 +36,14 @@ class SessionGoalsPage extends StatefulWidget {
   final Function(bool) onThemeToggle;
   final Function(String) onLanguageChange;
   final bool isMenuExpanded;
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onProgressTap;
+  final VoidCallback? onLeaderboardTap;
+  final VoidCallback? onTrickListTap;
+  final VoidCallback? onFriendsTap;
+  final VoidCallback? onSessionGoalsTap;
+  final VoidCallback? onEquipmentTap;
+  final VoidCallback? onSettingsTap;
 
   @override
   State<SessionGoalsPage> createState() => _SessionGoalsPageState();
@@ -132,7 +148,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${widget.localizations.deleteFailed}: $e')),
+          SnackBar(content: Text('${widget.localizations.error}: $e')),
         );
       }
     }
@@ -161,7 +177,7 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
             if (mounted) {
               setState(() => _isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${widget.localizations.saveFailed}: $e'), backgroundColor: Colors.red),
+                SnackBar(content: Text('${widget.localizations.error}: $e'), backgroundColor: Colors.red),
               );
             }
           }
@@ -172,8 +188,6 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
@@ -185,17 +199,28 @@ class _SessionGoalsPageState extends State<SessionGoalsPage> {
         isMenuExpanded: widget.isMenuExpanded,
         onThemeToggle: widget.onThemeToggle,
         onLanguageChange: widget.onLanguageChange,
+        onProfileTap: widget.onProfileTap,
+        onProgressTap: widget.onProgressTap,
+        onLeaderboardTap: widget.onLeaderboardTap,
+        onTrickListTap: widget.onTrickListTap,
+        onFriendsTap: widget.onFriendsTap,
+        onSessionGoalsTap: widget.onSessionGoalsTap,
+        onEquipmentTap: widget.onEquipmentTap,
+        onSettingsTap: widget.onSettingsTap,
       );
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
     final openGoals = _goals.where((g) => !g.isCompleted).toList();
     final completedGoals = _goals.where((g) => g.isCompleted).toList();
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       body: _isLoading && _goals.isEmpty 
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: AppColors.getDynamicPrimary(context)))
           : RefreshIndicator(
               onRefresh: _loadGoals,
+              color: AppColors.getDynamicPrimary(context),
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
@@ -387,11 +412,12 @@ class _GoalTile extends StatelessWidget {
     final bool canManuallyComplete = goal.targetCount == null || 
                                      goal.currentCount >= goal.targetCount!;
 
-    final accentColor = colorScheme.primary;
+    final accentColor = AppColors.getDynamicPrimary(context);
 
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),
+      color: Theme.of(context).cardColor,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -611,9 +637,15 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
     if (!availableStances.contains(_selectedStance)) {
       _selectedStance = 'REGULAR';
     }
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     return Container(
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+      ),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
         left: 16,
@@ -629,7 +661,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
             children: [
               Text(
                 widget.localizations.addGoal,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
               ),
               const SizedBox(height: 16),
               SegmentedButton<GoalType>(
@@ -689,6 +721,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                     return TextFormField(
                       controller: controller,
                       focusNode: focusNode,
+                      style: TextStyle(color: colorScheme.onSurface),
                       decoration: InputDecoration(
                         labelText: '${widget.localizations.selectTrick} *',
                         prefixIcon: const Icon(Icons.skateboarding),
@@ -706,6 +739,8 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _selectedStance,
+                  dropdownColor: theme.cardColor,
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: '${widget.localizations.stances} *',
                     prefixIcon: const Icon(Icons.directions_run),
@@ -724,6 +759,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                 TextFormField(
                   controller: _titleController,
                   focusNode: _titleFocusNode,
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: '${widget.localizations.goalHint} *',
                     prefixIcon: const Icon(Icons.edit),
@@ -737,6 +773,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                   Expanded(
                     child: TextField(
                       controller: _countController,
+                      style: TextStyle(color: colorScheme.onSurface),
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: widget.localizations.targetCount,
@@ -748,6 +785,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                   Expanded(
                     child: TextField(
                       controller: _minutesController,
+                      style: TextStyle(color: colorScheme.onSurface),
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         labelText: widget.localizations.timerMinutes,
@@ -760,9 +798,10 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
               const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 onPressed: () {
                   if (!_formKey.currentState!.validate()) return;
@@ -783,7 +822,7 @@ class _AddGoalSheetState extends State<_AddGoalSheet> {
                   );
                   widget.onGoalAdded(newGoal);
                 },
-                child: Text(widget.localizations.saveAndContinue),
+                child: Text(widget.localizations.saveAndContinue.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1)),
               ),
               const SizedBox(height: 16),
             ],

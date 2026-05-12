@@ -17,6 +17,14 @@ class LogInPage extends StatefulWidget {
     this.isMenuExpanded = false,
     this.onThemeToggle,
     this.onLanguageChange,
+    this.onProfileTap,
+    this.onProgressTap,
+    this.onLeaderboardTap,
+    this.onTrickListTap,
+    this.onFriendsTap,
+    this.onSessionGoalsTap,
+    this.onEquipmentTap,
+    this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -27,6 +35,14 @@ class LogInPage extends StatefulWidget {
   final bool isMenuExpanded;
   final Function(bool)? onThemeToggle;
   final Function(String)? onLanguageChange;
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onProgressTap;
+  final VoidCallback? onLeaderboardTap;
+  final VoidCallback? onTrickListTap;
+  final VoidCallback? onFriendsTap;
+  final VoidCallback? onSessionGoalsTap;
+  final VoidCallback? onEquipmentTap;
+  final VoidCallback? onSettingsTap;
 
   @override
   State<LogInPage> createState() => _LogInPageState();
@@ -51,6 +67,15 @@ class _LogInPageState extends State<LogInPage> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _nav(VoidCallback? originalCallback) {
+    if (originalCallback != null) {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      originalCallback();
+    }
   }
 
   Future<void> _handleLogin() async {
@@ -153,6 +178,14 @@ class _LogInPageState extends State<LogInPage> {
                         isMenuExpanded: _isMenuExpanded,
                         onThemeToggle: widget.onThemeToggle,
                         onLanguageChange: widget.onLanguageChange,
+                        onProfileTap: widget.onProfileTap,
+                        onProgressTap: widget.onProgressTap,
+                        onLeaderboardTap: widget.onLeaderboardTap,
+                        onTrickListTap: widget.onTrickListTap,
+                        onFriendsTap: widget.onFriendsTap,
+                        onSessionGoalsTap: widget.onSessionGoalsTap,
+                        onEquipmentTap: widget.onEquipmentTap,
+                        onSettingsTap: widget.onSettingsTap,
                       ),
                     ),
                   );
@@ -183,14 +216,14 @@ class _LogInPageState extends State<LogInPage> {
           isDesktop: isDesktop,
           onToggleMenu: () => setState(() => _isMenuExpanded = !_isMenuExpanded),
           onLanguageChange: widget.onLanguageChange ?? (v) {},
-          onProfileTap: () {},
-          onTrickListTap: () {},
-          onProgressTap: () {},
-          onSessionGoalsTap: () {},
-          onEquipmentTap: () {},
-          onLeaderboardTap: () {},
-          onFriendsTap: () {},
-          onSettingsTap: () {},
+          onProfileTap: () => _nav(widget.onProfileTap),
+          onTrickListTap: () => _nav(widget.onTrickListTap),
+          onProgressTap: () => _nav(widget.onProgressTap),
+          onSessionGoalsTap: () => _nav(widget.onSessionGoalsTap),
+          onEquipmentTap: () => _nav(widget.onEquipmentTap),
+          onLeaderboardTap: () => _nav(widget.onLeaderboardTap),
+          onFriendsTap: () => _nav(widget.onFriendsTap),
+          onSettingsTap: () => _nav(widget.onSettingsTap),
           isDarkMode: widget.isDarkMode,
           onThemeToggle: widget.onThemeToggle ?? (v) {},
         );

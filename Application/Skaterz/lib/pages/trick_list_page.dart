@@ -285,9 +285,13 @@ class _TrickListPageState extends State<TrickListPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final colorScheme = theme.colorScheme;
+        final primaryColor = AppColors.getDynamicPrimary(context);
+
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            color: theme.scaffoldBackgroundColor,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
           padding: EdgeInsets.only(
@@ -301,7 +305,7 @@ class _TrickListPageState extends State<TrickListPage> {
               final currentTrickData = _tricks.firstWhere((t) => t['id'] == trick['id'], orElse: () => trick);
               final bool isCompleted = _isTrickCompleted(currentTrickData, innerSelectedStance);
               final bool isWishlisted = _isTrickWishlisted(currentTrickData, innerSelectedStance);
-              final Color currentStanceColor = stanceColors[innerSelectedStance] ?? AppColors.primary;
+              final Color currentStanceColor = stanceColors[innerSelectedStance] ?? primaryColor;
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -311,7 +315,7 @@ class _TrickListPageState extends State<TrickListPage> {
                     child: Container(
                       width: 40,
                       height: 4,
-                      decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                      decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -322,34 +326,35 @@ class _TrickListPageState extends State<TrickListPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(currentTrickData['name'] ?? widget.localizations.tricks, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                            Text(currentTrickData['name'] ?? widget.localizations.tricks, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded),
+                        icon: Icon(Icons.close_rounded, color: colorScheme.onSurface),
                         onPressed: () => Navigator.pop(context),
-                        style: IconButton.styleFrom(backgroundColor: Colors.grey.withOpacity(0.1)),
+                        style: IconButton.styleFrom(backgroundColor: colorScheme.onSurface.withOpacity(0.1)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Text('${widget.localizations.stances} *', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text('${widget.localizations.stances} *', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: colorScheme.onSurface)),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     children: availableStances.map((stance) {
                       final isSelected = innerSelectedStance == stance;
                       final bool stanceDone = _isTrickCompleted(currentTrickData, stance);
-                      final Color sColor = stanceColors[stance] ?? AppColors.primary;
+                      final Color sColor = stanceColors[stance] ?? primaryColor;
 
                       return ChoiceChip(
                         label: Text(_formatStance(stance)),
                         selected: isSelected,
                         showCheckmark: false,
                         selectedColor: sColor.withOpacity(0.2),
+                        backgroundColor: colorScheme.onSurface.withOpacity(0.05),
                         labelStyle: TextStyle(
-                          color: isSelected ? sColor : null,
+                          color: isSelected ? sColor : colorScheme.onSurface,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                         avatar: stanceDone ? Icon(Icons.check, size: 16, color: sColor) : null,
@@ -375,9 +380,9 @@ class _TrickListPageState extends State<TrickListPage> {
                           icon: Icon(isWishlisted ? Icons.favorite_rounded : Icons.favorite_border_rounded),
                           label: Text(widget.localizations.wishlist),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: isCompleted ? Colors.grey : Colors.red,
+                            foregroundColor: isCompleted ? colorScheme.onSurface.withOpacity(0.3) : Colors.red,
                             side: BorderSide(
-                              color: isCompleted ? Colors.grey.withOpacity(0.2) : Colors.red,
+                              color: isCompleted ? colorScheme.onSurface.withOpacity(0.1) : Colors.red,
                               width: 1.5
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -396,8 +401,8 @@ class _TrickListPageState extends State<TrickListPage> {
                           icon: Icon(isCompleted ? Icons.undo_rounded : Icons.check_circle_rounded),
                           label: Text(isCompleted ? widget.localizations.undo : widget.localizations.complete),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: isCompleted ? Colors.grey[300] : currentStanceColor,
-                            foregroundColor: isCompleted ? Colors.black87 : Colors.white,
+                            backgroundColor: isCompleted ? colorScheme.onSurface.withOpacity(0.1) : currentStanceColor,
+                            foregroundColor: isCompleted ? colorScheme.onSurface : Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -418,6 +423,7 @@ class _TrickListPageState extends State<TrickListPage> {
   Widget _buildStanceIndicators(Map<String, dynamic> trick) {
     final availableStances = _getAvailableStances(trick['name'] ?? '');
     final allPossibleStances = ['REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'];
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -432,7 +438,7 @@ class _TrickListPageState extends State<TrickListPage> {
               margin: const EdgeInsets.only(left: 4),
               child: Icon(
                 isDone ? Icons.favorite : (isWishlisted ? Icons.favorite : Icons.favorite_border),
-                color: isDone ? Colors.green : (isWishlisted ? stanceColors[stance] : Colors.grey.withOpacity(0.2)),
+                color: isDone ? Colors.green : (isWishlisted ? stanceColors[stance] : colorScheme.onSurface.withOpacity(0.1)),
                 size: 14,
               ),
             );
@@ -444,7 +450,7 @@ class _TrickListPageState extends State<TrickListPage> {
           height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isDone ? stanceColors[stance] : Colors.grey.withOpacity(0.2),
+            color: isDone ? stanceColors[stance] : colorScheme.onSurface.withOpacity(0.1),
           ),
         );
       }).toList(),
@@ -458,7 +464,9 @@ class _TrickListPageState extends State<TrickListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     final filteredTricks = _tricks.where((trick) {
       bool matchesFilter = true;
@@ -497,6 +505,7 @@ class _TrickListPageState extends State<TrickListPage> {
 
         return Scaffold(
           key: _scaffoldKey,
+          backgroundColor: colorScheme.surface,
           appBar: CustomAppBar(
             title: widget.categoryName,
             isDarkMode: widget.isDarkMode,
@@ -521,7 +530,7 @@ class _TrickListPageState extends State<TrickListPage> {
                     Container(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).scaffoldBackgroundColor,
+                        color: theme.scaffoldBackgroundColor,
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -534,12 +543,15 @@ class _TrickListPageState extends State<TrickListPage> {
                         children: [
                           TextField(
                             controller: _searchController,
+                            style: TextStyle(color: colorScheme.onSurface),
+                            cursorColor: primaryColor,
                             decoration: InputDecoration(
                               hintText: widget.localizations.searchTricks,
-                              prefixIcon: Icon(Icons.search_rounded, color: AppColors.primary),
+                              hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                              prefixIcon: Icon(Icons.search_rounded, color: primaryColor),
                               suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded),
+                                    icon: Icon(Icons.clear_rounded, color: colorScheme.onSurface.withOpacity(0.5)),
                                     onPressed: () {
                                       _searchController.clear();
                                       _onSearchChanged("");
@@ -547,7 +559,7 @@ class _TrickListPageState extends State<TrickListPage> {
                                   )
                                 : null,
                               filled: true,
-                              fillColor: Colors.grey.withOpacity(0.1),
+                              fillColor: colorScheme.onSurface.withOpacity(0.05),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide.none,
@@ -579,18 +591,19 @@ class _TrickListPageState extends State<TrickListPage> {
                                   height: 36,
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
                                   decoration: BoxDecoration(
-                                    color: Colors.grey.withOpacity(0.1),
+                                    color: colorScheme.onSurface.withOpacity(0.05),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: DropdownButtonHideUnderline(
                                     child: DropdownButton<String>(
                                       value: _selectedStance,
-                                      icon: const Icon(Icons.arrow_drop_down, size: 20),
+                                      icon: Icon(Icons.arrow_drop_down, size: 20, color: colorScheme.onSurface.withOpacity(0.7)),
                                       style: TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
-                                        color: isDark ? Colors.white : Colors.black87,
+                                        color: colorScheme.onSurface,
                                       ),
+                                      dropdownColor: theme.cardColor,
                                       onChanged: (String? newValue) {
                                         if (newValue != null) {
                                           setState(() => _selectedStance = newValue);
@@ -614,17 +627,18 @@ class _TrickListPageState extends State<TrickListPage> {
                     ),
                     Expanded(
                       child: _isLoading && _tricks.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
+                          ? Center(child: CircularProgressIndicator(color: primaryColor))
                           : RefreshIndicator(
                               onRefresh: _loadInitialTricks,
+                              color: primaryColor,
                               child: filteredTricks.isEmpty
                                 ? Center(
                                     child: Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
+                                        Icon(Icons.search_off_rounded, size: 64, color: colorScheme.onSurface.withOpacity(0.2)),
                                         const SizedBox(height: 16),
-                                        Text(widget.localizations.noTricksFound, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+                                        Text(widget.localizations.noTricksFound, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5), fontSize: 16)),
                                       ],
                                     ),
                                   )
@@ -635,9 +649,9 @@ class _TrickListPageState extends State<TrickListPage> {
                                     itemCount: filteredTricks.length + (_hasMore ? 1 : 0),
                                     itemBuilder: (context, index) {
                                       if (index == filteredTricks.length) {
-                                        return const Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: Center(child: CircularProgressIndicator()),
+                                        return Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Center(child: CircularProgressIndicator(color: primaryColor)),
                                         );
                                       }
 
@@ -646,23 +660,24 @@ class _TrickListPageState extends State<TrickListPage> {
                                       return Card(
                                         elevation: 0,
                                         margin: const EdgeInsets.only(bottom: 12),
+                                        color: theme.cardColor,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(20),
-                                          side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                                          side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
                                         ),
                                         child: ListTile(
                                           onTap: () => _showTrickDetails(trick, index),
                                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                                           title: Text(
                                             trick['name'] ?? widget.localizations.tricks,
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colorScheme.onSurface),
                                           ),
                                           trailing: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               _buildStanceIndicators(trick),
                                               const SizedBox(width: 8),
-                                              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                                              Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface.withOpacity(0.3)),
                                             ],
                                           ),
                                         ),
@@ -683,7 +698,9 @@ class _TrickListPageState extends State<TrickListPage> {
 
   Widget _buildFilterChip(TrickFilter filter, String label) {
     final isSelected = _currentFilter == filter;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -698,13 +715,13 @@ class _TrickListPageState extends State<TrickListPage> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.grey.withOpacity(0.1),
+          color: isSelected ? primaryColor : colorScheme.onSurface.withOpacity(0.05),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+            color: isSelected ? Colors.white : colorScheme.onSurface.withOpacity(0.7),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 13,
           ),

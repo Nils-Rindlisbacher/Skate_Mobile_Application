@@ -134,7 +134,9 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
@@ -147,32 +149,41 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         isMenuExpanded: widget.isMenuExpanded,
         onThemeToggle: widget.onThemeToggle,
         onLanguageChange: widget.onLanguageChange,
+        onProfileTap: widget.onProfileTap,
+        onProgressTap: widget.onProgressTap,
+        onLeaderboardTap: widget.onLeaderboardTap,
+        onTrickListTap: widget.onTrickListTap,
+        onFriendsTap: widget.onFriendsTap,
+        onSessionGoalsTap: widget.onSessionGoalsTap,
+        onEquipmentTap: widget.onEquipmentTap,
+        onSettingsTap: widget.onSettingsTap,
       );
     }
 
     if (!_isUserPublic) {
       return Scaffold(
+        backgroundColor: colorScheme.surface,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.lock_person_outlined, size: 80, color: Colors.grey),
+                Icon(Icons.lock_person_outlined, size: 80, color: colorScheme.onSurface.withOpacity(0.2)),
                 const SizedBox(height: 24),
                 Text(
                   widget.localizations.profileIsPrivate,
                   style: TextStyle(
                     fontSize: 20, 
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   widget.localizations.publicProfileSubtitle,
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(fontSize: 16, color: colorScheme.onSurface.withOpacity(0.5)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
@@ -181,9 +192,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   icon: const Icon(Icons.settings),
                   label: Text(widget.localizations.settingsMenuItem),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: primaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ],
@@ -206,6 +218,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     }).toList();
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       body: Column(
         children: [
           Padding(
@@ -215,9 +228,20 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 DropdownButtonFormField<int?>(
                   value: _selectedCategoryId,
                   isExpanded: true,
+                  dropdownColor: theme.cardColor,
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: widget.localizations.trickListMenuItem,
+                    labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: primaryColor),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   items: [
@@ -243,9 +267,20 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 DropdownButtonFormField<String>(
                   value: _selectedStance,
                   isExpanded: true,
+                  dropdownColor: theme.cardColor,
+                  style: TextStyle(color: colorScheme.onSurface),
                   decoration: InputDecoration(
                     labelText: widget.localizations.stance,
+                    labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: primaryColor),
+                    ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((stance) {
@@ -270,12 +305,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => _loadData(silent: true),
+              color: primaryColor,
               child: _isLoading && _leaderboard.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(child: CircularProgressIndicator(color: primaryColor))
                   : filteredLeaderboard.isEmpty
                       ? ListView(children: [Center(child: Padding(
                           padding: const EdgeInsets.only(top: 100),
-                          child: Text(widget.localizations.noUsersFound),
+                          child: Text(widget.localizations.noUsersFound, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
                         ))])
                       : ListView.builder(
                           itemCount: filteredLeaderboard.length,
@@ -297,6 +333,12 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
                             return Card(
                               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              color: theme.cardColor,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                                side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
+                              ),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(15),
                                 onTap: userId == null ? null : () {
@@ -330,7 +372,6 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       ),
                                     ),
                                   ).then((_) {
-                                    // PROFI-FIX: Refresh verzögern um Animation nicht zu stören
                                     Future.delayed(const Duration(milliseconds: 300), () {
                                       if (mounted) _loadData(silent: true);
                                     });
@@ -346,7 +387,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                           '#$rank',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            color: _getRankColor(rank, isDark),
+                                            color: _getRankColor(rank, colorScheme),
                                             fontSize: 18,
                                           ),
                                         ),
@@ -355,7 +396,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                       Hero(
                                         tag: 'avatar_$userId',
                                         child: CircleAvatar(
-                                          backgroundColor: Colors.grey.withOpacity(0.2),
+                                          backgroundColor: colorScheme.onSurface.withOpacity(0.1),
                                           backgroundImage: hasCustomImage
                                               ? MemoryImage(const Base64Decoder().convert(base64Image))
                                               : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
@@ -365,7 +406,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                   ),
                                   title: Row(
                                     children: [
-                                      Expanded(child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                                      Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface), overflow: TextOverflow.ellipsis)),
                                       if (isFriend)
                                         Container(
                                           margin: const EdgeInsets.only(left: 8),
@@ -382,17 +423,17 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                                         ),
                                     ],
                                   ),
-                                  subtitle: Text('@$username'),
+                                  subtitle: Text('@$username', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
                                   trailing: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.15),
+                                      color: primaryColor.withOpacity(0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
                                       '$completedCount ${widget.localizations.tricks}',
                                       style: TextStyle(
-                                        color: isDark ? AppColors.secondary : AppColors.primary,
+                                        color: widget.isDarkMode ? colorScheme.secondary : primaryColor,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -409,10 +450,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     );
   }
 
-  Color _getRankColor(int rank, bool isDark) {
+  Color _getRankColor(int rank, ColorScheme colorScheme) {
     if (rank == 1) return Colors.amber[700]!;
-    if (rank == 2) return Colors.grey[isDark ? 400 : 600]!;
-    if (rank == 3) return Colors.brown[isDark ? 300 : 600]!;
-    return isDark ? Colors.white70 : Colors.black54;
+    if (rank == 2) return Colors.blueGrey[400]!;
+    if (rank == 3) return Colors.brown[400]!;
+    return colorScheme.onSurface.withOpacity(0.6);
   }
 }

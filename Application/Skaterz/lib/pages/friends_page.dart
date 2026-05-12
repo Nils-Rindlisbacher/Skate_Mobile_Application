@@ -187,12 +187,23 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
         isMenuExpanded: widget.isMenuExpanded,
         onThemeToggle: widget.onThemeToggle,
         onLanguageChange: widget.onLanguageChange,
+        onProfileTap: widget.onProfileTap,
+        onProgressTap: widget.onProgressTap,
+        onLeaderboardTap: widget.onLeaderboardTap,
+        onTrickListTap: widget.onTrickListTap,
+        onFriendsTap: widget.onFriendsTap,
+        onSessionGoalsTap: widget.onSessionGoalsTap,
+        onEquipmentTap: widget.onEquipmentTap,
+        onSettingsTap: widget.onSettingsTap,
       );
     }
 
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       body: Column(
         children: [
           Container(
@@ -200,11 +211,14 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
             child: TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
+              style: TextStyle(color: colorScheme.onSurface),
+              cursorColor: primaryColor,
               decoration: InputDecoration(
                 hintText: widget.localizations.searchFriends,
-                prefixIcon: const Icon(Icons.search_rounded),
+                hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                prefixIcon: Icon(Icons.search_rounded, color: primaryColor),
                 suffixIcon: _searchController.text.isNotEmpty 
-                  ? IconButton(icon: const Icon(Icons.clear_rounded), onPressed: () { _searchController.clear(); _onSearchChanged(""); })
+                  ? IconButton(icon: Icon(Icons.clear_rounded, color: colorScheme.onSurface.withOpacity(0.5)), onPressed: () { _searchController.clear(); _onSearchChanged(""); })
                   : null,
                 filled: true,
                 fillColor: colorScheme.onSurface.withOpacity(0.05),
@@ -215,8 +229,9 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
           ),
           TabBar(
             controller: _tabController,
-            indicatorColor: AppColors.primary,
-            labelColor: AppColors.primary,
+            indicatorColor: primaryColor,
+            labelColor: primaryColor,
+            dividerColor: Colors.transparent,
             unselectedLabelColor: colorScheme.onSurface.withOpacity(0.5),
             tabs: [
               Tab(text: widget.localizations.friends.toUpperCase()),
@@ -253,11 +268,13 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildFriendsList() {
-    if (_isLoadingFriends && _friends.isEmpty) return const Center(child: CircularProgressIndicator());
+    final primaryColor = AppColors.getDynamicPrimary(context);
+    if (_isLoadingFriends && _friends.isEmpty) return Center(child: CircularProgressIndicator(color: primaryColor));
     if (_friends.isEmpty) return _buildEmptyState(Icons.people_outline_rounded, widget.localizations.noUsersFound);
 
     return RefreshIndicator(
       onRefresh: () => _loadData(silent: true),
+      color: primaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _friends.length,
@@ -281,11 +298,13 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildRequestsList() {
-    if (_isLoadingRequests && _pendingRequests.isEmpty) return const Center(child: CircularProgressIndicator());
+    final primaryColor = AppColors.getDynamicPrimary(context);
+    if (_isLoadingRequests && _pendingRequests.isEmpty) return Center(child: CircularProgressIndicator(color: primaryColor));
     if (_pendingRequests.isEmpty) return _buildEmptyState(Icons.mark_email_unread_outlined, widget.localizations.noPendingRequests);
 
     return RefreshIndicator(
       onRefresh: () => _loadData(silent: true),
+      color: primaryColor,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _pendingRequests.length,
@@ -295,25 +314,33 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildUserCard(Map<String, dynamic> user, {bool isFriend = false}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
     final String? avatarData = user['profile_image'] ?? user['profileImage'];
     final int userId = user['id'];
     
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.cardColor,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
+      ),
       child: ListTile(
         leading: Hero(
           tag: 'avatar_$userId',
           child: CircleAvatar(
-            backgroundColor: Colors.grey.withOpacity(0.1),
+            backgroundColor: colorScheme.onSurface.withOpacity(0.1),
             backgroundImage: (avatarData != null && avatarData.isNotEmpty) 
                 ? MemoryImage(base64Decode(avatarData)) 
                 : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
           ),
         ),
-        title: Text(user['name'] ?? user['username'] ?? 'Skater', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('@${user['username'] ?? 'unknown'}'),
-        trailing: isFriend ? Icon(Icons.check_circle_rounded, color: AppColors.primary) : const Icon(Icons.chevron_right_rounded),
+        title: Text(user['name'] ?? user['username'] ?? 'Skater', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+        subtitle: Text('@${user['username'] ?? 'unknown'}', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
+        trailing: isFriend ? Icon(Icons.check_circle_rounded, color: primaryColor) : Icon(Icons.chevron_right_rounded, color: colorScheme.onSurface.withOpacity(0.3)),
         onTap: () => Navigator.push(context, PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),
@@ -350,26 +377,34 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildRequestCard(Map<String, dynamic> request) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final sender = request['sender'];
     if (sender == null) return const SizedBox.shrink();
     
     final String? avatarData = sender['profile_image'] ?? sender['profileImage'];
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.cardColor,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
+      ),
       child: ListTile(
         leading: CircleAvatar(
+          backgroundColor: colorScheme.onSurface.withOpacity(0.1),
           backgroundImage: (avatarData != null && avatarData.isNotEmpty) 
               ? MemoryImage(base64Decode(avatarData)) 
               : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider
         ),
-        title: Text(sender['name'] ?? sender['username'] ?? 'Skater', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(widget.localizations.wantsToBeYourFriend),
+        title: Text(sender['name'] ?? sender['username'] ?? 'Skater', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+        subtitle: Text(widget.localizations.wantsToBeYourFriend, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(icon: const Icon(Icons.check_circle, color: Colors.green), onPressed: () => _handleAccept(request['id'])),
-            IconButton(icon: const Icon(Icons.cancel, color: Colors.redAccent), onPressed: () => _handleDecline(request['id'])),
+            IconButton(icon: Icon(Icons.cancel, color: colorScheme.error), onPressed: () => _handleDecline(request['id'])),
           ],
         ),
       ),
@@ -377,10 +412,11 @@ class _FriendsPageState extends State<FriendsPage> with SingleTickerProviderStat
   }
 
   Widget _buildEmptyState(IconData icon, String message) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Icon(icon, size: 80, color: Colors.grey.withOpacity(0.3)),
+      Icon(icon, size: 80, color: colorScheme.onSurface.withOpacity(0.2)),
       const SizedBox(height: 16),
-      Text(message, style: const TextStyle(color: Colors.grey)),
+      Text(message, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
     ]));
   }
 }

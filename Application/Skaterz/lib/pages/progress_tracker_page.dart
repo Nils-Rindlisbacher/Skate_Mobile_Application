@@ -20,6 +20,14 @@ class ProgressTrackerPage extends StatefulWidget {
     required this.onThemeToggle,
     required this.onLanguageChange,
     this.isMenuExpanded = false,
+    this.onProfileTap,
+    this.onProgressTap,
+    this.onLeaderboardTap,
+    this.onTrickListTap,
+    this.onFriendsTap,
+    this.onSessionGoalsTap,
+    this.onEquipmentTap,
+    this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -31,6 +39,14 @@ class ProgressTrackerPage extends StatefulWidget {
   final Function(bool) onThemeToggle;
   final Function(String) onLanguageChange;
   final bool isMenuExpanded;
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onProgressTap;
+  final VoidCallback? onLeaderboardTap;
+  final VoidCallback? onTrickListTap;
+  final VoidCallback? onFriendsTap;
+  final VoidCallback? onSessionGoalsTap;
+  final VoidCallback? onEquipmentTap;
+  final VoidCallback? onSettingsTap;
 
   @override
   State<ProgressTrackerPage> createState() => _ProgressTrackerPageState();
@@ -112,6 +128,10 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
@@ -123,11 +143,17 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         isMenuExpanded: widget.isMenuExpanded,
         onThemeToggle: widget.onThemeToggle,
         onLanguageChange: widget.onLanguageChange,
+        onProfileTap: widget.onProfileTap,
+        onProgressTap: widget.onProgressTap,
+        onLeaderboardTap: widget.onLeaderboardTap,
+        onTrickListTap: widget.onTrickListTap,
+        onFriendsTap: widget.onFriendsTap,
+        onSessionGoalsTap: widget.onSessionGoalsTap,
+        onEquipmentTap: widget.onEquipmentTap,
+        onSettingsTap: widget.onSettingsTap,
       );
     }
     
-    final colorScheme = Theme.of(context).colorScheme;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
@@ -146,11 +172,13 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
         final int completedVariationsCount = _completed.length;
 
         return Scaffold(
+          backgroundColor: colorScheme.surface,
           appBar: null,
           body: _isLoading && _stats.isEmpty
-              ? const Center(child: CircularProgressIndicator())
+              ? Center(child: CircularProgressIndicator(color: primaryColor))
               : RefreshIndicator(
                   onRefresh: _loadData,
+                  color: primaryColor,
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                     padding: const EdgeInsets.all(24.0),
@@ -166,9 +194,9 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                         SegmentedButton<TrackerView>(
                           style: SegmentedButton.styleFrom(
                             backgroundColor: colorScheme.onSurface.withOpacity(0.05),
-                            selectedBackgroundColor: colorScheme.primary,
-                            selectedForegroundColor: colorScheme.onPrimary,
-                            side: BorderSide.none,
+                            selectedBackgroundColor: primaryColor,
+                            selectedForegroundColor: Colors.white,
+                            side: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           segments: [
@@ -230,7 +258,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           builder: (context, double value, child) {
             return Text(
               '(${(value * 100).toStringAsFixed(1)}% ${widget.localizations.completed})',
-              style: TextStyle(fontSize: 14, color: colorScheme.primary, fontWeight: FontWeight.w900, letterSpacing: 1),
+              style: TextStyle(fontSize: 14, color: AppColors.getDynamicPrimary(context), fontWeight: FontWeight.w900, letterSpacing: 1),
             );
           },
         ),
@@ -239,7 +267,8 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
   }
 
   Widget _buildCategoryView(int columns) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     Map<String, int> counts = {};
     for (var item in _completed) {
       final catId = (item['category_id'] ?? item['categoryId'] ?? 
@@ -268,7 +297,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
           title: cat['name'] ?? widget.localizations.category,
           count: count,
           total: total.toInt(),
-          color: colorScheme.primary, 
+          color: AppColors.getDynamicPrimary(context), 
           onTap: () => _showCategoryTricks(context, id, cat['name'] ?? widget.localizations.category),
         );
       },
@@ -277,7 +306,8 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   Widget _buildMasteryBarCard({required String title, required int count, required int total, required Color color, required VoidCallback onTap}) {
     final double progress = total > 0 ? count / total : 0;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return GestureDetector(
       onTap: () {
@@ -286,9 +316,9 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withOpacity(0.1)),
+          border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
           boxShadow: [
             BoxShadow(
               color: colorScheme.shadow.withOpacity(0.03), 
@@ -439,7 +469,8 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
   void _showTricksSheet(BuildContext context, String title, List<dynamic> tricks, {String? filteredStance}) {
     HapticFeedback.mediumImpact();
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     
     final Map<String, List<String>> groupedTricks = {};
     for (var t in tricks) {
@@ -457,16 +488,16 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: theme.scaffoldBackgroundColor,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         ),
         child: Column(
           children: [
             const SizedBox(height: 12),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.1), borderRadius: BorderRadius.circular(2)),),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),),
             const SizedBox(height: 20),
             Text(title.toUpperCase(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 2, color: colorScheme.onSurface)),
-            const Divider(),
+            Divider(color: colorScheme.onSurface.withOpacity(0.1)),
             Expanded(
               child: tricks.isEmpty
                   ? Center(child: Text(widget.localizations.noTricksYet, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))))
@@ -488,6 +519,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
 
                               final isDone = stances.contains(s);
                               final label = s == 'REGULAR' ? 'R' : (s == 'NOLLIE' ? 'N' : (s == 'SWITCH' ? 'S' : 'F'));
+                              final sColor = stanceColors[s] ?? AppColors.getDynamicPrimary(context);
                               return Container(
                                 margin: const EdgeInsets.only(right: 12, top: 4),
                                 child: Row(
@@ -496,7 +528,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                     Icon(
                                       isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                                       size: 16,
-                                      color: isDone ? stanceColors[s] : colorScheme.onSurface.withOpacity(0.1),
+                                      color: isDone ? sColor : colorScheme.onSurface.withOpacity(0.1),
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
@@ -504,7 +536,7 @@ class _ProgressTrackerPageState extends State<ProgressTrackerPage> with SingleTi
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.bold,
-                                        color: isDone ? stanceColors[s] : colorScheme.onSurface.withOpacity(0.2),
+                                        color: isDone ? sColor : colorScheme.onSurface.withOpacity(0.2),
                                       ),
                                     ),
                                   ],

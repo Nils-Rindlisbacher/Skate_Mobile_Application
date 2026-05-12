@@ -17,6 +17,14 @@ class EquipmentPage extends StatefulWidget {
     required this.onThemeToggle,
     required this.onLanguageChange,
     this.isMenuExpanded = false,
+    this.onProfileTap,
+    this.onProgressTap,
+    this.onLeaderboardTap,
+    this.onTrickListTap,
+    this.onFriendsTap,
+    this.onSessionGoalsTap,
+    this.onEquipmentTap,
+    this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -27,6 +35,14 @@ class EquipmentPage extends StatefulWidget {
   final Function(bool) onThemeToggle;
   final Function(String) onLanguageChange;
   final bool isMenuExpanded;
+  final VoidCallback? onProfileTap;
+  final VoidCallback? onProgressTap;
+  final VoidCallback? onLeaderboardTap;
+  final VoidCallback? onTrickListTap;
+  final VoidCallback? onFriendsTap;
+  final VoidCallback? onSessionGoalsTap;
+  final VoidCallback? onEquipmentTap;
+  final VoidCallback? onSettingsTap;
 
   @override
   State<EquipmentPage> createState() => _EquipmentPageState();
@@ -151,6 +167,10 @@ class _EquipmentPageState extends State<EquipmentPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
     if (!widget.isLoggedIn) {
       return LoginRequiredView(
         localizations: widget.localizations,
@@ -162,6 +182,14 @@ class _EquipmentPageState extends State<EquipmentPage> {
         isMenuExpanded: widget.isMenuExpanded,
         onThemeToggle: widget.onThemeToggle,
         onLanguageChange: widget.onLanguageChange,
+        onProfileTap: widget.onProfileTap,
+        onProgressTap: widget.onProgressTap,
+        onLeaderboardTap: widget.onLeaderboardTap,
+        onTrickListTap: widget.onTrickListTap,
+        onFriendsTap: widget.onFriendsTap,
+        onSessionGoalsTap: widget.onSessionGoalsTap,
+        onEquipmentTap: widget.onEquipmentTap,
+        onSettingsTap: widget.onSettingsTap,
       );
     }
 
@@ -170,16 +198,17 @@ class _EquipmentPageState extends State<EquipmentPage> {
     final inactiveItems = _equipment.where((e) => e['isActive'] != true && e['active'] != true).toList();
 
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'equipment_fab_main',
         onPressed: () => _showAddEditSheet(),
-        backgroundColor: AppColors.getDynamicPrimary(context),
+        backgroundColor: primaryColor,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text(widget.localizations.addEquipment.toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primaryColor))
           : RefreshIndicator(
               onRefresh: _loadEquipment,
               child: CustomScrollView(
@@ -197,9 +226,9 @@ class _EquipmentPageState extends State<EquipmentPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.handyman_outlined, size: 80, color: Colors.grey.withOpacity(0.3)),
+                            Icon(Icons.handyman_outlined, size: 80, color: colorScheme.onSurface.withOpacity(0.2)),
                             const SizedBox(height: 16),
-                            Text(widget.localizations.noData, style: const TextStyle(color: Colors.grey)),
+                            Text(widget.localizations.noData, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
                           ],
                         ),
                       ),
@@ -216,13 +245,14 @@ class _EquipmentPageState extends State<EquipmentPage> {
     final trucks = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'TRUCKS', orElse: () => {});
     final wheels = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'WHEELS', orElse: () => {});
     final hasAnyActive = activeItems.isNotEmpty;
+    final primaryColor = AppColors.getDynamicPrimary(context);
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: AppColors.getDynamicGradient(context),
         borderRadius: BorderRadius.circular(30),
-        boxShadow: [BoxShadow(color: AppColors.getDynamicPrimary(context).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,7 +267,10 @@ class _EquipmentPageState extends State<EquipmentPage> {
               _buildSetupIcon(Icons.album_rounded, wheels['brand'] ?? (hasAnyActive ? '?' : '-'), widget.localizations.typeWheels),
             ],
           ),
-          if (!hasAnyActive) const Center(child: Text('No active setup', style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic, fontSize: 12))),
+          if (!hasAnyActive) const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Center(child: Text('No active setup', style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic, fontSize: 12))),
+          ),
         ],
       ),
     );
@@ -253,15 +286,16 @@ class _EquipmentPageState extends State<EquipmentPage> {
         ),
         const SizedBox(height: 12),
         Text(category.toUpperCase(), style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
-        SizedBox(width: 60, child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
+        SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)),
       ],
     );
   }
 
   Widget _buildSectionHeader(String title) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-      child: Text(title.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 1.5, fontSize: 12)),
+      child: Text(title.toUpperCase(), style: TextStyle(fontWeight: FontWeight.w900, color: colorScheme.onSurface.withOpacity(0.5), letterSpacing: 1.5, fontSize: 12)),
     );
   }
 }
@@ -287,6 +321,9 @@ class _EquipmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
     final setupDateStr = item['setupDate'] ?? item['setup_date'];
     int daysInUse = 0;
     if (setupDateStr != null) {
@@ -300,17 +337,18 @@ class _EquipmentCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Colors.grey.withOpacity(0.1))),
+      color: theme.cardColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05))),
       child: ListTile(
         onTap: onEdit,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         leading: Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: (isActive ? AppColors.getDynamicPrimary(context) : Colors.grey).withOpacity(0.1), shape: BoxShape.circle),
-          child: Icon(_getTypeIcon(item['type'] ?? ''), color: isActive ? AppColors.getDynamicPrimary(context) : Colors.grey, size: 20),
+          decoration: BoxDecoration(color: (isActive ? primaryColor : colorScheme.onSurface.withOpacity(0.5)).withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(_getTypeIcon(item['type'] ?? ''), color: isActive ? primaryColor : colorScheme.onSurface.withOpacity(0.4), size: 20),
         ),
-        title: Text(item['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${item['brand'] ?? ''} ${item['model'] ?? ''}'.trim()),
+        title: Text(item['name'] ?? '', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
+        subtitle: Text('${item['brand'] ?? ''} ${item['model'] ?? ''}'.trim(), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
         trailing: daysInUse > 0 ? Text('$daysInUse d', style: TextStyle(color: _getLifecycleColor(daysInUse, item['type'] ?? ''), fontWeight: FontWeight.bold, fontSize: 12)) : null,
       ),
     );
@@ -385,9 +423,13 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final primaryColor = AppColors.getDynamicPrimary(context);
+
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       ),
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 24, left: 24, right: 24, top: 12),
@@ -397,13 +439,18 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: colorScheme.onSurface.withOpacity(0.2), borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: 20),
-              Text(widget.item == null ? widget.localizations.addEquipment : widget.localizations.editEquipment, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(widget.item == null ? widget.localizations.addEquipment : widget.localizations.editEquipment, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: colorScheme.onSurface)),
               const SizedBox(height: 24),
               DropdownButtonFormField<String>(
                 value: _type,
-                decoration: InputDecoration(labelText: widget.localizations.equipmentType),
+                dropdownColor: theme.cardColor,
+                style: TextStyle(color: colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: widget.localizations.equipmentType,
+                  labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                ),
                 items: ['DECK', 'TRUCKS', 'WHEELS', 'BEARINGS', 'GRIP', 'HARDWARE'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                 onChanged: (val) => setState(() => _type = val!),
               ),
@@ -423,9 +470,12 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                   return TextFormField(
                     controller: controller,
                     focusNode: focusNode,
+                    style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       labelText: widget.localizations.equipmentBrand,
+                      labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
                       hintText: 'e.g. Summer Supply',
+                      hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.3)),
                     ),
                     onChanged: (v) {
                       _brandController.text = v;
@@ -438,9 +488,27 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: TextFormField(controller: _modelController, decoration: InputDecoration(labelText: widget.localizations.equipmentModel))),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _modelController, 
+                      style: TextStyle(color: colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: widget.localizations.equipmentModel,
+                        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                      )
+                    )
+                  ),
                   const SizedBox(width: 16),
-                  Expanded(child: TextFormField(controller: _sizeController, decoration: InputDecoration(labelText: widget.localizations.equipmentSize))),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _sizeController, 
+                      style: TextStyle(color: colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: widget.localizations.equipmentSize,
+                        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                      )
+                    )
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -449,11 +517,27 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                   Expanded(
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(widget.localizations.setupDate),
-                      subtitle: Text(DateFormat.yMMMMd().format(_setupDate)),
-                      trailing: const Icon(Icons.calendar_today),
+                      title: Text(widget.localizations.setupDate, style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
+                      subtitle: Text(DateFormat.yMMMMd().format(_setupDate), style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7))),
+                      trailing: Icon(Icons.calendar_today, color: primaryColor),
                       onTap: () async {
-                        final picked = await showDatePicker(context: context, initialDate: _setupDate, firstDate: DateTime(2000), lastDate: DateTime.now());
+                        final picked = await showDatePicker(
+                          context: context, 
+                          initialDate: _setupDate, 
+                          firstDate: DateTime(2000), 
+                          lastDate: DateTime.now(),
+                          builder: (context, child) {
+                            return Theme(
+                              data: theme.copyWith(
+                                colorScheme: colorScheme.copyWith(
+                                  primary: primaryColor,
+                                  onPrimary: Colors.white,
+                                ),
+                              ),
+                              child: child!,
+                            );
+                          }
+                        );
                         if (picked != null) setState(() => _setupDate = picked);
                       },
                     ),
@@ -462,7 +546,13 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _priceController,
-                      decoration: InputDecoration(labelText: widget.localizations.price, suffixText: '€'),
+                      style: TextStyle(color: colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: widget.localizations.price, 
+                        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                        suffixText: '€',
+                        suffixStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)),
+                      ),
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
                     ),
@@ -470,20 +560,44 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                 ],
               ),
               const SizedBox(height: 16),
-              TextFormField(controller: _notesController, decoration: InputDecoration(labelText: widget.localizations.equipmentNotes), maxLines: 2),
+              TextFormField(
+                controller: _notesController, 
+                style: TextStyle(color: colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: widget.localizations.equipmentNotes,
+                  labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                ), 
+                maxLines: 2
+              ),
               const SizedBox(height: 16),
-              SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(widget.localizations.active), value: _isActive, onChanged: (v) => setState(() => _isActive = v), activeColor: AppColors.primary),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero, 
+                title: Text(widget.localizations.active, style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold)), 
+                value: _isActive, 
+                onChanged: (v) => setState(() => _isActive = v), 
+                activeColor: primaryColor,
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    widget.onSave({
-                      'type': _type, 'name': _nameController.text, 'brand': _brandController.text, 'model': _modelController.text, 'size': _sizeController.text, 
-                      'notes': _notesController.text, 'isActive': _isActive, 'price': double.tryParse(_priceController.text) ?? 0.0, 'setupDate': _setupDate.toIso8601String().split('T')[0],
-                    });
-                  }
-                }, child: Text(widget.localizations.saveAndContinue.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1))),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      widget.onSave({
+                        'type': _type, 'name': _nameController.text, 'brand': _brandController.text, 'model': _modelController.text, 'size': _sizeController.text, 
+                        'notes': _notesController.text, 'isActive': _isActive, 'price': double.tryParse(_priceController.text) ?? 0.0, 'setupDate': _setupDate.toIso8601String().split('T')[0],
+                      });
+                    }
+                  }, 
+                  child: Text(widget.localizations.saveAndContinue.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1))
+                ),
               ),
             ],
           ),
