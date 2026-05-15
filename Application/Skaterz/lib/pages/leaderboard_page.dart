@@ -82,7 +82,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     if (!oldWidget.isLoggedIn && widget.isLoggedIn) {
       _loadData();
     } else if (widget.isLoggedIn && widget.isActive && !oldWidget.isActive) {
-      _loadData(silent: true); 
+      _loadData(silent: true);
     }
   }
 
@@ -92,7 +92,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
     if (!silent) {
       setState(() => _isLoading = true);
     }
-    
+
     try {
       final results = await Future.wait([
         _apiService.getLeaderboard(categoryId: _selectedCategoryId, stance: _selectedStance),
@@ -104,13 +104,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         setState(() {
           _leaderboard = results[0] as List<dynamic>;
           _categories = results[1] as List<dynamic>;
-          
+
           final user = results[2] as Map<String, dynamic>?;
           if (user != null) {
             _friendIds = List<int>.from(user['friendIds'] ?? user['friend_ids'] ?? []);
             _blockedUserIds = List<int>.from(user['blockedIds'] ?? user['blocked_ids'] ?? []);
           }
-          
+
           _isLoading = false;
         });
       }
@@ -174,7 +174,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                 Text(
                   widget.localizations.profileIsPrivate,
                   style: TextStyle(
-                    fontSize: 20, 
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
                   ),
@@ -207,245 +207,250 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
     final filteredLeaderboard = _leaderboard.where((entry) {
       final dynamic rawId = entry['id'];
-      final int? userId = rawId != null 
+      final int? userId = rawId != null
           ? (rawId is int ? rawId : int.tryParse(rawId.toString()))
           : null;
-      
+
       if (userId != null && _blockedUserIds.contains(userId)) return false;
-      
+
       final int count = entry['completedCount'] ?? 0;
       return count > 0;
     }).toList();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Column(
-              children: [
-                DropdownButtonFormField<int?>(
-                  value: _selectedCategoryId,
-                  isExpanded: true,
-                  dropdownColor: theme.cardColor,
-                  style: TextStyle(color: colorScheme.onSurface),
-                  decoration: InputDecoration(
-                    labelText: widget.localizations.trickListMenuItem,
-                    labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 30.0), // <-- Hier kannst du zusätzlichen Abstand oben einstellen
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<int?>(
+                      value: _selectedCategoryId,
+                      isExpanded: true,
+                      dropdownColor: theme.cardColor,
+                      style: TextStyle(color: colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: widget.localizations.trickListMenuItem,
+                        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: primaryColor),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: [
+                        DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text(widget.localizations.allTricks),
+                        ),
+                        ..._categories.map((cat) {
+                          return DropdownMenuItem<int?>(
+                            value: cat['id'],
+                            child: Text(cat['name'] ?? widget.localizations.category),
+                          );
+                        }).toList(),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategoryId = value;
+                        });
+                        _loadData();
+                      },
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: primaryColor),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _selectedStance,
+                      isExpanded: true,
+                      dropdownColor: theme.cardColor,
+                      style: TextStyle(color: colorScheme.onSurface),
+                      decoration: InputDecoration(
+                        labelText: widget.localizations.stance,
+                        labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: primaryColor),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((stance) {
+                        return DropdownMenuItem<String>(
+                          value: stance,
+                          child: Text(_formatStance(stance)),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedStance = value;
+                          });
+                          _loadData();
+                        }
+                      },
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  items: [
-                    DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text(widget.localizations.allTricks),
-                    ),
-                    ..._categories.map((cat) {
-                      return DropdownMenuItem<int?>(
-                        value: cat['id'],
-                        child: Text(cat['name'] ?? widget.localizations.category),
-                      );
-                    }).toList(),
                   ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedCategoryId = value;
-                    });
-                    _loadData();
-                  },
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _selectedStance,
-                  isExpanded: true,
-                  dropdownColor: theme.cardColor,
-                  style: TextStyle(color: colorScheme.onSurface),
-                  decoration: InputDecoration(
-                    labelText: widget.localizations.stance,
-                    labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.1)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: primaryColor),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  ),
-                  items: ['ALL', 'REGULAR', 'NOLLIE', 'SWITCH', 'FAKIE'].map((stance) {
-                    return DropdownMenuItem<String>(
-                      value: stance,
-                      child: Text(_formatStance(stance)),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _selectedStance = value;
-                      });
-                      _loadData();
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => _loadData(silent: true),
-              color: primaryColor,
-              child: _isLoading && _leaderboard.isEmpty
-                  ? Center(child: CircularProgressIndicator(color: primaryColor))
-                  : filteredLeaderboard.isEmpty
-                      ? ListView(children: [Center(child: Padding(
-                          padding: const EdgeInsets.only(top: 100),
-                          child: Text(widget.localizations.noUsersFound, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
-                        ))])
-                      : ListView.builder(
-                          itemCount: filteredLeaderboard.length,
-                          itemBuilder: (context, index) {
-                            final entry = filteredLeaderboard[index];
-                            final int rank = index + 1;
-                            final int completedCount = entry['completedCount'] ?? 0;
-                            final String name = entry['name'] ?? widget.localizations.guest;
-                            final String username = entry['username'] ?? 'User';
-                            final String? base64Image = entry['profile_image'] ?? entry['profileImage'];
-                            final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
-                            
-                            final dynamic rawId = entry['id'];
-                            final int? userId = rawId != null 
-                                ? (rawId is int ? rawId : int.tryParse(rawId.toString()))
-                                : null;
-                            
-                            final bool isFriend = userId != null && _friendIds.contains(userId);
+              ),
 
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              color: theme.cardColor,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                                side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(15),
-                                onTap: userId == null ? null : () {
-                                  Navigator.push(
-                                    context,
-                                    PageRouteBuilder(
-                                      transitionDuration: const Duration(milliseconds: 300),
-                                      reverseTransitionDuration: const Duration(milliseconds: 250),
-                                      pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
-                                        opacity: animation,
-                                        child: PublicProfilePage(
-                                          localizations: widget.localizations,
-                                          userId: userId,
-                                          username: username,
-                                          isLoggedIn: widget.isLoggedIn,
-                                          currentUserData: widget.userData,
-                                          isDarkMode: widget.isDarkMode,
-                                          onThemeToggle: widget.onThemeToggle,
-                                          onLanguageChange: widget.onLanguageChange,
-                                          onProfileTap: widget.onProfileTap,
-                                          onProgressTap: widget.onProgressTap,
-                                          onLeaderboardTap: widget.onLeaderboardTap,
-                                          onTrickListTap: widget.onTrickListTap,
-                                          onFriendsTap: widget.onFriendsTap,
-                                          onSessionGoalsTap: widget.onSessionGoalsTap,
-                                          onEquipmentTap: widget.onEquipmentTap,
-                                          onSettingsTap: widget.onSettingsTap,
-                                          isMenuExpanded: widget.isMenuExpanded,
-                                          onToggleMenu: widget.onToggleMenu,
-                                        ),
-                                      ),
-                                    ),
-                                  ).then((_) {
-                                    Future.delayed(const Duration(milliseconds: 300), () {
-                                      if (mounted) _loadData(silent: true);
-                                    });
-                                  }); 
-                                },
-                                child: ListTile(
-                                  leading: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 35,
-                                        child: Text(
-                                          '#$rank',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: _getRankColor(rank, colorScheme),
-                                            fontSize: 18,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Hero(
-                                        tag: 'avatar_$userId',
-                                        child: CircleAvatar(
-                                          backgroundColor: colorScheme.onSurface.withOpacity(0.1),
-                                          backgroundImage: hasCustomImage
-                                              ? MemoryImage(const Base64Decoder().convert(base64Image))
-                                              : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  title: Row(
-                                    children: [
-                                      Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface), overflow: TextOverflow.ellipsis)),
-                                      if (isFriend)
-                                        Container(
-                                          margin: const EdgeInsets.only(left: 8),
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.blue.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                                          ),
-                                          child: Text(
-                                            widget.localizations.friend.toUpperCase(),
-                                            style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  subtitle: Text('@$username', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
-                                  trailing: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: primaryColor.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      '$completedCount ${widget.localizations.tricks}',
-                                      style: TextStyle(
-                                        color: widget.isDarkMode ? colorScheme.secondary : primaryColor,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => _loadData(silent: true),
+                  color: primaryColor,
+                  child: _isLoading && _leaderboard.isEmpty
+                      ? Center(child: CircularProgressIndicator(color: primaryColor))
+                      : filteredLeaderboard.isEmpty
+                      ? ListView(children: [Center(child: Padding(
+                    padding: const EdgeInsets.only(top: 100),
+                    child: Text(widget.localizations.noUsersFound, style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5))),
+                  ))])
+                      : ListView.builder(
+                    itemCount: filteredLeaderboard.length,
+                    itemBuilder: (context, index) {
+                      final entry = filteredLeaderboard[index];
+                      final int rank = index + 1;
+                      final int completedCount = entry['completedCount'] ?? 0;
+                      final String name = entry['name'] ?? widget.localizations.guest;
+                      final String username = entry['username'] ?? 'User';
+                      final String? base64Image = entry['profile_image'] ?? entry['profileImage'];
+                      final bool hasCustomImage = base64Image != null && base64Image.isNotEmpty;
+
+                      final dynamic rawId = entry['id'];
+                      final int? userId = rawId != null
+                          ? (rawId is int ? rawId : int.tryParse(rawId.toString()))
+                          : null;
+
+                      final bool isFriend = userId != null && _friendIds.contains(userId);
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        color: theme.cardColor,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          side: BorderSide(color: colorScheme.onSurface.withOpacity(0.05)),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(15),
+                          onTap: userId == null ? null : () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(milliseconds: 300),
+                                reverseTransitionDuration: const Duration(milliseconds: 250),
+                                pageBuilder: (context, animation, secondaryAnimation) => FadeTransition(
+                                  opacity: animation,
+                                  child: PublicProfilePage(
+                                    localizations: widget.localizations,
+                                    userId: userId,
+                                    username: username,
+                                    isLoggedIn: widget.isLoggedIn,
+                                    currentUserData: widget.userData,
+                                    isDarkMode: widget.isDarkMode,
+                                    onThemeToggle: widget.onThemeToggle,
+                                    onLanguageChange: widget.onLanguageChange,
+                                    onProfileTap: widget.onProfileTap,
+                                    onProgressTap: widget.onProgressTap,
+                                    onLeaderboardTap: widget.onLeaderboardTap,
+                                    onTrickListTap: widget.onTrickListTap,
+                                    onFriendsTap: widget.onFriendsTap,
+                                    onSessionGoalsTap: widget.onSessionGoalsTap,
+                                    onEquipmentTap: widget.onEquipmentTap,
+                                    onSettingsTap: widget.onSettingsTap,
+                                    isMenuExpanded: widget.isMenuExpanded,
+                                    onToggleMenu: widget.onToggleMenu,
                                   ),
                                 ),
                               ),
-                            );
+                            ).then((_) {
+                              Future.delayed(const Duration(milliseconds: 300), () {
+                                if (mounted) _loadData(silent: true);
+                              });
+                            });
                           },
+                          child: ListTile(
+                            leading: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 35,
+                                  child: Text(
+                                    '#$rank',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: _getRankColor(rank, colorScheme),
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Hero(
+                                  tag: 'avatar_$userId',
+                                  child: CircleAvatar(
+                                    backgroundColor: colorScheme.onSurface.withOpacity(0.1),
+                                    backgroundImage: hasCustomImage
+                                        ? MemoryImage(const Base64Decoder().convert(base64Image))
+                                        : const AssetImage('assets/Default_Profile_Pic.png') as ImageProvider,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            title: Row(
+                              children: [
+                                Expanded(child: Text(name, style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.onSurface), overflow: TextOverflow.ellipsis)),
+                                if (isFriend)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                                    ),
+                                    child: Text(
+                                      widget.localizations.friend.toUpperCase(),
+                                      style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.blue),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            subtitle: Text('@$username', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '$completedCount ${widget.localizations.tricks}',
+                                style: TextStyle(
+                                  color: widget.isDarkMode ? colorScheme.secondary : primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-            ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
