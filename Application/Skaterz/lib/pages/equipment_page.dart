@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:skaterz/l10n/app_localizations.dart';
@@ -24,7 +25,7 @@ class EquipmentPage extends StatefulWidget {
     this.onFriendsTap,
     this.onSessionGoalsTap,
     this.onEquipmentTap,
-    this.onSettingsTap,
+    required this.onSettingsTap,
   });
 
   final AppLocalizations localizations;
@@ -42,7 +43,7 @@ class EquipmentPage extends StatefulWidget {
   final VoidCallback? onFriendsTap;
   final VoidCallback? onSessionGoalsTap;
   final VoidCallback? onEquipmentTap;
-  final VoidCallback? onSettingsTap;
+  final VoidCallback onSettingsTap;
 
   @override
   State<EquipmentPage> createState() => _EquipmentPageState();
@@ -64,7 +65,8 @@ class _EquipmentPageState extends State<EquipmentPage> {
   }
 
   Future<void> _loadEquipment() async {
-    if (mounted) setState(() => _isLoading = true);
+    if (!mounted) return;
+    setState(() => _isLoading = true);
     try {
       final data = await _apiService.getEquipment();
       if (mounted) {
@@ -83,6 +85,16 @@ class _EquipmentPageState extends State<EquipmentPage> {
     }
   }
 
+  static bool isItemActive(dynamic item) {
+    if (item == null) return false;
+    final val = item['is_active'] ?? item['active'] ?? item['isActive'];
+    if (val == null) return false;
+    if (val is bool) return val;
+    if (val is num) return val == 1;
+    final s = val.toString().toLowerCase();
+    return s == 'true' || s == '1' || s == 'active';
+  }
+
   void _showAddEditSheet({Map<String, dynamic>? item}) {
     showModalBottomSheet(
       context: context,
@@ -99,19 +111,29 @@ class _EquipmentPageState extends State<EquipmentPage> {
               _equipment.add(Map<String, dynamic>.from(data)..['id'] = -1);
             } else {
               final index = _equipment.indexWhere((e) => e['id'] == item['id']);
-              if (index != -1) _equipment[index] = data;
+              if (index != -1) {
+                _equipment[index] = Map<String, dynamic>.from(data)..['id'] = item['id'];
+              }
             }
           });
 
           try {
             if (item == null) {
               final newItem = await _apiService.addEquipment(data);
-              setState(() {
-                final index = _equipment.indexWhere((e) => e['id'] == -1);
-                if (index != -1) _equipment[index] = newItem!;
-              });
+              if (mounted && newItem != null) {
+                setState(() {
+                  final index = _equipment.indexWhere((e) => e['id'] == -1);
+                  if (index != -1) _equipment[index] = newItem;
+                });
+              }
             } else {
-              await _apiService.updateEquipment(item['id'], data);
+              final updatedItem = await _apiService.updateEquipment(item['id'], data);
+              if (mounted && updatedItem != null) {
+                setState(() {
+                  final index = _equipment.indexWhere((e) => e['id'] == item['id']);
+                  if (index != -1) _equipment[index] = updatedItem;
+                });
+              }
             }
           } catch (e) {
             _loadEquipment(); 
@@ -146,16 +168,12 @@ class _EquipmentPageState extends State<EquipmentPage> {
       final originalItem = _equipment.firstWhere((e) => e['id'] == id);
       final index = _equipment.indexOf(originalItem);
 
-      setState(() {
-        _equipment.removeWhere((e) => e['id'] == id);
-      });
+      setState(() => _equipment.removeWhere((e) => e['id'] == id));
 
       try {
         await _apiService.deleteEquipment(id);
       } catch (e) {
-        setState(() {
-          _equipment.insert(index, originalItem);
-        });
+        setState(() => _equipment.insert(index, originalItem));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('${widget.localizations.error}: $e')),
@@ -193,9 +211,8 @@ class _EquipmentPageState extends State<EquipmentPage> {
       );
     }
 
-    _equipment.sort((a, b) => (a['isActive'] == true) ? -1 : 1);
-    final activeItems = _equipment.where((e) => e['isActive'] == true || e['active'] == true).toList();
-    final inactiveItems = _equipment.where((e) => e['isActive'] != true && e['active'] != true).toList();
+    final activeItems = _equipment.where((e) => isItemActive(e)).toList();
+    final inactiveItems = _equipment.where((e) => !isItemActive(e)).toList();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -211,6 +228,7 @@ class _EquipmentPageState extends State<EquipmentPage> {
           ? Center(child: CircularProgressIndicator(color: primaryColor))
           : RefreshIndicator(
               onRefresh: _loadEquipment,
+              color: primaryColor,
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.all(24), child: _buildCurrentSetupSummary(activeItems))),
@@ -241,9 +259,9 @@ class _EquipmentPageState extends State<EquipmentPage> {
   }
 
   Widget _buildCurrentSetupSummary(List<dynamic> activeItems) {
-    final deck = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'DECK', orElse: () => {});
-    final trucks = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'TRUCKS', orElse: () => {});
-    final wheels = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => e['type'] == 'WHEELS', orElse: () => {});
+    final deck = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => (e['type'] ?? '').toString().toUpperCase() == 'DECK', orElse: () => {});
+    final trucks = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => (e['type'] ?? '').toString().toUpperCase() == 'TRUCKS', orElse: () => {});
+    final wheels = activeItems.cast<Map<String, dynamic>>().firstWhere((e) => (e['type'] ?? '').toString().toUpperCase() == 'WHEELS', orElse: () => {});
     final hasAnyActive = activeItems.isNotEmpty;
     final primaryColor = AppColors.getDynamicPrimary(context);
 
@@ -324,7 +342,7 @@ class _EquipmentCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final primaryColor = AppColors.getDynamicPrimary(context);
-    final setupDateStr = item['setupDate'] ?? item['setup_date'];
+    final setupDateStr = item['setup_date'] ?? item['setupDate'];
     int daysInUse = 0;
     if (setupDateStr != null) {
       try {
@@ -332,7 +350,7 @@ class _EquipmentCard extends StatelessWidget {
         daysInUse = DateTime.now().difference(date).inDays;
       } catch (_) {}
     }
-    final bool isActive = item['isActive'] == true || item['active'] == true;
+    final bool isActive = _EquipmentPageState.isItemActive(item);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 6),
@@ -379,6 +397,7 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
   late String _type;
   late TextEditingController _nameController;
   late TextEditingController _brandController;
+  late FocusNode _brandFocusNode; // Profi-Fix: FocusNode fuer Autocomplete
   late TextEditingController _modelController;
   late TextEditingController _sizeController;
   late TextEditingController _notesController;
@@ -387,10 +406,9 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
   late bool _isActive;
 
   final List<String> _commonBrands = [
-    'Summer Supply', 'Baker', 'Element', 'Independent', 'Santa Cruz', 'Venture', 'Thunder',
-    'Spitfire', 'Bones', 'Ricta', 'Girl', 'Chocolate', 'Real', 'Anti-Hero', 'Krooked',
-    'Creature', 'Palace', 'Polar', 'Primitive', 'Flip', 'Enjoi', 'Almost', 'Blind',
-    'Deathwish', 'Zero', 'Tensor', 'Ace', 'Royal', 'Krux', 'Powell Peralta', 'Bronson'
+    'Independent', 'Thunder', 'Venture', 'Spitfire', 'Bones', 'Baker', 'Element', 'Santa Cruz',
+    'Girl', 'Chocolate', 'Real', 'Anti-Hero', 'Krooked', 'Creature', 'Palace', 'Polar',
+    'Primitive', 'Flip', 'Enjoi', 'Almost', 'Blind', 'Deathwish', 'Zero', 'Tensor', 'Ace'
   ];
 
   @override
@@ -398,22 +416,37 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
     super.initState();
     final item = widget.item;
     _type = item?['type'] ?? 'DECK';
-    _nameController = TextEditingController(text: item?['brand'] ?? ''); 
-    _brandController = TextEditingController(text: item?['brand'] ?? '');
-    _modelController = TextEditingController(text: item?['model'] ?? '');
-    _sizeController = TextEditingController(text: item?['size'] ?? '');
-    _notesController = TextEditingController(text: item?['notes'] ?? '');
-    _priceController = TextEditingController(text: item?['price']?.toString() ?? '');
-    _isActive = item?['isActive'] ?? item?['active'] ?? true;
     
-    final dateStr = item?['setupDate'] ?? item?['setup_date'];
+    final brand = (item?['brand'] ?? '').toString();
+    _brandController = TextEditingController(text: brand);
+    _brandFocusNode = FocusNode(); // Profi-Fix: Initialisierung
+    _nameController = TextEditingController(text: (item?['name'] ?? brand).toString()); 
+    _modelController = TextEditingController(text: (item?['model'] ?? '').toString());
+    _sizeController = TextEditingController(text: (item?['size'] ?? '').toString());
+    _notesController = TextEditingController(text: (item?['notes'] ?? '').toString());
+    _priceController = TextEditingController(text: (item?['price'] ?? '').toString());
+    
+    _isActive = _initActiveState(item);
+    
+    final dateStr = item?['setup_date'] ?? item?['setupDate'];
     _setupDate = dateStr != null ? DateTime.parse(dateStr.toString()) : DateTime.now();
+  }
+
+  bool _initActiveState(Map<String, dynamic>? item) {
+    if (item == null) return true;
+    final val = item['is_active'] ?? item['active'] ?? item['isActive'];
+    if (val == null) return true;
+    if (val is bool) return val;
+    if (val is num) return val == 1;
+    final s = val.toString().toLowerCase();
+    return s == 'true' || s == '1' || s == 'active';
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _brandController.dispose();
+    _brandFocusNode.dispose(); // Profi-Fix: Dispose
     _modelController.dispose();
     _sizeController.dispose();
     _notesController.dispose();
@@ -456,6 +489,8 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
               ),
               const SizedBox(height: 16),
               Autocomplete<String>(
+                textEditingController: _brandController,
+                focusNode: _brandFocusNode, // Profi-Fix: FocusNode uebergeben
                 optionsBuilder: (TextEditingValue textEditingValue) {
                   if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
                   return _commonBrands.where((brand) => brand.toLowerCase().contains(textEditingValue.text.toLowerCase()));
@@ -463,7 +498,9 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                 onSelected: (String selection) {
                   setState(() {
                     _brandController.text = selection;
-                    _nameController.text = selection; 
+                    if (_nameController.text.isEmpty || _nameController.text == selection.substring(0, selection.length > 0 ? selection.length - 1 : 0)) {
+                       _nameController.text = selection;
+                    }
                   });
                 },
                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
@@ -474,13 +511,9 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                     decoration: InputDecoration(
                       labelText: widget.localizations.equipmentBrand,
                       labelStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.7)),
-                      hintText: 'e.g. Summer Supply',
+                      hintText: 'e.g. Independent',
                       hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.3)),
                     ),
-                    onChanged: (v) {
-                      _brandController.text = v;
-                      _nameController.text = v;
-                    },
                     validator: (v) => v!.isEmpty ? widget.localizations.enterCredentials : null,
                   );
                 },
@@ -591,8 +624,15 @@ class _AddEditEquipmentSheetState extends State<_AddEditEquipmentSheet> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       widget.onSave({
-                        'type': _type, 'name': _nameController.text, 'brand': _brandController.text, 'model': _modelController.text, 'size': _sizeController.text, 
-                        'notes': _notesController.text, 'isActive': _isActive, 'price': double.tryParse(_priceController.text) ?? 0.0, 'setupDate': _setupDate.toIso8601String().split('T')[0],
+                        'type': _type, 
+                        'name': _nameController.text.isNotEmpty ? _nameController.text : _brandController.text, 
+                        'brand': _brandController.text, 
+                        'model': _modelController.text, 
+                        'size': _sizeController.text, 
+                        'notes': _notesController.text, 
+                        'is_active': _isActive,
+                        'price': double.tryParse(_priceController.text) ?? 0.0, 
+                        'setup_date': _setupDate.toIso8601String().split('T')[0],
                       });
                     }
                   }, 
