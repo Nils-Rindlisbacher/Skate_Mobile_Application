@@ -10,7 +10,9 @@ import java.util.List;
 @Repository
 public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
     List<Equipment> findByUserId(Long userId);
-    List<Equipment> findByUserIdAndIsActive(Long userId, boolean isActive);
+    
+    // Updated to match the field name 'active' in the Equipment entity
+    List<Equipment> findByUserIdAndActive(Long userId, boolean active);
 
     @Transactional
     @Modifying

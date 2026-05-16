@@ -36,7 +36,7 @@ public class EquipmentController {
     @GetMapping("/active")
     public List<Equipment> getActiveEquipment() {
         User user = getCurrentUser();
-        return equipmentRepository.findByUserIdAndIsActive(user.getId(), true);
+        return equipmentRepository.findByUserIdAndActive(user.getId(), true);
     }
 
     @PostMapping
@@ -63,7 +63,7 @@ public class EquipmentController {
         equipment.setSize(equipmentDetails.getSize());
         equipment.setNotes(equipmentDetails.getNotes());
         equipment.setSetupDate(equipmentDetails.getSetupDate());
-        equipment.setActive(equipmentDetails.isActive());
+        equipment.setActive(equipmentDetails.getIsActive()); // Using explicit getter
         equipment.setPrice(equipmentDetails.getPrice());
 
         return ResponseEntity.ok(equipmentRepository.save(equipment));
