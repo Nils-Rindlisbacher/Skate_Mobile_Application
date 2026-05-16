@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -307,8 +306,26 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           _buildAvatar(),
           const SizedBox(height: 20),
-          Text(_userData?['name'] ?? widget.localizations.guest, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: colorScheme.onSurface)),
-          Text('@${_userData?['username'] ?? ''}', style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.w600)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              _userData?['name'] ?? widget.localizations.guest, 
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: colorScheme.onSurface),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              '@${_userData?['username'] ?? ''}', 
+              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -464,10 +481,10 @@ class _ProfilePageState extends State<ProfilePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _moodIcon('GREAT', '🔥', colorScheme.primary, widget.localizations.moodGreat),
-                _moodIcon('OK', '🛹', Colors.blueGrey, widget.localizations.moodOk),
-                _moodIcon('BAD', '🤕', Colors.orange, widget.localizations.moodBad),
-                _moodIcon('INJURED', '🚑', Colors.redAccent, widget.localizations.moodInjured),
+                Expanded(child: _moodIcon('GREAT', '🔥', colorScheme.primary, widget.localizations.moodGreat)),
+                Expanded(child: _moodIcon('OK', '🛹', Colors.blueGrey, widget.localizations.moodOk)),
+                Expanded(child: _moodIcon('BAD', '🤕', Colors.orange, widget.localizations.moodBad)),
+                Expanded(child: _moodIcon('INJURED', '🚑', Colors.redAccent, widget.localizations.moodInjured)),
               ],
             ),
             const SizedBox(height: 20),
@@ -485,10 +502,17 @@ class _ProfilePageState extends State<ProfilePage> {
         try { await _apiService.logSkatingSession(mood); _loadData(); } catch (e) { _calculateSessionStats(); }
       },
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(emoji, style: const TextStyle(fontSize: 40)),
           const SizedBox(height: 8),
-          Text(label.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color)),
+          Text(
+            label.toUpperCase(), 
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: color),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+          ),
         ],
       ),
     );
